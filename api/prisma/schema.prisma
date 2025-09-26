@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ScimUser {
+  id          String   @id @default(cuid())
+  scimId      String   @unique
+  externalId  String?
+  userName    String
+  active      Boolean  @default(true)
+  rawPayload  String
+  meta        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  groups      GroupMember[]
+}
+
+model ScimGroup {
+  id          String        @id @default(cuid())
+  scimId      String        @unique
+  displayName String
+  rawPayload  String
+  meta        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  members     GroupMember[]
+}
+
+model GroupMember {
+  id        String    @id @default(cuid())
+  groupId   String
+  userId    String?
+  value     String
+  type      String?
+  display   String?
+  createdAt DateTime  @default(now())
+
+  group ScimGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  ScimUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model RequestLog {
+  id               String   @id @default(cuid())
+  method           String
+  url              String
+  status           Int?
+  durationMs       Int?
+  requestHeaders   String
+  requestBody      String?
+  responseHeaders  String?
+  responseBody     String?
+  errorMessage     String?
+  errorStack       String?
+  identifier       String?  // Persisted lightweight identifier (userName/email/displayName/etc)
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([method])
+  @@index([status])
+}

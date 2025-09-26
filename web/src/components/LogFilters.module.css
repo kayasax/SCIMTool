@@ -1,0 +1,34 @@
+﻿/* Styles for the log filters bar */
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.inp, .sel, .wide, .date {
+  padding: 0.35rem 0.45rem;
+  background: #1f242d;
+  color: #e2e6ea;
+  border: 1px solid #2a2f3a;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.inp { width: 70px; }
+.sel { width: 100px; }
+.wide { width: 180px; }
+.date { width: 160px; }
+
+button {
+  padding: 0.4rem 0.75rem;
+  background: #2b303b;
+  color: #e2e6ea;
+  border: 1px solid #353b47;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+button:disabled { opacity: 0.55; cursor: not-allowed; }
