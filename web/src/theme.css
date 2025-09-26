@@ -1,0 +1,177 @@
+﻿/* Microsoft Fluent Design Variables */
+:root {
+  /* Light Theme Colors */
+  --color-primary: #0078d4;
+  --color-primary-hover: #106ebe;
+  --color-primary-pressed: #005a9e;
+  
+  --color-neutral-background: #ffffff;
+  --color-neutral-surface: #faf9f8;
+  --color-neutral-surface-secondary: #f3f2f1;
+  --color-neutral-surface-tertiary: #edebe9;
+  
+  --color-neutral-foreground: #201f1e;
+  --color-neutral-foreground-secondary: #605e5c;
+  --color-neutral-foreground-tertiary: #8a8886;
+  
+  --color-success: #107c10;
+  --color-success-background: #dff6dd;
+  --color-error: #d13438;
+  --color-error-background: #fde7e9;
+  --color-warning: #faa06b;
+  --color-warning-background: #fff4ce;
+  
+  --color-border: #edebe9;
+  --color-border-strong: #8a8886;
+  
+  /* Dark Theme Colors */
+  --dark-color-neutral-background: #1b1a19;
+  --dark-color-neutral-surface: #252423;
+  --dark-color-neutral-surface-secondary: #292827;
+  --dark-color-neutral-surface-tertiary: #323130;
+  
+  --dark-color-neutral-foreground: #ffffff;
+  --dark-color-neutral-foreground-secondary: #d2d0ce;
+  --dark-color-neutral-foreground-tertiary: #a19f9d;
+  
+  --dark-color-success: #54b054;
+  --dark-color-success-background: #393d1b;
+  --dark-color-error: #f85149;
+  --dark-color-error-background: #442426;
+  --dark-color-warning: #f9c74f;
+  --dark-color-warning-background: #433519;
+  
+  --dark-color-border: #3b3a39;
+  --dark-color-border-strong: #605e5c;
+  
+  /* Typography */
+  --font-family-base: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+  --font-family-monospace: 'Cascadia Code', 'SF Mono', Monaco, 'Inconsolata', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  
+  --font-size-100: 10px;
+  --font-size-200: 12px;
+  --font-size-300: 14px;
+  --font-size-400: 16px;
+  --font-size-500: 18px;
+  --font-size-600: 20px;
+  --font-size-700: 28px;
+  --font-size-800: 34px;
+  --font-size-900: 42px;
+  
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-xxl: 24px;
+  --spacing-xxxl: 32px;
+  
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  
+  /* Elevation/Shadows */
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0px 2px rgba(0, 0, 0, 0.12);
+  --shadow-4: 0 2px 4px rgba(0, 0, 0, 0.14), 0 0px 2px rgba(0, 0, 0, 0.12);
+  --shadow-8: 0 4px 8px rgba(0, 0, 0, 0.14), 0 0px 2px rgba(0, 0, 0, 0.12);
+  --shadow-16: 0 8px 16px rgba(0, 0, 0, 0.14), 0 0px 2px rgba(0, 0, 0, 0.12);
+  
+  /* Dark theme shadows */
+  --dark-shadow-2: 0 1px 2px rgba(0, 0, 0, 0.24), 0 0px 2px rgba(0, 0, 0, 0.28);
+  --dark-shadow-4: 0 2px 4px rgba(0, 0, 0, 0.24), 0 0px 2px rgba(0, 0, 0, 0.28);
+  --dark-shadow-8: 0 4px 8px rgba(0, 0, 0, 0.24), 0 0px 2px rgba(0, 0, 0, 0.28);
+  --dark-shadow-16: 0 8px 16px rgba(0, 0, 0, 0.24), 0 0px 2px rgba(0, 0, 0, 0.28);
+  
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* Dark theme class override */
+[data-theme="dark"] {
+  --current-background: var(--dark-color-neutral-background);
+  --current-surface: var(--dark-color-neutral-surface);
+  --current-surface-secondary: var(--dark-color-neutral-surface-secondary);
+  --current-surface-tertiary: var(--dark-color-neutral-surface-tertiary);
+  
+  --current-foreground: var(--dark-color-neutral-foreground);
+  --current-foreground-secondary: var(--dark-color-neutral-foreground-secondary);
+  --current-foreground-tertiary: var(--dark-color-neutral-foreground-tertiary);
+  
+  --current-success: var(--dark-color-success);
+  --current-success-background: var(--dark-color-success-background);
+  --current-error: var(--dark-color-error);
+  --current-error-background: var(--dark-color-error-background);
+  --current-warning: var(--dark-color-warning);
+  --current-warning-background: var(--dark-color-warning-background);
+  
+  --current-border: var(--dark-color-border);
+  --current-border-strong: var(--dark-color-border-strong);
+  
+  --current-shadow-2: var(--dark-shadow-2);
+  --current-shadow-4: var(--dark-shadow-4);
+  --current-shadow-8: var(--dark-shadow-8);
+  --current-shadow-16: var(--dark-shadow-16);
+}
+
+/* Light theme (default) */
+[data-theme="light"] {
+  --current-background: var(--color-neutral-background);
+  --current-surface: var(--color-neutral-surface);
+  --current-surface-secondary: var(--color-neutral-surface-secondary);
+  --current-surface-tertiary: var(--color-neutral-surface-tertiary);
+  
+  --current-foreground: var(--color-neutral-foreground);
+  --current-foreground-secondary: var(--color-neutral-foreground-secondary);
+  --current-foreground-tertiary: var(--color-neutral-foreground-tertiary);
+  
+  --current-success: var(--color-success);
+  --current-success-background: var(--color-success-background);
+  --current-error: var(--color-error);
+  --current-error-background: var(--color-error-background);
+  --current-warning: var(--color-warning);
+  --current-warning-background: var(--color-warning-background);
+  
+  --current-border: var(--color-border);
+  --current-border-strong: var(--color-border-strong);
+  
+  --current-shadow-2: var(--shadow-2);
+  --current-shadow-4: var(--shadow-4);
+  --current-shadow-8: var(--shadow-8);
+  --current-shadow-16: var(--shadow-16);
+}
+
+/* Default to dark theme */
+:root {
+  --current-background: var(--dark-color-neutral-background);
+  --current-surface: var(--dark-color-neutral-surface);
+  --current-surface-secondary: var(--dark-color-neutral-surface-secondary);
+  --current-surface-tertiary: var(--dark-color-neutral-surface-tertiary);
+  
+  --current-foreground: var(--dark-color-neutral-foreground);
+  --current-foreground-secondary: var(--dark-color-neutral-foreground-secondary);
+  --current-foreground-tertiary: var(--dark-color-neutral-foreground-tertiary);
+  
+  --current-success: var(--dark-color-success);
+  --current-success-background: var(--dark-color-success-background);
+  --current-error: var(--dark-color-error);
+  --current-error-background: var(--dark-color-error-background);
+  --current-warning: var(--dark-color-warning);
+  --current-warning-background: var(--dark-color-warning-background);
+  
+  --current-border: var(--dark-color-border);
+  --current-border-strong: var(--dark-color-border-strong);
+  
+  --current-shadow-2: var(--dark-shadow-2);
+  --current-shadow-4: var(--dark-shadow-4);
+  --current-shadow-8: var(--dark-shadow-8);
+  --current-shadow-16: var(--dark-shadow-16);
+}
