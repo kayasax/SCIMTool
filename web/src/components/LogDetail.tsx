@@ -1,103 +1,212 @@
-﻿import React, { useState } from 'react';
-import type { RequestLogItem } from '../api/client';
-import styles from '../app.module.css';
+import React, { useState, useEffect } from 'react';
+import { RequestLogItem } from '../api/client';
+import styles from './LogDetail.module.css';
 
-interface Props {
+interface LogDetailProps {
   log: RequestLogItem | null;
   onClose: () => void;
 }
 
-export const LogDetail: React.FC<Props> = ({ log, onClose }) => {
-  if (!log) return null;
+export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
   const [copied, setCopied] = useState<string | null>(null);
 
-  function copy(label: string, data: unknown) {
+  const parseContent = (content: any): string => {
+    if (typeof content === 'string') {
+      try {
+        return JSON.stringify(JSON.parse(content), null, 2);
+      } catch {
+        return content;
+      }
+    }
+    return JSON.stringify(content, null, 2);
+  };
+
+  const copy = async (type: string, content: any) => {
     try {
-      navigator.clipboard.writeText(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-      setCopied(label);
-      setTimeout(() => setCopied(null), 1500);
-    } catch {}
+      const textContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+      await navigator.clipboard.writeText(textContent);
+      setCopied(type);
+      setTimeout(() => setCopied(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  const getStatusBadgeClass = (status: number): string => {
+    if (status >= 200 && status < 300) return styles.statusSuccess;
+    if (status >= 400 && status < 500) return styles.statusError;
+    if (status >= 500) return styles.statusError;
+    return styles.statusOther;
+  };
+
+  const getMethodBadgeClass = (method: string): string => {
+    switch (method?.toUpperCase()) {
+      case 'GET': return styles.methodGet;
+      case 'POST': return styles.methodPost;
+      case 'PUT': return styles.methodPut;
+      case 'PATCH': return styles.methodPatch;
+      case 'DELETE': return styles.methodDelete;
+      default: return styles.methodOther;
+    }
+  };
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
+  if (!log) {
+    return null;
   }
 
-  const statusClass = log.status === undefined || log.status === null ? styles.statusOther : (
-    log.status >=200 && log.status <300 ? styles.status2xx :
-    log.status >=400 && log.status <500 ? styles.status4xx :
-    log.status >=500 ? styles.status5xx : styles.statusOther
-  );
-
-  const loadingHeaders = log.requestHeaders && (log.requestHeaders as any).loading;
-
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.detailHeader}>
-          <h3>{log.method} {log.url}</h3>
-          {log.reportableIdentifier && (
-            <span className={[styles.statusBadge, styles.statusOther].join(' ')} title="Reportable Identifier">{log.reportableIdentifier}</span>
-          )}
-          <div className={styles.badgeRow}>
-            <span className={[styles.statusBadge, statusClass].join(' ')}>{log.status ?? '—'}</span>
-            <span className={styles.meta}>Duration {log.durationMs ?? '—'} ms</span>
-          </div>
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>
+            <span className={`${styles.methodBadge} ${getMethodBadgeClass(log.method)}`}>
+              {log.method}
+            </span>
+            Request Details
+          </h2>
+          <button className={styles.closeButton} onClick={onClose}>✕</button>
         </div>
-        {log.errorMessage && <p className={styles.errorText}>Error: {log.errorMessage}</p>}
 
-        <section className={styles.section}>
-          <div className={styles.flexRow}>
-            <h4 className={styles.flexGrow}>Request Headers</h4>
-            {!loadingHeaders && log.requestHeaders && <button className={styles.smallBtn} onClick={() => copy('reqHeaders', log.requestHeaders)}>Copy</button>}
-          </div>
-          {loadingHeaders && <div className={styles.spinner} />}
-          {!loadingHeaders && (!log.requestHeaders || Object.keys(log.requestHeaders).length === 0) && <div className={styles.emptyText}>(none)</div>}
-          {!loadingHeaders && log.requestHeaders && Object.keys(log.requestHeaders).length > 0 && (
-            <pre className={styles.codeBlock}>{JSON.stringify(log.requestHeaders, null, 2)}</pre>
-          )}
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.flexRow}>
-            <h4 className={styles.flexGrow}>Response Headers</h4>
-            {log.responseHeaders && <button className={styles.smallBtn} onClick={() => copy('resHeaders', log.responseHeaders)}>Copy</button>}
-          </div>
-          {!log.responseHeaders && <div className={styles.emptyText}>(none)</div>}
-          {log.responseHeaders && <pre className={styles.codeBlock}>{JSON.stringify(log.responseHeaders, null, 2)}</pre>}
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.flexRow}>
-            <h4 className={styles.flexGrow}>Request Body</h4>
-            {log.requestBody !== undefined && log.requestBody !== null && (
-              <button className={styles.smallBtn} onClick={() => copy('reqBody', log.requestBody)}>Copy</button>
+        <div className={styles.modalContent}>
+          <div className={styles.requestInfo}>
+            <div className={styles.infoCard}>
+              <div className={styles.infoLabel}>URL</div>
+              <div className={styles.infoValue}>{log.url}</div>
+            </div>
+            
+            <div className={styles.infoCard}>
+              <div className={styles.infoLabel}>Status</div>
+              <div className={styles.infoValue}>
+                {log.status ? (
+                  <span className={`${styles.statusBadge} ${getStatusBadgeClass(log.status)}`}>
+                    {log.status}
+                  </span>
+                ) : '—'}
+              </div>
+            </div>
+            
+            <div className={styles.infoCard}>
+              <div className={styles.infoLabel}>Duration</div>
+              <div className={styles.infoValue}>{log.durationMs ? `${log.durationMs}ms` : '—'}</div>
+            </div>
+            
+            <div className={styles.infoCard}>
+              <div className={styles.infoLabel}>Timestamp</div>
+              <div className={styles.infoValue}>{new Date(log.createdAt).toLocaleString()}</div>
+            </div>
+            
+            {log.reportableIdentifier && (
+              <div className={styles.infoCard}>
+                <div className={styles.infoLabel}>Identifier</div>
+                <div className={styles.infoValue}>{log.reportableIdentifier}</div>
+              </div>
+            )}
+            
+            {log.errorMessage && (
+              <div className={`${styles.infoCard} ${styles.errorCard}`}>
+                <div className={styles.infoLabel}>Error</div>
+                <div className={styles.infoValue}>{log.errorMessage}</div>
+              </div>
             )}
           </div>
-          {log.requestBody === undefined || log.requestBody === null ? (
-            <div className={styles.emptyText}>(empty)</div>
-          ) : (
-            <pre className={styles.codeBlock}>{JSON.stringify(log.requestBody as any, null, 2)}</pre>
-          )}
-        </section>
 
-        <section className={styles.section}>
-          <div className={styles.flexRow}>
-            <h4 className={styles.flexGrow}>Response Body</h4>
-            {log.responseBody !== undefined && log.responseBody !== null && (
-              <button className={styles.smallBtn} onClick={() => copy('resBody', log.responseBody)}>Copy</button>
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              <span>Request Headers</span>
+              {log.requestHeaders && (
+                <button 
+                  className={`${styles.copyButton} ${copied === 'reqHeaders' ? styles.copied : ''}`}
+                  onClick={() => copy('reqHeaders', log.requestHeaders)}
+                >
+                  {copied === 'reqHeaders' ? '✓ Copied' : '📋 Copy'}
+                </button>
+              )}
+            </div>
+            {!log.requestHeaders || Object.keys(log.requestHeaders).length === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📭</div>
+                <div>No request headers</div>
+              </div>
+            ) : (
+              <pre className={styles.codeBlock}>{JSON.stringify(log.requestHeaders, null, 2)}</pre>
             )}
           </div>
-          {log.responseBody === undefined || log.responseBody === null ? (
-            <div className={styles.emptyText}>(empty)</div>
-          ) : (
-            <pre className={styles.codeBlock}>{JSON.stringify(log.responseBody as any, null, 2)}</pre>
-          )}
-        </section>
 
-        <div className={styles.spaceBetween}>
-          <div className={styles.mutedSmall}>{copied && <span>Copied {copied}</span>}</div>
-          <button onClick={onClose}>Close</button>
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              <span>Response Headers</span>
+              {log.responseHeaders && (
+                <button 
+                  className={`${styles.copyButton} ${copied === 'resHeaders' ? styles.copied : ''}`}
+                  onClick={() => copy('resHeaders', log.responseHeaders)}
+                >
+                  {copied === 'resHeaders' ? '✓ Copied' : '📋 Copy'}
+                </button>
+              )}
+            </div>
+            {!log.responseHeaders ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📭</div>
+                <div>No response headers</div>
+              </div>
+            ) : (
+              <pre className={styles.codeBlock}>{JSON.stringify(log.responseHeaders, null, 2)}</pre>
+            )}
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              <span>Request Body</span>
+              {log.requestBody !== undefined && log.requestBody !== null && (
+                <button 
+                  className={`${styles.copyButton} ${copied === 'reqBody' ? styles.copied : ''}`}
+                  onClick={() => copy('reqBody', log.requestBody)}
+                >
+                  {copied === 'reqBody' ? '✓ Copied' : '📋 Copy'}
+                </button>
+              )}
+            </div>
+            {log.requestBody === undefined || log.requestBody === null ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📭</div>
+                <div>No request body</div>
+              </div>
+            ) : (
+              <pre className={styles.codeBlock}>{parseContent(log.requestBody)}</pre>
+            )}
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              <span>Response Body</span>
+              {log.responseBody !== undefined && log.responseBody !== null && (
+                <button 
+                  className={`${styles.copyButton} ${copied === 'resBody' ? styles.copied : ''}`}
+                  onClick={() => copy('resBody', log.responseBody)}
+                >
+                  {copied === 'resBody' ? '✓ Copied' : '📋 Copy'}
+                </button>
+              )}
+            </div>
+            {log.responseBody === undefined || log.responseBody === null ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📭</div>
+                <div>No response body</div>
+              </div>
+            ) : (
+              <pre className={styles.codeBlock}>{parseContent(log.responseBody)}</pre>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
-// Inline styles removed; using CSS module classes.

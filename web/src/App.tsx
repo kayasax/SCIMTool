@@ -3,9 +3,12 @@ import { fetchLogs, clearLogs, fetchLog, RequestLogItem, LogQuery, LogListRespon
 import { LogList } from './components/LogList';
 import { LogDetail } from './components/LogDetail';
 import { LogFilters } from './components/LogFilters';
+import { Header } from './components/Header';
+import { ThemeProvider } from './hooks/useTheme';
+import './theme.css';
 import styles from './app.module.css';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [items, setItems] = useState<RequestLogItem[]>([]);
   const [meta, setMeta] = useState<Omit<LogListResponse,'items'>>();
   const [loading, setLoading] = useState(false);
@@ -24,9 +27,19 @@ export const App: React.FC = () => {
           ? { ...filters, page:1 }
           : filters;
       const data = await fetchLogs(q);
-      setItems(data.items);
+      const filteredItems = data.items.filter(item => !item.url?.includes('/scim/admin/logs'));
+      const removedThisPage = data.items.length - filteredItems.length;
+      setItems(filteredItems);
+      setSelected(prev => {
+        if (!prev) return prev;
+        return filteredItems.some(item => item.id === prev.id) ? prev : null;
+      });
       const { items: _i, ...rest } = data;
-      setMeta(rest);
+      setMeta({
+        ...rest,
+        count: filteredItems.length,
+        total: Math.max(0, rest.total - removedThisPage)
+      });
       setFilters(q); // persist any page reset
     } catch (e: any) {
       setError(e.message);
@@ -68,31 +81,56 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={styles.page}>
-      <h2 className={styles.title}>SCIMTool Logs</h2>
-      <p className={styles.subtitle}>Inspect raw SCIM traffic captured by the troubleshooting endpoint.</p>
-      {error && <div className={styles.error}>{error}</div>}
-      <LogFilters
-        value={filters}
-        onChange={setFilters}
-        onReset={() => { setFilters({ page:1 }); }}
-        onFilterCommit={(next) => { load(false, next); }}
-        loading={loading}
-      />
-      <div className={styles.toolbar}>
-        <button onClick={() => load()} disabled={loading}>Refresh</button>
-        <label className={styles.autoLabel}>
-          <input type='checkbox' checked={auto} onChange={e => setAuto(e.target.checked)} /> Auto-refresh
-        </label>
-        <button onClick={handleClear} disabled={loading}>Clear Logs</button>
-        {meta && <span className={styles.meta}>Total {meta.total} • Page {meta.page} / {Math.ceil(meta.total / meta.pageSize)}</span>}
-        <div className={styles.pager}>
-          <button disabled={loading || !meta?.hasPrev} onClick={() => { if (meta?.hasPrev) { const next = { ...filters, page: (filters.page ?? 1) - 1 }; load(false, next); } }}>Prev</button>
-          <button disabled={loading || !meta?.hasNext} onClick={() => { if (meta?.hasNext) { const next = { ...filters, page: (filters.page ?? 1) + 1 }; load(false, next); } }}>Next</button>
+    <div className={styles.app}>
+      <Header />
+      <div className={styles.page}>
+        {error && <div className={styles.error}>{error}</div>}
+        
+        <LogFilters
+          value={filters}
+          onChange={setFilters}
+          onReset={() => { setFilters({ page:1 }); }}
+          onFilterCommit={(next) => { load(false, next); }}
+          loading={loading}
+        />
+        
+        <div className={styles.toolbar}>
+          <button className={styles.button} onClick={() => load()} disabled={loading}>
+            Refresh
+          </button>
+          <label className={styles.autoLabel}>
+            <input type='checkbox' checked={auto} onChange={e => setAuto(e.target.checked)} /> 
+            Auto-refresh
+          </label>
+          <button className={styles.buttonSecondary} onClick={handleClear} disabled={loading}>
+            Clear Logs
+          </button>
+          {meta && <span className={styles.meta}>Total {meta.total} • Page {meta.page} / {Math.ceil(meta.total / meta.pageSize)}</span>}
+          <div className={styles.pager}>
+            <button className={styles.buttonSmall} disabled={loading || !meta?.hasPrev} onClick={() => { if (meta?.hasPrev) { const next = { ...filters, page: (filters.page ?? 1) - 1 }; load(false, next); } }}>Prev</button>
+            <button className={styles.buttonSmall} disabled={loading || !meta?.hasNext} onClick={() => { if (meta?.hasNext) { const next = { ...filters, page: (filters.page ?? 1) + 1 }; load(false, next); } }}>Next</button>
+          </div>
+        </div>
+        
+        <div className={styles.content}>
+          <div className={styles.logListSection}>
+            <LogList items={items} loading={loading} onSelect={handleSelect} selected={selected} />
+          </div>
+          <div className={styles.logDetailSection}>
+            <LogDetail log={selected} onClose={() => setSelected(null)} />
+          </div>
         </div>
       </div>
-  <LogList items={items} loading={loading} onSelect={handleSelect} />
-      <LogDetail log={selected} onClose={() => setSelected(null)} />
     </div>
   );
 };
+
+const AppWithTheme: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+};
+
+export const App = AppWithTheme;
