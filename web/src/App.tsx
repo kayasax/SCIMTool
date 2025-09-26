@@ -27,9 +27,19 @@ const AppContent: React.FC = () => {
           ? { ...filters, page:1 }
           : filters;
       const data = await fetchLogs(q);
-      setItems(data.items);
+      const filteredItems = data.items.filter(item => !item.url?.includes('/scim/admin/logs'));
+      const removedThisPage = data.items.length - filteredItems.length;
+      setItems(filteredItems);
+      setSelected(prev => {
+        if (!prev) return prev;
+        return filteredItems.some(item => item.id === prev.id) ? prev : null;
+      });
       const { items: _i, ...rest } = data;
-      setMeta(rest);
+      setMeta({
+        ...rest,
+        count: filteredItems.length,
+        total: Math.max(0, rest.total - removedThisPage)
+      });
       setFilters(q); // persist any page reset
     } catch (e: any) {
       setError(e.message);

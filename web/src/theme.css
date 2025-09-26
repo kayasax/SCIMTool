@@ -93,37 +93,8 @@
   --transition-fast: 0.1s ease;
   --transition-normal: 0.2s ease;
   --transition-slow: 0.3s ease;
-}
 
-/* Dark theme class override */
-[data-theme="dark"] {
-  --current-background: var(--dark-color-neutral-background);
-  --current-surface: var(--dark-color-neutral-surface);
-  --current-surface-secondary: var(--dark-color-neutral-surface-secondary);
-  --current-surface-tertiary: var(--dark-color-neutral-surface-tertiary);
-  
-  --current-foreground: var(--dark-color-neutral-foreground);
-  --current-foreground-secondary: var(--dark-color-neutral-foreground-secondary);
-  --current-foreground-tertiary: var(--dark-color-neutral-foreground-tertiary);
-  
-  --current-success: var(--dark-color-success);
-  --current-success-background: var(--dark-color-success-background);
-  --current-error: var(--dark-color-error);
-  --current-error-background: var(--dark-color-error-background);
-  --current-warning: var(--dark-color-warning);
-  --current-warning-background: var(--dark-color-warning-background);
-  
-  --current-border: var(--dark-color-border);
-  --current-border-strong: var(--dark-color-border-strong);
-  
-  --current-shadow-2: var(--dark-shadow-2);
-  --current-shadow-4: var(--dark-shadow-4);
-  --current-shadow-8: var(--dark-shadow-8);
-  --current-shadow-16: var(--dark-shadow-16);
-}
-
-/* Light theme (default) */
-[data-theme="light"] {
+  /* Default (light) current tokens */
   --current-background: var(--color-neutral-background);
   --current-surface: var(--color-neutral-surface);
   --current-surface-secondary: var(--color-neutral-surface-secondary);
@@ -149,8 +120,8 @@
   --current-shadow-16: var(--shadow-16);
 }
 
-/* Default to dark theme */
-:root {
+/* Dark theme override */
+:root[data-theme="dark"] {
   --current-background: var(--dark-color-neutral-background);
   --current-surface: var(--dark-color-neutral-surface);
   --current-surface-secondary: var(--dark-color-neutral-surface-secondary);

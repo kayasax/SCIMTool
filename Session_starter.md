@@ -138,6 +138,8 @@
 | 2025-09-26 | ✅ **FINAL VERIFICATION** - Web UI accessible without authentication, assets working |
 | 2025-09-26 | 🔧 **API URL FIX** - Resolved double /scim prefix issue in web client API calls |
 | 2025-09-26 | 🎉 **COMPLETE SUCCESS** - Containerized SCIMTool fully functional and ready for teams |
+| 2025-09-26 | 🎨 Microsoft-inspired theming completed (dark/light parity, refined filters, log modal polish) |
+| 2025-09-26 | 🔍 Admin log noise hidden from UI; SCIM request list now focused on provisioning traffic |
 
 ---
 
