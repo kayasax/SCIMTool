@@ -12,7 +12,7 @@ iwr https://raw.githubusercontent.com/kayasax/SCIMTool/main/deploy.ps1 | iex
 
 ### Step 2: Create Enterprise App
 1. **Azure Portal** → **Entra ID** → **Enterprise Applications**
-2. **+ New application** → **Create your own application** 
+2. **+ New application** → **Create your own application**
 3. **Name**: `SCIMTool - [Your Name]`
 4. **Type**: `Non-gallery application`
 
@@ -22,7 +22,7 @@ iwr https://raw.githubusercontent.com/kayasax/SCIMTool/main/deploy.ps1 | iex
 3. **Secret Token**: `S@g@r2011`
 4. **Test Connection** → **Save**
 
-## ✅ Done! 
+## ✅ Done!
 
 - **Monitor provisioning**: `https://[your-container-url]/` (share with team)
 - **Real-time logs** of all SCIM requests/responses
@@ -43,7 +43,7 @@ cd web && npm install && npm run dev        # Start monitoring UI
 ## 🎯 What You Get
 
 - **SCIM 2.0 Server** - All endpoints (Users, Groups, etc.)
-- **Real-time Monitoring** - Web UI showing all provisioning activity  
+- **Real-time Monitoring** - Web UI showing all provisioning activity
 - **Team Sharing** - Colleagues can view logs without setup
 - **Production Ready** - Hosted on Azure Container Apps
 
@@ -132,7 +132,7 @@ az containerapp up \
 
 ### Benefits
 - ✅ **Automatic HTTPS** with custom domain support
-- ✅ **Auto-scaling** based on demand  
+- ✅ **Auto-scaling** based on demand
 - ✅ **High availability** with multiple replicas
 - ✅ **Integrated monitoring** and logging
 - ✅ **Secure secrets** management

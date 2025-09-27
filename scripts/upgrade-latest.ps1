@@ -39,7 +39,7 @@ Write-Host "🔄 SCIMTool Re-Pull Tag Helper" -ForegroundColor Cyan
 Write-Host " Resource Group : $ResourceGroup" -ForegroundColor Gray
 Write-Host " App Name      : $AppName" -ForegroundColor Gray
 Write-Host " Desired Tag   : $Tag" -ForegroundColor Gray
-Write-Host "" 
+Write-Host ""
 
 # Ensure logged in
 try {

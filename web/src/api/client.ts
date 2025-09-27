@@ -20,12 +20,12 @@ const getApiBase = (): string => {
     // If environment specifies a base URL, use it (supports both relative and absolute URLs)
     return envBase;
   }
-  
+
   // Auto-detect: if served from same origin, use empty base (client code adds /scim)
   if (typeof window !== 'undefined') {
     return ''; // Empty base for containerized deployment - client code adds /scim
   }
-  
+
   return ''; // Fallback for SSR
 };
 

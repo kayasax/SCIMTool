@@ -4,7 +4,7 @@
 
 **🔍 FINAL RESOLUTION (September 26, 2025):**
 - ✅ **ROOT CAUSE IDENTIFIED** - Apps created via Microsoft Graph API don't show provisioning tab
-- ✅ **SOLUTION CONFIRMED** - Manual Azure Portal creation works perfectly  
+- ✅ **SOLUTION CONFIRMED** - Manual Azure Portal creation works perfectly
 - ✅ **OAuth 2.0 Implementation COMPLETE** - Full authentication working
 - ✅ **Repository CLEANED** - Single entry point, clear documentation
 - ✅ **User Experience STREAMLINED** - One script, clear instructionsssion Starter: SCIMTool Project
@@ -37,7 +37,7 @@
 
 **Key Components:**
 - ✅ NestJS SCIM 2.0 server (all operations working)
-- ✅ OAuth 2.0 + Bearer token authentication  
+- ✅ OAuth 2.0 + Bearer token authentication
 - ✅ React log viewer UI
 - ✅ Dev tunnel integration for public HTTPS
 - ✅ Microsoft Entra provisioning compatible
@@ -279,7 +279,7 @@
 - `.\scripts\manual-entra-setup.ps1 -TestLocal` - Test SCIM endpoint functionality
 - `.\scripts\setup-dev-tunnel.ps1` - Create public HTTPS tunnel (for external testing)
 
-**Key Files:** 
+**Key Files:**
 - `api/src/oauth/` - OAuth 2.0 implementation (working)
 - `api/src/modules/auth/shared-secret.guard.ts` - Dual authentication (Bearer + OAuth)
 - `scripts/manual-entra-setup.ps1` - Honest setup instructions
@@ -294,7 +294,7 @@
 
 **TECHNICAL SUCCESS:** ✅ All SCIM 2.0 functionality working perfectly
 - OAuth 2.0 Client Credentials authentication implemented
-- Bearer token authentication maintained for compatibility  
+- Bearer token authentication maintained for compatibility
 - Dual authentication guard supporting both methods
 - All SCIM operations (Users, Groups, ServiceProviderConfig, etc.)
 - Dev tunnel integration for public HTTPS exposure

@@ -42,7 +42,7 @@ Write-Host "Base Image    : $Image" -ForegroundColor Gray
 Write-Host "GitHub Repo   : $GitHubRepo" -ForegroundColor Gray
 Write-Host "Include Pre   : $($Prerelease.IsPresent)" -ForegroundColor Gray
 Write-Host "Dry Run       : $($DryRun.IsPresent)" -ForegroundColor Gray
-Write-Host "" 
+Write-Host ""
 
 # Validate az CLI auth
 try {
