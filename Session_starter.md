@@ -142,6 +142,9 @@
 | 2025-09-26 | 🆕 Added /scim/admin/version endpoint (backend version reporting) |
 | 2025-09-26 | 🔔 Frontend upgrade banner + remote manifest polling (L1+L2) implemented |
 | 2025-09-26 | 🧩 Added dynamic upgrade helper script (GitHub Releases based) |
+| 2025-09-26 | 🎨 Microsoft-inspired theming completed (dark/light parity, refined filters, log modal polish) |
+| 2025-09-26 | 🔍 Admin log noise hidden from UI; SCIM request list now focused on provisioning traffic |
+
 
 ---
 

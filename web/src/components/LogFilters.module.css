@@ -2,33 +2,71 @@
 .wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
   align-items: center;
 }
 
-.inp, .sel, .wide, .date {
-  padding: 0.35rem 0.45rem;
-  background: #1f242d;
-  color: #e2e6ea;
-  border: 1px solid #2a2f3a;
-  border-radius: 4px;
-  font-size: 13px;
+.inp,
+.sel,
+.wide,
+.date {
+  padding: 0.4rem 0.6rem;
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground);
+  border: 1px solid var(--current-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-300);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
-.inp { width: 70px; }
-.sel { width: 100px; }
-.wide { width: 180px; }
-.date { width: 160px; }
+.inp::placeholder,
+.wide::placeholder {
+  color: var(--current-foreground-tertiary);
+}
 
-button {
-  padding: 0.4rem 0.75rem;
-  background: #2b303b;
-  color: #e2e6ea;
-  border: 1px solid #353b47;
-  border-radius: 4px;
+.inp:focus,
+.sel:focus,
+.wide:focus,
+.date:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.25);
+  background: var(--current-surface);
+}
+
+.inp { width: 80px; }
+.sel { width: 110px; }
+.wide { width: 200px; }
+.date { width: 180px; }
+
+.button {
+  padding: 0.45rem 0.9rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 4px 8px rgba(0, 120, 212, 0.2);
+}
+
+.button:active:not(:disabled) {
+  background: var(--color-primary-pressed);
+  border-color: var(--color-primary-pressed);
+}
+
+.button:disabled {
+  background: var(--current-surface-tertiary);
+  border-color: var(--current-border);
+  color: var(--current-foreground-tertiary);
+  cursor: not-allowed;
+  box-shadow: none;
+}

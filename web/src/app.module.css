@@ -1,33 +1,192 @@
-﻿.page {
-  padding: 1rem 1.25rem;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #e2e6ea;
-  background: #14181f;
+﻿.app {
+  font-family: var(--font-family-base);
+  color: var(--current-foreground);
+  background: var(--current-background);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.title { margin-top: 0; }
-.subtitle { margin-top: 0; color: #9aa0ab; font-size: 14px; }
+.page {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
 
 .error {
-  background: #402629;
-  color: #ffb3b3;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 0.75rem;
-  font-size: 14px;
+  background: var(--current-error-background);
+  color: var(--current-error);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--current-error);
+  font-size: var(--font-size-300);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.error::before {
+  content: "⚠️";
+  font-size: var(--font-size-400);
 }
 
 .toolbar {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-md);
   align-items: center;
-  margin-bottom: 0.5rem;
   flex-wrap: wrap;
+  padding: var(--spacing-lg);
+  background: var(--current-surface);
+  border: 1px solid var(--current-border);
+  border-radius: var(--border-radius-lg);
 }
 
-.autoLabel { font-size: 13px; display: flex; align-items: center; gap: 0.25rem; }
-.meta { font-size: 12px; color: #9aa0ab; }
+.button {
+  padding: var(--spacing-xs) var(--spacing-lg);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.button:active:not(:disabled) {
+  background: var(--color-primary-pressed);
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonSecondary {
+  padding: var(--spacing-xs) var(--spacing-lg);
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground);
+  border: 1px solid var(--current-border);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: var(--current-surface-tertiary);
+  border-color: var(--current-border-strong);
+}
+
+.buttonSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonSmall {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground);
+  border: 1px solid var(--current-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-200);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.buttonSmall:hover:not(:disabled) {
+  background: var(--current-surface-tertiary);
+}
+
+.buttonSmall:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pager {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.autoLabel { 
+  font-size: var(--font-size-300); 
+  display: flex; 
+  align-items: center; 
+  gap: var(--spacing-xs);
+  color: var(--current-foreground-secondary);
+  cursor: pointer;
+}
+
+.autoLabel input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.meta { 
+  font-size: var(--font-size-200); 
+  color: var(--current-foreground-tertiary);
+  margin-left: auto;
+}
+
+.content {
+  display: flex;
+  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+}
+
+.logListSection {
+  flex: 1 1 60%;
+  min-width: 0;
+}
+
+.logDetailSection {
+  flex: 1 1 40%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--spacing-lg);
+  }
+  
+  .content {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .logListSection,
+  .logDetailSection {
+    flex: none;
+  }
+  
+  .toolbar {
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+  
+  .meta {
+    margin-left: 0;
+    order: -1;
+  }
+}
 .pager { margin-left: auto; display: flex; gap: 0.25rem; }
 
 button {

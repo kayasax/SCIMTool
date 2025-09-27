@@ -44,7 +44,7 @@ export const LogFilters: React.FC<Props> = ({ value, onChange, onReset, onFilter
       <input aria-label='Search text filter' className={styles.wide} placeholder='Search (url or error)' value={value.search ?? ''} onChange={e => update('search', e.target.value || undefined)} />
       <input aria-label='Since date filter' className={styles.date} type='datetime-local' value={value.since ?? ''} onChange={e => update('since', e.target.value || undefined)} />
       <input aria-label='Until date filter' className={styles.date} type='datetime-local' value={value.until ?? ''} onChange={e => update('until', e.target.value || undefined)} />
-      <button onClick={() => { const reset = { page:1 } as LogQuery; onReset(); onFilterCommit(reset); }} disabled={loading}>Reset</button>
+      <button className={styles.button} onClick={() => { const reset = { page:1 } as LogQuery; onReset(); onFilterCommit(reset); }} disabled={loading}>Reset</button>
     </div>
   );
 };

@@ -1,0 +1,177 @@
+﻿.logListContainer {
+  background: var(--current-surface);
+  border: 1px solid var(--current-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+
+.logListHeader {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--current-border);
+  background: var(--current-surface-secondary);
+}
+
+.logListTitle {
+  margin: 0;
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-semibold);
+  color: var(--current-foreground);
+}
+
+.logListContent {
+  flex: 1;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-300);
+}
+
+.table thead {
+  background: var(--current-surface-tertiary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table th {
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--current-foreground);
+  border-bottom: 1px solid var(--current-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--current-foreground-secondary);
+  border-bottom: 1px solid var(--current-border);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tableRow {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.tableRow:hover {
+  background: var(--current-surface-secondary);
+}
+
+.tableRow.selected {
+  background: var(--color-primary);
+  color: white;
+}
+
+.tableRow.selected td {
+  color: white;
+}
+
+.tableRow.error {
+  background: var(--current-error-background);
+  border-left: 3px solid var(--current-error);
+}
+
+.tableRow.error:hover {
+  background: var(--current-error-background);
+  opacity: 0.8;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  min-width: 45px;
+  justify-content: center;
+}
+
+.statusSuccess {
+  background: var(--current-success-background);
+  color: var(--current-success);
+  border: 1px solid var(--current-success);
+}
+
+.statusError {
+  background: var(--current-error-background);
+  color: var(--current-error);
+  border: 1px solid var(--current-error);
+}
+
+.statusWarning {
+  background: var(--current-warning-background);
+  color: var(--current-warning);
+  border: 1px solid var(--current-warning);
+}
+
+.methodBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  min-width: 50px;
+  justify-content: center;
+  font-family: var(--font-family-monospace);
+}
+
+.methodGet { background: #e3f2fd; color: #1976d2; }
+.methodPost { background: #e8f5e8; color: #388e3c; }
+.methodPut { background: #fff3e0; color: #f57c00; }
+.methodPatch { background: #fce4ec; color: #c2185b; }
+.methodDelete { background: #ffebee; color: #d32f2f; }
+
+/* Dark theme method colors */
+[data-theme="dark"] .methodGet { background: #1e3a8a; color: #93c5fd; }
+[data-theme="dark"] .methodPost { background: #166534; color: #86efac; }
+[data-theme="dark"] .methodPut { background: #ea580c; color: #fed7aa; }
+[data-theme="dark"] .methodPatch { background: #be185d; color: #f9a8d4; }
+[data-theme="dark"] .methodDelete { background: #dc2626; color: #fca5a5; }
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xxxl);
+  color: var(--current-foreground-secondary);
+}
+
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xxxl);
+  color: var(--current-foreground-secondary);
+  text-align: center;
+  gap: var(--spacing-md);
+}
+
+.emptyIcon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.durationBadge {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-200);
+  color: var(--current-foreground-tertiary);
+}
+
+.timeBadge {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-200);
+  color: var(--current-foreground-tertiary);
+}
