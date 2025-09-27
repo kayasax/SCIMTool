@@ -27,9 +27,9 @@ export class DatabaseService {
     if (search) {
       where.OR = [
         { userName: { contains: search, mode: 'insensitive' } },
-        { displayName: { contains: search, mode: 'insensitive' } },
-        { givenName: { contains: search, mode: 'insensitive' } },
-        { familyName: { contains: search, mode: 'insensitive' } },
+        { scimId: { contains: search, mode: 'insensitive' } },
+        { externalId: { contains: search, mode: 'insensitive' } },
+        { rawPayload: { contains: search, mode: 'insensitive' } }, // Search in raw payload for any custom fields
       ];
     }
 
@@ -49,6 +49,7 @@ export class DatabaseService {
           scimId: true,
           externalId: true,
           active: true,
+          rawPayload: true,
           createdAt: true,
           updatedAt: true,
           groups: {
@@ -67,10 +68,24 @@ export class DatabaseService {
     ]);
 
     return {
-      users: users.map(user => ({
-        ...user,
-        groups: user.groups.map(ug => ug.group),
-      })),
+      users: users.map(user => {
+        let parsedPayload = {};
+        try {
+          parsedPayload = JSON.parse(user.rawPayload);
+        } catch (e) {
+          // If parsing fails, use basic fields
+          parsedPayload = {
+            userName: user.userName,
+            active: user.active,
+          };
+        }
+
+        return {
+          ...user,
+          ...parsedPayload, // Include all fields from the raw SCIM payload
+          groups: user.groups.map((groupMember: any) => groupMember.group),
+        };
+      }),
       pagination: {
         page,
         limit,
@@ -89,7 +104,7 @@ export class DatabaseService {
     if (search) {
       where.OR = [
         { displayName: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { rawPayload: { contains: search, mode: 'insensitive' } }, // Search in raw payload for any custom fields
       ];
     }
 
@@ -102,6 +117,7 @@ export class DatabaseService {
         select: {
           id: true,
           displayName: true,
+          rawPayload: true,
           createdAt: true,
           updatedAt: true,
           _count: {
@@ -115,10 +131,23 @@ export class DatabaseService {
     ]);
 
     return {
-      groups: groups.map(group => ({
-        ...group,
-        memberCount: group._count.members,
-      })),
+      groups: groups.map(group => {
+        let parsedPayload = {};
+        try {
+          parsedPayload = JSON.parse(group.rawPayload);
+        } catch (e) {
+          // If parsing fails, use basic fields
+          parsedPayload = {
+            displayName: group.displayName,
+          };
+        }
+
+        return {
+          ...group,
+          ...parsedPayload, // Include all fields from the raw SCIM payload
+          memberCount: group._count.members,
+        };
+      }),
       pagination: {
         page,
         limit,

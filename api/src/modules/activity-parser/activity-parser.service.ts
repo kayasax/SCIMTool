@@ -1,0 +1,528 @@
+﻿import { Injectable } from '@nestjs/common';
+
+export interface ActivitySummary {
+  id: string;
+  timestamp: string;
+  icon: string;
+  message: string;
+  details?: string;
+  type: 'user' | 'group' | 'system' | 'error';
+  severity: 'info' | 'success' | 'warning' | 'error';
+  userIdentifier?: string;
+  groupIdentifier?: string;
+}
+
+@Injectable()
+export class ActivityParserService {
+  
+  /**
+   * Parse a SCIM request log into a human-readable activity summary
+   */
+  parseActivity(log: {
+    id: string;
+    method: string;
+    url: string;
+    status?: number;
+    requestBody?: string;
+    responseBody?: string;
+    createdAt: string;
+    identifier?: string;
+  }): ActivitySummary {
+    const timestamp = log.createdAt;
+    const method = log.method.toUpperCase();
+    const url = log.url;
+    const status = log.status || 0;
+
+    // Parse request and response bodies
+    let requestData: any = {};
+    let responseData: any = {};
+    
+    try {
+      if (log.requestBody) {
+        requestData = JSON.parse(log.requestBody);
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+
+    try {
+      if (log.responseBody) {
+        responseData = JSON.parse(log.responseBody);
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+
+    // Determine if this is a Users or Groups operation
+    const isUsersOperation = url.includes('/Users');
+    const isGroupsOperation = url.includes('/Groups');
+    const isListOperation = method === 'GET' && !url.match(/\/[^/]+$/);
+    const isGetOperation = method === 'GET' && !!url.match(/\/[^/]+$/);
+
+    // Extract identifiers
+    const userIdentifier = this.extractUserIdentifier(requestData, responseData, log.identifier);
+    const groupIdentifier = this.extractGroupIdentifier(requestData, responseData, log.identifier);
+
+    // Handle different operation types
+    if (isUsersOperation) {
+      return this.parseUserActivity({
+        id: log.id,
+        timestamp,
+        method,
+        url,
+        status,
+        requestData,
+        responseData,
+        userIdentifier,
+        isListOperation,
+        isGetOperation,
+      });
+    } else if (isGroupsOperation) {
+      return this.parseGroupActivity({
+        id: log.id,
+        timestamp,
+        method,
+        url,
+        status,
+        requestData,
+        responseData,
+        groupIdentifier,
+        isListOperation,
+        isGetOperation,
+      });
+    } else {
+      return this.parseSystemActivity({
+        id: log.id,
+        timestamp,
+        method,
+        url,
+        status,
+      });
+    }
+  }
+
+  private parseUserActivity(params: {
+    id: string;
+    timestamp: string;
+    method: string;
+    url: string;
+    status: number;
+    requestData: any;
+    responseData: any;
+    userIdentifier?: string;
+    isListOperation: boolean;
+    isGetOperation: boolean;
+  }): ActivitySummary {
+    const { id, timestamp, method, status, requestData, responseData, userIdentifier, isListOperation, isGetOperation } = params;
+
+    // Handle errors first
+    if (status >= 400) {
+      return {
+        id,
+        timestamp,
+        icon: '❌',
+        message: `Failed to ${method.toLowerCase()} user${userIdentifier ? `: ${userIdentifier}` : ''}`,
+        details: `HTTP ${status}`,
+        type: 'user',
+        severity: 'error',
+        userIdentifier,
+      };
+    }
+
+    // Handle successful operations
+    switch (method) {
+      case 'POST':
+        return {
+          id,
+          timestamp,
+          icon: '👤',
+          message: `User created${userIdentifier ? `: ${userIdentifier}` : ''}`,
+          details: this.extractUserDetails(requestData),
+          type: 'user',
+          severity: 'success',
+          userIdentifier,
+        };
+
+      case 'PUT':
+        return {
+          id,
+          timestamp,
+          icon: '✏️',
+          message: `User updated${userIdentifier ? `: ${userIdentifier}` : ''}`,
+          details: this.extractUserDetails(requestData),
+          type: 'user',
+          severity: 'info',
+          userIdentifier,
+        };
+
+      case 'PATCH':
+        const operations = requestData?.Operations || [];
+        const deactivateOp = operations.find((op: any) => 
+          op.path === 'active' && op.value === false
+        );
+        const activateOp = operations.find((op: any) => 
+          op.path === 'active' && op.value === true
+        );
+
+        if (deactivateOp) {
+          return {
+            id,
+            timestamp,
+            icon: '⚠️',
+            message: `User deactivated${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            type: 'user',
+            severity: 'warning',
+            userIdentifier,
+          };
+        } else if (activateOp) {
+          return {
+            id,
+            timestamp,
+            icon: '✅',
+            message: `User activated${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            type: 'user',
+            severity: 'success',
+            userIdentifier,
+          };
+        } else {
+          return {
+            id,
+            timestamp,
+            icon: '✏️',
+            message: `User modified${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            details: `${operations.length} change${operations.length !== 1 ? 's' : ''}`,
+            type: 'user',
+            severity: 'info',
+            userIdentifier,
+          };
+        }
+
+      case 'DELETE':
+        return {
+          id,
+          timestamp,
+          icon: '🗑️',
+          message: `User deleted${userIdentifier ? `: ${userIdentifier}` : ''}`,
+          type: 'user',
+          severity: 'warning',
+          userIdentifier,
+        };
+
+      case 'GET':
+        if (isListOperation) {
+          const totalResults = responseData?.totalResults || 0;
+          return {
+            id,
+            timestamp,
+            icon: '📋',
+            message: `User list retrieved`,
+            details: `${totalResults} user${totalResults !== 1 ? 's' : ''} found`,
+            type: 'system',
+            severity: 'info',
+          };
+        } else if (isGetOperation) {
+          return {
+            id,
+            timestamp,
+            icon: '👁️',
+            message: `User details retrieved${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            type: 'user',
+            severity: 'info',
+            userIdentifier,
+          };
+        }
+        break;
+    }
+
+    // Fallback
+    return {
+      id,
+      timestamp,
+      icon: '❓',
+      message: `User operation: ${method}`,
+      type: 'user',
+      severity: 'info',
+      userIdentifier,
+    };
+  }
+
+  private parseGroupActivity(params: {
+    id: string;
+    timestamp: string;
+    method: string;
+    url: string;
+    status: number;
+    requestData: any;
+    responseData: any;
+    groupIdentifier?: string;
+    isListOperation: boolean;
+    isGetOperation: boolean;
+  }): ActivitySummary {
+    const { id, timestamp, method, status, requestData, responseData, groupIdentifier, isListOperation, isGetOperation } = params;
+
+    // Handle errors first
+    if (status >= 400) {
+      return {
+        id,
+        timestamp,
+        icon: '❌',
+        message: `Failed to ${method.toLowerCase()} group${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+        details: `HTTP ${status}`,
+        type: 'group',
+        severity: 'error',
+        groupIdentifier,
+      };
+    }
+
+    // Handle successful operations
+    switch (method) {
+      case 'POST':
+        return {
+          id,
+          timestamp,
+          icon: '🏢',
+          message: `Group created${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+          details: this.extractGroupDetails(requestData),
+          type: 'group',
+          severity: 'success',
+          groupIdentifier,
+        };
+
+      case 'PUT':
+        return {
+          id,
+          timestamp,
+          icon: '✏️',
+          message: `Group updated${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+          details: this.extractGroupDetails(requestData),
+          type: 'group',
+          severity: 'info',
+          groupIdentifier,
+        };
+
+      case 'PATCH':
+        const operations = requestData?.Operations || [];
+        const memberOps = operations.filter((op: any) => 
+          op.path === 'members' || op.path?.startsWith('members[')
+        );
+
+        if (memberOps.length > 0) {
+          const addOps = memberOps.filter((op: any) => op.op === 'add');
+          const removeOps = memberOps.filter((op: any) => op.op === 'remove');
+
+          if (addOps.length > 0 && removeOps.length === 0) {
+            const memberNames = addOps.map((op: any) => op.value?.display || op.value?.value || 'Unknown user').join(', ');
+            return {
+              id,
+              timestamp,
+              icon: '➕',
+              message: `${groupIdentifier || 'Group'} gained new member${addOps.length > 1 ? 's' : ''}`,
+              details: memberNames,
+              type: 'group',
+              severity: 'success',
+              groupIdentifier,
+            };
+          } else if (removeOps.length > 0 && addOps.length === 0) {
+            const memberNames = removeOps.map((op: any) => op.value?.display || op.value?.value || 'Unknown user').join(', ');
+            return {
+              id,
+              timestamp,
+              icon: '➖',
+              message: `${groupIdentifier || 'Group'} lost member${removeOps.length > 1 ? 's' : ''}`,
+              details: memberNames,
+              type: 'group',
+              severity: 'info',
+              groupIdentifier,
+            };
+          } else {
+            return {
+              id,
+              timestamp,
+              icon: '👥',
+              message: `${groupIdentifier || 'Group'} membership updated`,
+              details: `${memberOps.length} change${memberOps.length !== 1 ? 's' : ''}`,
+              type: 'group',
+              severity: 'info',
+              groupIdentifier,
+            };
+          }
+        } else {
+          return {
+            id,
+            timestamp,
+            icon: '✏️',
+            message: `Group modified${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+            details: `${operations.length} change${operations.length !== 1 ? 's' : ''}`,
+            type: 'group',
+            severity: 'info',
+            groupIdentifier,
+          };
+        }
+
+      case 'DELETE':
+        return {
+          id,
+          timestamp,
+          icon: '🗑️',
+          message: `Group deleted${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+          type: 'group',
+          severity: 'warning',
+          groupIdentifier,
+        };
+
+      case 'GET':
+        if (isListOperation) {
+          const totalResults = responseData?.totalResults || 0;
+          return {
+            id,
+            timestamp,
+            icon: '📋',
+            message: `Group list retrieved`,
+            details: `${totalResults} group${totalResults !== 1 ? 's' : ''} found`,
+            type: 'system',
+            severity: 'info',
+          };
+        } else if (isGetOperation) {
+          return {
+            id,
+            timestamp,
+            icon: '👁️',
+            message: `Group details retrieved${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+            type: 'group',
+            severity: 'info',
+            groupIdentifier,
+          };
+        }
+        break;
+    }
+
+    // Fallback
+    return {
+      id,
+      timestamp,
+      icon: '❓',
+      message: `Group operation: ${method}`,
+      type: 'group',
+      severity: 'info',
+      groupIdentifier,
+    };
+  }
+
+  private parseSystemActivity(params: {
+    id: string;
+    timestamp: string;
+    method: string;
+    url: string;
+    status: number;
+  }): ActivitySummary {
+    const { id, timestamp, method, url, status } = params;
+
+    if (url.includes('/ServiceProviderConfig')) {
+      return {
+        id,
+        timestamp,
+        icon: '⚙️',
+        message: 'Service configuration retrieved',
+        type: 'system',
+        severity: 'info',
+      };
+    }
+
+    if (url.includes('/Schemas')) {
+      return {
+        id,
+        timestamp,
+        icon: '📋',
+        message: 'SCIM schemas retrieved',
+        type: 'system',
+        severity: 'info',
+      };
+    }
+
+    if (url.includes('/ResourceTypes')) {
+      return {
+        id,
+        timestamp,
+        icon: '📋',
+        message: 'Resource types retrieved',
+        type: 'system',
+        severity: 'info',
+      };
+    }
+
+    // Fallback for other system operations
+    return {
+      id,
+      timestamp,
+      icon: '🔧',
+      message: `System operation: ${method} ${url}`,
+      details: status >= 400 ? `HTTP ${status}` : undefined,
+      type: 'system',
+      severity: status >= 400 ? 'error' : 'info',
+    };
+  }
+
+  private extractUserIdentifier(requestData: any, responseData: any, logIdentifier?: string): string | undefined {
+    // Use log identifier if available (already computed)
+    if (logIdentifier) {
+      return logIdentifier;
+    }
+
+    // Try to extract from request or response data
+    const data = requestData || responseData || {};
+    
+    return data.userName || 
+           data.name?.formatted || 
+           data.displayName ||
+           data.emails?.[0]?.value ||
+           data.id ||
+           undefined;
+  }
+
+  private extractGroupIdentifier(requestData: any, responseData: any, logIdentifier?: string): string | undefined {
+    // Use log identifier if available (already computed)
+    if (logIdentifier) {
+      return logIdentifier;
+    }
+
+    // Try to extract from request or response data
+    const data = requestData || responseData || {};
+    
+    return data.displayName || 
+           data.id ||
+           undefined;
+  }
+
+  private extractUserDetails(data: any): string | undefined {
+    if (!data) return undefined;
+
+    const details: string[] = [];
+    
+    if (data.name?.givenName || data.name?.familyName) {
+      const fullName = `${data.name.givenName || ''} ${data.name.familyName || ''}`.trim();
+      if (fullName) details.push(fullName);
+    }
+    
+    if (data.active !== undefined) {
+      details.push(data.active ? 'Active' : 'Inactive');
+    }
+
+    if (data.emails?.length > 0) {
+      details.push(data.emails[0].value);
+    }
+
+    return details.length > 0 ? details.join(' • ') : undefined;
+  }
+
+  private extractGroupDetails(data: any): string | undefined {
+    if (!data) return undefined;
+
+    const details: string[] = [];
+    
+    if (data.members?.length > 0) {
+      details.push(`${data.members.length} member${data.members.length !== 1 ? 's' : ''}`);
+    }
+
+    return details.length > 0 ? details.join(' • ') : undefined;
+  }
+}

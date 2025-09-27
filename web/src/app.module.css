@@ -97,6 +97,45 @@
   cursor: not-allowed;
 }
 
+/* View Tabs */
+.viewTabs {
+  display: flex;
+  gap: 4px;
+  background: var(--current-surface);
+  padding: 4px;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--current-border);
+  margin-bottom: var(--spacing-lg);
+}
+
+.viewTab {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  background: transparent;
+  color: var(--current-foreground-secondary);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.viewTab:hover {
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground);
+}
+
+.viewTab.active {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-small);
+}
+
 .buttonSmall {
   padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--current-surface-secondary);
