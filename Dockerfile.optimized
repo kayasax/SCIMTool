@@ -12,8 +12,8 @@ WORKDIR /web
 # Copy package files first for better layer caching
 COPY web/package*.json ./
 
-# Install dependencies and build in single layer to reduce size
-RUN npm ci --no-audit --no-fund --no-optional && \
+# Install dependencies (need all deps for build)
+RUN npm ci --no-audit --no-fund && \
     npm cache clean --force
 
 # Copy source and build, clean in same layer

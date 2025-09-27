@@ -1,0 +1,99 @@
+﻿#############################
+# Ultra-optimized SCIMTool build - Target <400MB
+#############################
+
+#############################
+# Stage 1: Dependencies and build tools
+#############################
+FROM node:18-alpine AS deps
+WORKDIR /app
+
+# Install only the packages we need for building
+RUN apk add --no-cache openssl python3 make g++
+
+# API dependencies
+COPY api/package*.json ./api/
+RUN cd api && npm ci --no-audit --no-fund
+
+# Web dependencies  
+COPY web/package*.json ./web/
+RUN cd web && npm ci --no-audit --no-fund
+
+#############################
+# Stage 2: Build web frontend
+#############################
+FROM deps AS web-build
+WORKDIR /app/web
+COPY web/ ./
+RUN npm run build
+
+#############################
+# Stage 3: Build API
+#############################
+FROM deps AS api-build
+WORKDIR /app/api
+COPY api/ ./
+COPY --from=web-build /app/web/dist ./public
+
+ENV DATABASE_URL="file:./data.db"
+RUN npx prisma generate && \
+    npx prisma db push && \
+    npx tsc -p tsconfig.build.json
+
+#############################
+# Stage 4: Production dependencies only
+#############################
+FROM node:18-alpine AS prod-deps
+WORKDIR /app
+RUN apk add --no-cache openssl
+
+COPY api/package*.json ./
+RUN npm ci --only=production --no-audit --no-fund && \
+    npm cache clean --force
+
+#############################
+# Stage 5: Minimal runtime
+#############################
+FROM node:18-alpine AS runtime
+WORKDIR /app
+
+# Runtime essentials only
+RUN apk add --no-cache openssl && \
+    rm -rf /var/cache/apk/* /tmp/* && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S scim -u 1001
+
+# Production environment
+ENV NODE_ENV=production \
+    PORT=80 \
+    DATABASE_URL="file:./data.db" \
+    NODE_OPTIONS="--max_old_space_size=256"
+
+# Copy only production artifacts
+COPY --from=prod-deps --chown=scim:nodejs /app/node_modules ./node_modules
+COPY --from=api-build --chown=scim:nodejs /app/api/dist ./dist
+COPY --from=api-build --chown=scim:nodejs /app/api/public ./public
+COPY --from=api-build --chown=scim:nodejs /app/api/prisma ./prisma
+COPY --from=api-build --chown=scim:nodejs /app/api/package.json ./package.json
+
+# Aggressive cleanup of node_modules
+RUN find ./node_modules -type f -name "*.md" -delete && \
+    find ./node_modules -type f -name "*.txt" -delete && \
+    find ./node_modules -type f -name "*.markdown" -delete && \
+    find ./node_modules -type f -name "LICENSE*" -delete && \
+    find ./node_modules -type f -name "CHANGELOG*" -delete && \
+    find ./node_modules -type f -name "*.map" -delete && \
+    find ./node_modules -type d -name "test*" -exec rm -rf {} + 2>/dev/null || true && \
+    find ./node_modules -type d -name "__tests__" -exec rm -rf {} + 2>/dev/null || true && \
+    find ./node_modules -type d -name "docs" -exec rm -rf {} + 2>/dev/null || true && \
+    find ./node_modules -type d -name "example*" -exec rm -rf {} + 2>/dev/null || true && \
+    find ./node_modules -type f -name "*.ts" ! -name "*.d.ts" -delete && \
+    find ./node_modules -type f -name "tsconfig*.json" -delete
+
+USER scim
+EXPOSE 80
+
+HEALTHCHECK --interval=60s --timeout=3s --start-period=10s --retries=2 \
+    CMD node -e "require('http').get('http://127.0.0.1:80/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
+
+CMD ["node", "dist/main.js"]
