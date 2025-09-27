@@ -8,6 +8,7 @@
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req
 } from '@nestjs/common';
@@ -47,6 +48,18 @@ export class UsersController {
     const baseUrl = buildBaseUrl(request);
     const response = await this.usersService.listUsers(query, baseUrl);
     return response;
+  }
+
+  @Put(':id')
+  @Header('Content-Type', 'application/scim+json')
+  async replace(
+    @Param('id') id: string,
+    @Body() dto: CreateUserDto,
+    @Req() request: Request
+  ): Promise<ScimUserResource> {
+    const baseUrl = buildBaseUrl(request);
+    const resource = await this.usersService.replaceUser(id, dto, baseUrl);
+    return this.enforceSchema(resource);
   }
 
   @Patch(':id')

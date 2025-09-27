@@ -8,6 +8,7 @@
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req
 } from '@nestjs/common';
@@ -46,6 +47,18 @@ export class GroupsController {
   async findAll(@Query() query: ListQueryDto, @Req() request: Request) {
     const baseUrl = buildBaseUrl(request);
     return this.groupsService.listGroups(query, baseUrl);
+  }
+
+  @Put(':id')
+  @Header('Content-Type', 'application/scim+json')
+  async replace(
+    @Param('id') id: string,
+    @Body() dto: CreateGroupDto,
+    @Req() request: Request
+  ): Promise<ScimGroupResource> {
+    const baseUrl = buildBaseUrl(request);
+    const resource = await this.groupsService.replaceGroup(id, dto, baseUrl);
+    return this.enforceSchema(resource);
   }
 
   @Patch(':id')

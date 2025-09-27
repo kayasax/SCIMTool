@@ -173,6 +173,52 @@ export class ScimGroupsService {
     });
   }
 
+  async replaceGroup(
+    scimId: string,
+    dto: CreateGroupDto,
+    baseUrl: string
+  ): Promise<ScimGroupResource> {
+    this.ensureSchema(dto.schemas, SCIM_CORE_GROUP_SCHEMA);
+
+    const group = await this.getGroupWithMembers(scimId);
+    if (!group) {
+      throw createScimError({ status: 404, detail: `Resource ${scimId} not found.` });
+    }
+
+    const now = new Date();
+    const meta = this.parseJson<Record<string, unknown>>(String(group.meta ?? '{}'));
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.scimGroup.update({
+        where: { id: group.id },
+        data: {
+          displayName: dto.displayName,
+          rawPayload: JSON.stringify(this.extractAdditionalAttributes(dto)),
+          meta: JSON.stringify({
+            ...meta,
+            lastModified: now.toISOString()
+          })
+        }
+      });
+
+      // Replace all members with new ones
+      await tx.groupMember.deleteMany({ where: { groupId: group.id } });
+
+      if (dto.members && dto.members.length > 0) {
+        const data = await this.mapMembersForPersistence(group.id, dto.members, tx);
+        await tx.groupMember.createMany({ data });
+      }
+    });
+
+    // Return updated group
+    const updatedGroup = await this.getGroupWithMembers(scimId);
+    if (!updatedGroup) {
+      throw createScimError({ status: 500, detail: 'Failed to retrieve updated group.' });
+    }
+
+    return this.toScimGroupResource(updatedGroup, baseUrl);
+  }
+
   private ensureSchema(schemas: string[] | undefined, requiredSchema: string): void {
     if (!schemas || !schemas.includes(requiredSchema)) {
       throw createScimError({

@@ -124,6 +124,41 @@ export class ScimUsersService {
     return this.toScimUserResource(updatedUser, baseUrl);
   }
 
+  async replaceUser(
+    scimId: string,
+    dto: CreateUserDto,
+    baseUrl: string
+  ): Promise<ScimUserResource> {
+    this.ensureSchema(dto.schemas, SCIM_CORE_USER_SCHEMA);
+
+    const user = await this.prisma.scimUser.findUnique({ where: { scimId } });
+    if (!user) {
+      throw createScimError({ status: 404, detail: `Resource ${scimId} not found.` });
+    }
+
+    const now = new Date();
+    const sanitizedPayload = this.extractAdditionalAttributes(dto);
+    const meta = this.parseJson<Record<string, unknown>>(String(user.meta ?? '{}'));
+
+    const data: Prisma.ScimUserUpdateInput = {
+      externalId: dto.externalId ?? null,
+      userName: dto.userName,
+      active: dto.active ?? true,
+      rawPayload: JSON.stringify(sanitizedPayload),
+      meta: JSON.stringify({
+        ...meta,
+        lastModified: now.toISOString()
+      })
+    };
+
+    const updatedUser = await this.prisma.scimUser.update({
+      where: { scimId },
+      data
+    });
+
+    return this.toScimUserResource(updatedUser, baseUrl);
+  }
+
   private ensureSchema(schemas: string[] | undefined, requiredSchema: string): void {
     if (!schemas || !schemas.includes(requiredSchema)) {
       throw createScimError({
