@@ -188,7 +188,6 @@ const AppContent: React.FC = () => {
     <div className={styles.app}>
       <Header />
       <div className={styles.page}>
-        <h2 className={styles.title}>SCIMTool Logs</h2>
       {upgradeAvailable && latestTag && (
         <div className={styles.upgradeBanner}>
           <span className={styles.upgradeBannerNew}>NEW</span>

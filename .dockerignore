@@ -1,20 +1,58 @@
-﻿.git
+﻿# Git and version control
+.git
 **/.git
 **/.gitignore
-**/node_modules
+.github/
+
+# Node.js
+**/node_modules  
 api/node_modules
 web/node_modules
+npm-debug.log*
+yarn-debug.log*
+.npm
+.yarn
+
+# Build artifacts
 api/dist
 web/dist
+coverage/
+.nyc_output
+
+# Logs and temporary files
 *.log
 *.tmp
 *.swp
-Dockerfile
+*~
+.DS_Store
+Thumbs.db
+
+# Test files  
+test/
+tests/
+**/__tests__ 
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
+
+# IDE and development
+.vscode/
+.idea/
+*.sublime-*
+.eslintcache
+
+# Environment and config
+.env*
+*.md
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Project specific
 infra/
 scripts/
-README.md
-Session_starter.md
 deploy.ps1
 DEPLOYMENT.md
 setup.ps1
-.vscode/
+Session_starter.md
