@@ -41,6 +41,7 @@ export interface LogQuery {
   since?: string; // ISO
   until?: string; // ISO
   search?: string;
+  includeAdmin?: boolean;
 }
 
 export interface LogListResponse {

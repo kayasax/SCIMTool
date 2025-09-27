@@ -32,7 +32,8 @@ export class AdminController {
     @Query('urlContains') urlContains?: string,
     @Query('since') since?: string,
     @Query('until') until?: string,
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('includeAdmin') includeAdmin?: string
   ) {
     return this.loggingService.listLogs({
       page: page ? Number(page) : undefined,
@@ -43,7 +44,8 @@ export class AdminController {
       urlContains: urlContains || undefined,
       since: since ? new Date(since) : undefined,
       until: until ? new Date(until) : undefined,
-      search: search || undefined
+      search: search || undefined,
+      includeAdmin: includeAdmin === 'true'
     });
   }
 

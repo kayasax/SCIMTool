@@ -90,6 +90,7 @@ export class LoggingService {
     since?: Date;
     until?: Date;
     search?: string;
+    includeAdmin?: boolean;
   } = {}) {
     const pageSize = Math.min(Math.max(filters.pageSize ?? 50, 1), 200);
     const page = Math.max(filters.page ?? 1, 1);
@@ -100,6 +101,19 @@ export class LoggingService {
     if (filters.hasError === true) where.errorMessage = { not: null };
     if (filters.hasError === false) where.errorMessage = null;
     if (filters.urlContains) where.url = { contains: filters.urlContains };
+    
+    // By default, exclude admin endpoints to focus on SCIM provisioning traffic
+    if (!filters.includeAdmin) {
+      const adminFilter = { url: { not: { contains: '/scim/admin/' } } };
+      if (Array.isArray(where.AND)) {
+        where.AND.push(adminFilter);
+      } else if (where.AND) {
+        where.AND = [where.AND, adminFilter];
+      } else {
+        where.AND = [adminFilter];
+      }
+    }
+    
     if (filters.since || filters.until) {
       where.createdAt = {};
       if (filters.since) where.createdAt.gte = filters.since;
