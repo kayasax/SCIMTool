@@ -252,5 +252,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 
 ## 📋 TODO / Next Steps
 
-- [ ] **Docker Image Optimization** - Current image size is 1GB+, need to optimize multi-stage build, remove dev dependencies, and improve layer caching
+- [x] ✅ **Docker Image Optimization Attempted** - Current image ~1.1GB despite aggressive optimization (NestJS ecosystem + dependencies inherently large)
 - [x] ✅ **GitHub Release Created** - v0.3.0 release published with comprehensive changelog and upgrade instructions
+- [ ] **Consider Lighter Architecture** - Evaluate Express.js or Fastify instead of NestJS for smaller image size
+- [ ] **Distroless Runtime** - Test Google distroless Node.js images for production

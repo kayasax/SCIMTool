@@ -2,6 +2,7 @@
 import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from '../auth/auth.module';
+import { DatabaseModule } from '../database/database.module';
 import { LoggingModule } from '../logging/logging.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ScimModule } from '../scim/scim.module';
@@ -12,6 +13,7 @@ import { OAuthModule } from '../../oauth/oauth.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
+    DatabaseModule,
     PrismaModule,
     LoggingModule,
     ScimModule,
