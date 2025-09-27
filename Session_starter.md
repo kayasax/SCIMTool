@@ -1,5 +1,7 @@
 # 🧠 SCIMTool - Session Context
 
+USeful commands:
+- pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest 
 **Status:** ✅ **COMPLETE** - Ready for Microsoft Entra SCIM provisioning
 
 **🔍 FINAL RESOLUTION (September 26, 2025):**
@@ -147,7 +149,7 @@
 | 2025-12-26 | 📦 **PUBLIC ACR SETUP** - Created scimtoolpublic.azurecr.io with anonymous pull enabled |
 | 2025-12-26 | 🛠️ **UNIFIED DOCKERFILE** - Multi-stage build (web+API) with fixed SQLite permissions |
 | 2025-12-26 | 🚀 **CONTAINER DEPLOYMENT** - Production deployment working via public registry |
-| 2025-12-26 | 🔧 **SQLITE PERMISSIONS FIX** - Resolved readonly database errors with proper user ownership |  
+| 2025-12-26 | 🔧 **SQLITE PERMISSIONS FIX** - Resolved readonly database errors with proper user ownership |
 | 2025-12-26 | 📋 **AUTOMATION SCRIPTS** - publish-acr.ps1, tag-and-release.ps1, update-scimtool.ps1 created |
 | 2025-12-26 | 🎯 **UPGRADE BANNER COMPLETE** - Compact banner with modal, hosted PowerShell script integration |
 | 2025-12-26 | 📖 **ADMIN DOCUMENTATION** - Complete release workflow and user update process documented |
@@ -337,7 +339,7 @@
 
 **Current Container Capabilities:**
 - SCIM 2.0 server with OAuth 2.0 + Bearer token auth
-- Real-time monitoring web UI accessible without authentication  
+- Real-time monitoring web UI accessible without authentication
 - SQLite database with proper file permissions
 - Healthcheck endpoint for Container Apps monitoring
 - Version reporting for upgrade management

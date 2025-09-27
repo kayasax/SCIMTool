@@ -17,14 +17,10 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS for web client access
   app.enableCors({
-    origin: [
-      'http://localhost:5173',  // Vite dev server
-      'http://localhost:3000',  // Alternative dev port
-      'https://localhost:5173', // HTTPS dev server
-    ],
+    origin: true,  // Allow all origins for now - web client is served from same container
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true
+    credentials: false  // Set to false since we're allowing all origins
   });
 
   // Serve static files (web client) from /public directory
