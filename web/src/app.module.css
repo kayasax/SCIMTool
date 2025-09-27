@@ -304,3 +304,35 @@ tbody tr:hover { background: #1f242d; }
   overflow-y: auto;
   padding-right: 4px;
 }
+
+/* Footer styles */
+.footer {
+  margin-top: auto;
+  background: var(--current-surface);
+  border-top: 1px solid var(--current-border);
+  padding: var(--spacing-md) 0;
+}
+
+.footerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-200);
+  color: var(--current-foreground-secondary);
+}
+
+.footerLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footerLink:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}

@@ -279,6 +279,21 @@ const AppContent: React.FC = () => {
       <LogList items={items} loading={loading} onSelect={handleSelect} />
       <LogDetail log={selected} onClose={() => setSelected(null)} />
       </div>
+      
+      <footer className={styles.footer}>
+        <div className={styles.footerContent}>
+          <span>Made by <strong>Loïc MICHEL</strong></span>
+          <span>v{localVersion?.version || '0.3.0'}</span>
+          <a 
+            href="https://github.com/kayasax/SCIMTool" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            GitHub Repository
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };
