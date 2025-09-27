@@ -138,6 +138,10 @@
 | 2025-09-26 | ✅ **FINAL VERIFICATION** - Web UI accessible without authentication, assets working |
 | 2025-09-26 | 🔧 **API URL FIX** - Resolved double /scim prefix issue in web client API calls |
 | 2025-09-26 | 🎉 **COMPLETE SUCCESS** - Containerized SCIMTool fully functional and ready for teams |
+| 2025-09-26 | 🌿 `feature/acr-automation` branch created and pushed to start Azure Container Registry automation work |
+| 2025-09-26 | 🆕 Added /scim/admin/version endpoint (backend version reporting) |
+| 2025-09-26 | 🔔 Frontend upgrade banner + remote manifest polling (L1+L2) implemented |
+| 2025-09-26 | 🧩 Added dynamic upgrade helper script (GitHub Releases based) |
 
 ---
 
@@ -149,6 +153,10 @@
 - [x] ✅ Deliver initial React UI (log list + filters + detail modal)
 - [x] ✅ Performance tune log list (remove large bodies, derive identifiers separately)
 - [ ] 🧪 Expand e2e tests (Groups, filtering edge cases, PATCH semantics, error paths)
+- [ ] 🧭 Design Azure Container Registry automation workflow and update-notification strategy (`feature/acr-automation`)
+	- [x] ✅ Phase 1: Local version endpoint + remote manifest polling (implemented)
+	- [x] ✅ Added CLI upgrade helper (GitHub releases → az containerapp update)
+	- [ ] Phase 2: (Deferred) self-update action / managed identity
 - [ ] 🏷️ Stabilize persisted `identifier` column (Prisma client / migration alignment + backfill script)
 - [ ] 📦 Docker + tunnel usage docs (ngrok / Dev Tunnels) & Azure Container Apps template
 - [ ] �️ Optional redaction / masking strategy (configurable)

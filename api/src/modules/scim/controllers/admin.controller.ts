@@ -2,6 +2,16 @@
 
 import { LoggingService } from '../../logging/logging.service';
 
+interface VersionInfo {
+  version: string;
+  commit?: string;
+  buildTime?: string; // ISO string
+  runtime: {
+    node: string;
+    platform: string;
+  };
+}
+
 @Controller('admin')
 export class AdminController {
   constructor(private readonly loggingService: LoggingService) {}
@@ -42,5 +52,33 @@ export class AdminController {
     const log = await this.loggingService.getLog(id);
     if (!log) throw new NotFoundException('Log not found');
     return log;
+  }
+
+  @Get('version')
+  getVersion(): VersionInfo {
+    // Prefer explicit env vars injected at build/deploy time
+    const version = process.env.APP_VERSION || this.readPackageVersion();
+    const commit = process.env.GIT_COMMIT;
+    const buildTime = process.env.BUILD_TIME;
+    return {
+      version,
+      commit,
+      buildTime,
+      runtime: {
+        node: process.version,
+        platform: `${process.platform}-${process.arch}`
+      }
+    };
+  }
+
+  private readPackageVersion(): string {
+    try {
+      // Lazy load to avoid startup cost if env already provided
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const pkg = require('../../../../package.json');
+      return pkg.version || '0.0.0';
+    } catch {
+      return '0.0.0';
+    }
   }
 }
