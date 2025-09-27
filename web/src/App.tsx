@@ -64,14 +64,14 @@ const AppContent: React.FC = () => {
   const upgradeCommand = useMemo(() => {
     if (!(upgradeAvailable && latestTag)) return '';
     
-    // Use the "download first, then execute" pattern like popular tools (Chocolatey, Scoop, etc.)
-    const scriptUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-container.ps1';
-    const args = [`-Version '${latestTag}'`];
-    if (azResourceGroup) args.push(`-ResourceGroup '${azResourceGroup}'`);
-    if (azContainerApp) args.push(`-AppName '${azContainerApp}'`);
+    // Use function-based approach like Chocolatey and other popular tools
+    const scriptUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1';
+    const args = [`-Version ${latestTag}`];
+    if (azResourceGroup) args.push(`-ResourceGroup ${azResourceGroup}`);
+    if (azContainerApp) args.push(`-AppName ${azContainerApp}`);
     
-    // Pattern: Download script content, then execute with parameters
-    return `$script = irm '${scriptUrl}'; & ([scriptblock]::Create($script)) ${args.join(' ')}`;
+    // Pattern: iex (irm 'script.ps1'); Then call function with parameters
+    return `iex (irm '${scriptUrl}'); Update-SCIMTool ${args.join(' ')}`;
   }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp]);
 
   async function load(applyPageReset = false, override?: LogQuery) {
