@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
 
-    [string]$TargetBranch = "main",
+    [string]$TargetBranch = "master",
 
     [switch]$CreateRelease,
 
