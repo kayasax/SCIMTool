@@ -144,6 +144,13 @@
 | 2025-09-26 | 🧩 Added dynamic upgrade helper script (GitHub Releases based) |
 | 2025-09-26 | 🎨 Microsoft-inspired theming completed (dark/light parity, refined filters, log modal polish) |
 | 2025-09-26 | 🔍 Admin log noise hidden from UI; SCIM request list now focused on provisioning traffic |
+| 2025-12-26 | 📦 **PUBLIC ACR SETUP** - Created scimtoolpublic.azurecr.io with anonymous pull enabled |
+| 2025-12-26 | 🛠️ **UNIFIED DOCKERFILE** - Multi-stage build (web+API) with fixed SQLite permissions |
+| 2025-12-26 | 🚀 **CONTAINER DEPLOYMENT** - Production deployment working via public registry |
+| 2025-12-26 | 🔧 **SQLITE PERMISSIONS FIX** - Resolved readonly database errors with proper user ownership |  
+| 2025-12-26 | 📋 **AUTOMATION SCRIPTS** - publish-acr.ps1, tag-and-release.ps1, update-scimtool.ps1 created |
+| 2025-12-26 | 🎯 **UPGRADE BANNER COMPLETE** - Compact banner with modal, hosted PowerShell script integration |
+| 2025-12-26 | 📖 **ADMIN DOCUMENTATION** - Complete release workflow and user update process documented |
 
 
 ---
@@ -313,6 +320,44 @@
 2. Microsoft controls the entire provisioning ecosystem for Entra
 3. Policy changes can render technical solutions obsolete overnight
 4. Always validate business assumptions alongside technical implementation
+
+---
+
+## 🎯 DECEMBER 2025 UPDATE - CONTAINERIZATION & AUTOMATION SUCCESS
+
+**STATUS:** ✅ **ENTERPRISE-READY CONTAINERIZED SOLUTION**
+
+**New Achievements:**
+- 🏭 **Public Container Registry** - `scimtoolpublic.azurecr.io/scimtool` with anonymous pull
+- 🐳 **Unified Container** - Single image containing both SCIM API + monitoring web UI
+- 🔧 **Production Fixes** - SQLite permissions resolved, container stability confirmed
+- 🚀 **Automated Deployment** - PowerShell scripts for building, tagging, releasing, updating
+- 🎨 **Upgrade UX** - Compact banner with modal release notes, one-click update commands
+- 📖 **Complete Documentation** - Admin guide with release workflow and user instructions
+
+**Current Container Capabilities:**
+- SCIM 2.0 server with OAuth 2.0 + Bearer token auth
+- Real-time monitoring web UI accessible without authentication  
+- SQLite database with proper file permissions
+- Healthcheck endpoint for Container Apps monitoring
+- Version reporting for upgrade management
+- Request/response logging with search and filtering
+
+**Deployment Options:**
+1. **Azure Container Apps**: `az containerapp update -n scimtool-prod -g scimtool-rg --image scimtoolpublic.azurecr.io/scimtool:latest`
+2. **Docker Compose**: Standard setup with public image
+3. **Kubernetes**: Helm charts can reference public registry
+
+**Upgrade Workflow:**
+- Banner shows: "New version available: 0.1.0 → v0.2.0"
+- One-click copy: `iex (irm https://scimtoolpublic.azurecr.io/scimtool/update-scimtool.ps1)`
+- Hosted PowerShell script handles validation, confirmation, and Azure CLI execution
+
+**Enterprise Value:**
+- **Zero Infrastructure** - Public registry eliminates private registry setup
+- **One-Command Updates** - Streamlined upgrade process for teams
+- **Self-Contained** - No separate web server or database setup required
+- **Production Ready** - Tested deployment with proper error handling and logging
 
 **USER GUIDANCE PROVIDED:**
 - Clear documentation of the policy limitation

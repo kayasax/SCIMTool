@@ -98,6 +98,32 @@ Invoke-RestMethod -Headers @{ Authorization = 'Bearer S@g@r2011' } -Uri https://
 ```
 Banner should show new version if the running instance version < latest release/tag.
 
+### 7. User Experience - Streamlined Updates
+The UI now provides a streamlined update experience:
+
+**Compact Banner**:
+- Shows: "New version available: [current] → [latest]"  
+- **More** button opens modal with release notes
+- **Copy Update Command** button provides one-liner command
+
+**Hosted PowerShell Script**:
+Users can update with a single command (copied from banner):
+```powershell
+iex (irm https://scimtoolpublic.azurecr.io/scimtool/update-scimtool.ps1)
+```
+
+The hosted script:
+- Validates Azure CLI authentication
+- Prompts for confirmation before updating
+- Normalizes version strings (removes 'v' prefix)
+- Updates the Container App with proper error handling
+- Shows progress and results
+
+**Alternative**: Direct Azure CLI (still supported):
+```powershell
+az containerapp update -n scimtool-prod -g scimtool-rg --image scimtoolpublic.azurecr.io/scimtool:0.2.0
+```
+
 ### 7. Rollback
 List revisions:
 ```powershell

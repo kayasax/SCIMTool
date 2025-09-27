@@ -8,6 +8,10 @@ import { ThemeProvider } from './hooks/useTheme';
 import './theme.css';
 import styles from './app.module.css';
 
+const updateScriptUrl =
+  import.meta.env.VITE_UPDATE_SCRIPT_URL ??
+  'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool.ps1';
+
 const AppContent: React.FC = () => {
   const [items, setItems] = useState<RequestLogItem[]>([]);
   const [meta, setMeta] = useState<Omit<LogListResponse,'items'>>();
@@ -18,7 +22,10 @@ const AppContent: React.FC = () => {
   const [auto, setAuto] = useState(false);
   const [localVersion, setLocalVersion] = useState<VersionInfo | null>(null);
   const [latestTag, setLatestTag] = useState<string | null>(null);
-  const [latestNotes, setLatestNotes] = useState<string | null>(null);
+  const [latestTitle, setLatestTitle] = useState<string | null>(null);
+  const [latestBody, setLatestBody] = useState<string | null>(null);
+  const [latestSource, setLatestSource] = useState<'release' | 'tag' | null>(null);
+  const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const azResourceGroup = import.meta.env.VITE_AZURE_RESOURCE_GROUP; // optional
@@ -56,12 +63,12 @@ const AppContent: React.FC = () => {
 
   const upgradeCommand = useMemo(() => {
     if (!(upgradeAvailable && latestTag)) return '';
-    if (azResourceGroup && azContainerApp && azImage) {
-      const imgRef = `${azImage}:${latestTag}`;
-      return `az containerapp update -n ${azContainerApp} -g ${azResourceGroup} --image ${imgRef}`;
-    }
-    return `# Deploy new version\n# Version: ${latestTag}`;
-  }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp, azImage]);
+    const args = [`-Version ${latestTag}`];
+    if (azResourceGroup) args.push(`-ResourceGroup '${azResourceGroup}'`);
+    if (azContainerApp) args.push(`-AppName '${azContainerApp}'`);
+    if (azImage) args.push(`-Image '${azImage}'`);
+    return `iex (irm '${updateScriptUrl}') ${args.join(' ')}`.trim();
+  }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp, azImage, updateScriptUrl]);
 
   async function load(applyPageReset = false, override?: LogQuery) {
     setLoading(true);
@@ -118,9 +125,18 @@ const AppContent: React.FC = () => {
         if (releaseRes.ok) {
           const data = await releaseRes.json();
           if (data?.tag_name) {
-            setLatestTag(data.tag_name as string);
-            const notes = data.name || data.body || '';
-            setLatestNotes(notes.length > 160 ? notes.slice(0,157) + '…' : notes);
+            const tag = data.tag_name as string;
+            setLatestTag(tag);
+            const title = typeof data.name === 'string' && data.name.trim().length
+              ? data.name.trim()
+              : tag;
+            const body = typeof data.body === 'string' && data.body.trim().length
+              ? data.body.trim()
+              : null;
+
+            setLatestTitle(title);
+            setLatestBody(body);
+            setLatestSource(body ? 'release' : null);
             return; // success via release
           }
         } else if (releaseRes.status === 404) {
@@ -131,8 +147,11 @@ const AppContent: React.FC = () => {
             if (Array.isArray(tags) && tags.length) {
               const first = tags[0];
               if (first?.name) {
-                setLatestTag(first.name as string);
-                setLatestNotes('(from latest git tag – no releases yet)');
+                const tag = first.name as string;
+                setLatestTag(tag);
+                setLatestTitle(tag);
+                setLatestBody('(from latest git tag – no releases yet)');
+                setLatestSource('tag');
               }
             }
           }
@@ -170,13 +189,66 @@ const AppContent: React.FC = () => {
           <span className={styles.upgradeBannerNew}>NEW</span>
           <div className={styles.flex1}>
             <strong>Update available:</strong> {localVersion?.version} → {latestTag}
-            {latestNotes && <small>{latestNotes}</small>}
+            {latestTitle && <small className={styles.upgradeBannerMeta}>{latestTitle}</small>}
+            {latestSource === 'tag' && latestBody && (
+              <small className={styles.upgradeBannerMeta}>{latestBody}</small>
+            )}
           </div>
-          <button onClick={() => { navigator.clipboard.writeText(upgradeCommand).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false), 2500); }); }} disabled={!upgradeCommand}>
-            {copied ? 'Copied!' : 'Copy Update Command'}
-          </button>
+          <div className={styles.upgradeBannerActions}>
+            {latestSource === 'release' && latestBody && (
+              <button
+                type="button"
+                className={styles.buttonSmall}
+                onClick={() => setShowReleaseNotes(true)}
+              >
+                More
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (!upgradeCommand) return;
+                navigator.clipboard.writeText(upgradeCommand).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2500);
+                });
+              }}
+              disabled={!upgradeCommand}
+            >
+              {copied ? 'Copied!' : 'Copy Update Command'}
+            </button>
+          </div>
         </div>
       )}
+
+      {showReleaseNotes && latestBody && (
+        <div
+          className={styles.overlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="releaseNotesTitle"
+          onClick={() => setShowReleaseNotes(false)}
+        >
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.spaceBetween}>
+              <h3 id="releaseNotesTitle">
+                Release notes – {latestTitle ?? latestTag}
+              </h3>
+              <button
+                type="button"
+                className={styles.buttonSmall}
+                onClick={() => setShowReleaseNotes(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className={styles.releaseNotesBody}>
+              {latestBody}
+            </div>
+          </div>
+        </div>
+      )}
+
       <p className={styles.subtitle}>Inspect raw SCIM traffic captured by the troubleshooting endpoint.</p>
       {error && <div className={styles.error}>{error}</div>}
       <LogFilters

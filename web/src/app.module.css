@@ -248,3 +248,19 @@ tbody tr:hover { background: #1f242d; }
 .upgradeBanner button:hover { background:#2f6285; }
 .upgradeBanner small { display:block; font-size:11px; color:#7d8a97; margin-top:2px; }
 .flex1 { flex:1; }
+
+/* Upgrade banner compact layout */
+.upgradeBannerMeta { display:flex; flex-direction:column; gap:2px; flex:1; }
+.upgradeBannerActions { display:flex; gap:.5rem; align-items:center; }
+
+/* Release notes modal body */
+.releaseNotesBody { 
+  margin-top:1rem; 
+  line-height:1.5; 
+  color:#d1d9e0; 
+  font-size:14px;
+  white-space:pre-wrap;
+  max-height:400px;
+  overflow-y:auto;
+  padding-right:4px;
+}
