@@ -102,15 +102,20 @@ export class LoggingService {
     if (filters.hasError === false) where.errorMessage = null;
     if (filters.urlContains) where.url = { contains: filters.urlContains };
     
-    // By default, exclude admin endpoints to focus on SCIM provisioning traffic
+    // By default, exclude admin endpoints and non-SCIM traffic to focus on SCIM provisioning
     if (!filters.includeAdmin) {
-      const adminFilter = { url: { not: { contains: '/scim/admin/' } } };
+      const nonScimFilters = [
+        { url: { not: { contains: '/scim/admin/' } } },
+        { url: { not: { equals: '/' } } },
+        { url: { not: { equals: '/health' } } }
+      ];
+      
       if (Array.isArray(where.AND)) {
-        where.AND.push(adminFilter);
+        where.AND.push(...nonScimFilters);
       } else if (where.AND) {
-        where.AND = [where.AND, adminFilter];
+        where.AND = [where.AND, ...nonScimFilters];
       } else {
-        where.AND = [adminFilter];
+        where.AND = nonScimFilters;
       }
     }
     
