@@ -20,12 +20,12 @@ const getApiBase = (): string => {
     // If environment specifies a base URL, use it (supports both relative and absolute URLs)
     return envBase;
   }
-  
+
   // Auto-detect: if served from same origin, use empty base (client code adds /scim)
   if (typeof window !== 'undefined') {
     return ''; // Empty base for containerized deployment - client code adds /scim
   }
-  
+
   return ''; // Fallback for SSR
 };
 
@@ -77,6 +77,33 @@ export async function clearLogs(): Promise<void> {
 export async function fetchLog(id: string): Promise<RequestLogItem> {
   const res = await fetch(`${base}/scim/admin/logs/${id}`, { headers: authHeader() });
   if (!res.ok) throw new Error(`Failed to load log ${id}: ${res.status}`);
+  return res.json();
+}
+
+// Versioning
+export interface VersionInfo {
+  version: string;
+  commit?: string;
+  buildTime?: string;
+  runtime: { node: string; platform: string };
+}
+
+export async function fetchLocalVersion(): Promise<VersionInfo> {
+  const res = await fetch(`${base}/scim/admin/version`, { headers: authHeader() });
+  if (!res.ok) throw new Error(`Failed to fetch version: ${res.status}`);
+  return res.json();
+}
+
+export interface RemoteManifest {
+  latest: string; // semver or tag
+  notes?: string;
+  publishedAt?: string;
+  image?: string; // e.g. myacr.azurecr.io/scimtool:0.2.0
+}
+
+export async function fetchRemoteManifest(url: string): Promise<RemoteManifest> {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to fetch remote manifest: ${res.status}`);
   return res.json();
 }
 

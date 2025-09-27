@@ -240,3 +240,11 @@ tbody tr:hover { background: #1f242d; }
 .flexGrow { flex:1; }
 .spaceBetween { display:flex; justify-content:space-between; align-items:center; }
 .mutedSmall { font-size:11px; color:#6c757d; }
+
+/* Upgrade banner */
+.upgradeBanner { background:#1d2a3a; border:1px solid #244760; padding:.6rem .75rem; border-radius:6px; display:flex; gap:.75rem; align-items:center; margin-bottom:.75rem; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+.upgradeBannerNew { background:#2f3b49; color:#9bd2ff; font-size:11px; padding:2px 6px; border-radius:4px; border:1px solid #466380; letter-spacing:.5px; }
+.upgradeBanner button { background:#264f6b; border:1px solid #316180; }
+.upgradeBanner button:hover { background:#2f6285; }
+.upgradeBanner small { display:block; font-size:11px; color:#7d8a97; margin-top:2px; }
+.flex1 { flex:1; }

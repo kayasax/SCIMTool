@@ -12,7 +12,7 @@ iwr https://raw.githubusercontent.com/kayasax/SCIMTool/main/deploy.ps1 | iex
 
 ### Step 2: Create Enterprise App
 1. **Azure Portal** → **Entra ID** → **Enterprise Applications**
-2. **+ New application** → **Create your own application** 
+2. **+ New application** → **Create your own application**
 3. **Name**: `SCIMTool - [Your Name]`
 4. **Type**: `Non-gallery application`
 
@@ -22,7 +22,7 @@ iwr https://raw.githubusercontent.com/kayasax/SCIMTool/main/deploy.ps1 | iex
 3. **Secret Token**: `S@g@r2011`
 4. **Test Connection** → **Save**
 
-## ✅ Done! 
+## ✅ Done!
 
 - **Monitor provisioning**: `https://[your-container-url]/` (share with team)
 - **Real-time logs** of all SCIM requests/responses
@@ -43,7 +43,7 @@ cd web && npm install && npm run dev        # Start monitoring UI
 ## 🎯 What You Get
 
 - **SCIM 2.0 Server** - All endpoints (Users, Groups, etc.)
-- **Real-time Monitoring** - Web UI showing all provisioning activity  
+- **Real-time Monitoring** - Web UI showing all provisioning activity
 - **Team Sharing** - Colleagues can view logs without setup
 - **Production Ready** - Hosted on Azure Container Apps
 
@@ -132,7 +132,7 @@ az containerapp up \
 
 ### Benefits
 - ✅ **Automatic HTTPS** with custom domain support
-- ✅ **Auto-scaling** based on demand  
+- ✅ **Auto-scaling** based on demand
 - ✅ **High availability** with multiple replicas
 - ✅ **Integrated monitoring** and logging
 - ✅ **Secure secrets** management
@@ -196,3 +196,82 @@ After deploying to Azure Container Apps, configure the web UI to connect to your
 ```
 
 That's it! Your SCIM server is ready for Microsoft Entra provisioning.
+## 🔄 Upgrading / New Releases
+You do not need to maintain a manual version manifest. Each time you publish a GitHub Release (tag) and push a container image with the same tag (e.g. `v0.2.0`), you can upgrade your running Azure Container App to that version.
+
+### Option A: Interactive Upgrade Helper (Recommended)
+Run the helper script which discovers available versions live from GitHub Releases and performs the update:
+
+```powershell
+./scripts/upgrade-help.ps1 -ResourceGroup scimtool-rg -AppName scimtool-prod -Image myacr.azurecr.io/scimtool
+```
+
+Parameters:
+* `-Prerelease` include pre-release tags
+* `-DryRun` show the command without executing
+* `-GitHubRepo owner/name` override repository (defaults to `kayasax/SCIMTool`)
+
+What it does:
+1. Reads current running version from `/scim/admin/version` (if reachable)
+2. Fetches GitHub Releases (`https://api.github.com/repos/<repo>/releases`)
+3. Lets you choose a target tag
+4. Executes: `az containerapp update -n <AppName> -g <RG> --image <image>:<tag>`
+
+### Option B: Manual Command
+If you already know the tag:
+```powershell
+az containerapp update -n scimtool-prod -g scimtool-rg --image myacr.azurecr.io/scimtool:v0.2.0
+```
+
+### Frontend Upgrade Banner
+The UI auto-fetches the latest GitHub release (no manifest needed). If the release tag is greater than the running version, a banner appears with a copyable `az containerapp update` command.
+
+### Release Tag Discipline
+1. Tag repo: `git tag v0.2.0 && git push origin v0.2.0`
+2. Build & push: `docker build -t myacr.azurecr.io/scimtool:v0.2.0 .` then push
+3. Run upgrade script (or manual update). Done.
+
+### Rollback
+Use the same update command with an older tag, or select an older release in the helper script.
+
+### Verifying Upgrade
+After a few minutes:
+```powershell
+curl -H "Authorization: Bearer <secret>" https://<fqdn>/scim/admin/version
+```
+Ensure `version` matches your target tag.
+\n+## 🔄 Upgrading / New Releases
+You do not need to maintain a manual version manifest. Each time you publish a GitHub Release (tag) and push a container image with the same tag (e.g. `v0.2.0`), you can upgrade your running Azure Container App to that version.
+\n+### Option A: Interactive Upgrade Helper (Recommended)
+Run the new helper script which discovers available versions live from GitHub Releases and performs the update:
+\n+```powershell
+./scripts/upgrade-help.ps1 -ResourceGroup scimtool-rg -AppName scimtool-prod -Image myacr.azurecr.io/scimtool
+```
+Parameters:
+* `-Prerelease` include pre-release tags
+* `-DryRun` show the command without executing
+* `-GitHubRepo owner/name` override repository (defaults to `kayasax/SCIMTool`)
+\n+What it does:
+1. Reads current running version from `/scim/admin/version` (if reachable)
+2. Fetches GitHub Releases (`https://api.github.com/repos/<repo>/releases`)
+3. Lets you choose a target tag
+4. Executes: `az containerapp update -n <AppName> -g <RG> --image <image>:<tag>`
+\n+### Option B: Manual Command
+If you already know the tag:
+```powershell
+az containerapp update -n scimtool-prod -g scimtool-rg --image myacr.azurecr.io/scimtool:v0.2.0
+```
+\n+### Frontend Upgrade Banner (Optional)
+The UI currently supports an optional remote manifest (`VITE_REMOTE_MANIFEST_URL`) to show an in-app “Update available” banner. If you prefer zero-maintenance, simply skip that variable; the system works fine without it. A future enhancement may query GitHub Releases directly to eliminate the manifest entirely.
+\n+### Release Tag Discipline
+1. Tag repo: `git tag v0.2.0 && git push origin v0.2.0`
+2. Build & push: `docker build -t myacr.azurecr.io/scimtool:v0.2.0 .` then `az acr login` & `docker push ...`
+3. Run upgrade script (or manual update). Done.
+\n+### Rollback
+Use the same update command with an older tag, or select an older release in the helper script.
+\n+### Verifying Upgrade
+After a few minutes:
+```powershell
+curl -H "Authorization: Bearer <secret>" https://<fqdn>/scim/admin/version
+```
+Ensure `version` matches your target tag.

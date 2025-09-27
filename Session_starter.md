@@ -4,7 +4,7 @@
 
 **🔍 FINAL RESOLUTION (September 26, 2025):**
 - ✅ **ROOT CAUSE IDENTIFIED** - Apps created via Microsoft Graph API don't show provisioning tab
-- ✅ **SOLUTION CONFIRMED** - Manual Azure Portal creation works perfectly  
+- ✅ **SOLUTION CONFIRMED** - Manual Azure Portal creation works perfectly
 - ✅ **OAuth 2.0 Implementation COMPLETE** - Full authentication working
 - ✅ **Repository CLEANED** - Single entry point, clear documentation
 - ✅ **User Experience STREAMLINED** - One script, clear instructionsssion Starter: SCIMTool Project
@@ -37,7 +37,7 @@
 
 **Key Components:**
 - ✅ NestJS SCIM 2.0 server (all operations working)
-- ✅ OAuth 2.0 + Bearer token authentication  
+- ✅ OAuth 2.0 + Bearer token authentication
 - ✅ React log viewer UI
 - ✅ Dev tunnel integration for public HTTPS
 - ✅ Microsoft Entra provisioning compatible
@@ -138,8 +138,13 @@
 | 2025-09-26 | ✅ **FINAL VERIFICATION** - Web UI accessible without authentication, assets working |
 | 2025-09-26 | 🔧 **API URL FIX** - Resolved double /scim prefix issue in web client API calls |
 | 2025-09-26 | 🎉 **COMPLETE SUCCESS** - Containerized SCIMTool fully functional and ready for teams |
+| 2025-09-26 | 🌿 `feature/acr-automation` branch created and pushed to start Azure Container Registry automation work |
+| 2025-09-26 | 🆕 Added /scim/admin/version endpoint (backend version reporting) |
+| 2025-09-26 | 🔔 Frontend upgrade banner + remote manifest polling (L1+L2) implemented |
+| 2025-09-26 | 🧩 Added dynamic upgrade helper script (GitHub Releases based) |
 | 2025-09-26 | 🎨 Microsoft-inspired theming completed (dark/light parity, refined filters, log modal polish) |
 | 2025-09-26 | 🔍 Admin log noise hidden from UI; SCIM request list now focused on provisioning traffic |
+
 
 ---
 
@@ -151,6 +156,10 @@
 - [x] ✅ Deliver initial React UI (log list + filters + detail modal)
 - [x] ✅ Performance tune log list (remove large bodies, derive identifiers separately)
 - [ ] 🧪 Expand e2e tests (Groups, filtering edge cases, PATCH semantics, error paths)
+- [ ] 🧭 Design Azure Container Registry automation workflow and update-notification strategy (`feature/acr-automation`)
+	- [x] ✅ Phase 1: Local version endpoint + remote manifest polling (implemented)
+	- [x] ✅ Added CLI upgrade helper (GitHub releases → az containerapp update)
+	- [ ] Phase 2: (Deferred) self-update action / managed identity
 - [ ] 🏷️ Stabilize persisted `identifier` column (Prisma client / migration alignment + backfill script)
 - [ ] 📦 Docker + tunnel usage docs (ngrok / Dev Tunnels) & Azure Container Apps template
 - [ ] �️ Optional redaction / masking strategy (configurable)
@@ -273,7 +282,7 @@
 - `.\scripts\manual-entra-setup.ps1 -TestLocal` - Test SCIM endpoint functionality
 - `.\scripts\setup-dev-tunnel.ps1` - Create public HTTPS tunnel (for external testing)
 
-**Key Files:** 
+**Key Files:**
 - `api/src/oauth/` - OAuth 2.0 implementation (working)
 - `api/src/modules/auth/shared-secret.guard.ts` - Dual authentication (Bearer + OAuth)
 - `scripts/manual-entra-setup.ps1` - Honest setup instructions
@@ -288,7 +297,7 @@
 
 **TECHNICAL SUCCESS:** ✅ All SCIM 2.0 functionality working perfectly
 - OAuth 2.0 Client Credentials authentication implemented
-- Bearer token authentication maintained for compatibility  
+- Bearer token authentication maintained for compatibility
 - Dual authentication guard supporting both methods
 - All SCIM operations (Users, Groups, ServiceProviderConfig, etc.)
 - Dev tunnel integration for public HTTPS exposure
