@@ -181,9 +181,10 @@ const AppContent: React.FC = () => {
   }
 
   return (
-
-    <div className={styles.page}>
-      <h2 className={styles.title}>SCIMTool Logs</h2>
+    <div className={styles.app}>
+      <Header />
+      <div className={styles.page}>
+        <h2 className={styles.title}>SCIMTool Logs</h2>
       {upgradeAvailable && latestTag && (
         <div className={styles.upgradeBanner}>
           <span className={styles.upgradeBannerNew}>NEW</span>
@@ -270,6 +271,9 @@ const AppContent: React.FC = () => {
           <button disabled={loading || !meta?.hasNext} onClick={() => { if (meta?.hasNext) { const next = { ...filters, page: (filters.page ?? 1) + 1 }; load(false, next); } }}>Next</button>
 
         </div>
+      </div>
+      <LogList items={items} loading={loading} onSelect={handleSelect} />
+      <LogDetail log={selected} onClose={() => setSelected(null)} />
       </div>
     </div>
   );
