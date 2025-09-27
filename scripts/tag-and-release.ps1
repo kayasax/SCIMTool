@@ -17,6 +17,21 @@ function Write-Step($text) {
     Write-Host "=== $text ===" -ForegroundColor Cyan
 }
 
+function Assert-NoTag([string]$tagName) {
+    $ref = "refs/tags/$tagName"
+
+    $local = git show-ref --tags --verify $ref 2>$null
+    if ($local) {
+        $summary = git show --stat --oneline $tagName
+        throw "Tag $tagName already exists locally:`n$summary"
+    }
+
+    $remote = git ls-remote --tags origin $tagName
+    if ($remote) {
+        throw "Tag $tagName already exists on origin:`n$remote"
+    }
+}
+
 Write-Step "Validating git status"
 git status --short | ForEach-Object {
     throw "Working tree not clean. Commit or stash changes before tagging."
@@ -38,9 +53,7 @@ git status -sb | Select-String "\[ahead|\[behind" | ForEach-Object {
 $tagName = "v$Version"
 
 Write-Step "Checking for existing tag $tagName"
-if (git rev-parse "$tagName" 2>$null) {
-    throw "Tag $tagName already exists. Pick a new version."
-}
+Assert-NoTag $tagName
 
 Write-Step "Creating and pushing tag $tagName"
 git tag -a $tagName -m $tagName
