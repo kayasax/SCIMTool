@@ -1,5 +1,8 @@
 | Date | Achievement |
 |------|-------------|
+| 2025-09-28 | 📊 **v0.4.3 Activity Badges** - Browser tab notifications + visual badges for new activities - Perfect UX! |
+| 2025-09-28 | 🔧 **v0.4.2 Critical Fix** - SCIM PATCH 'Add' operations now supported - Microsoft Entra compatibility restored! |ate | Achievement |
+|------|-------------|
 | 2025-09-28 | � **v0.4.2 Critical Fix** - SCIM PATCH 'Add' operations now supported - Microsoft Entra compatibility restored! |
 | 2025-09-28 | �🚀 **v0.4.1 Ready** - Complete UI polish: dropdown theme fixes, emoji icons, perfect theme consistency |
 | 2025-09-28 | 🎨 **Dark Theme Fixed** - Dropdown options now visible in dark theme with proper contrast |
