@@ -68,13 +68,13 @@ const AppContent: React.FC = () => {
 
   const upgradeCommand = useMemo(() => {
     if (!(upgradeAvailable && latestTag)) return '';
-    
+
     // Use function-based approach like Chocolatey and other popular tools
     const scriptUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1';
     const args = [`-Version ${latestTag}`];
     if (azResourceGroup) args.push(`-ResourceGroup ${azResourceGroup}`);
     if (azContainerApp) args.push(`-AppName ${azContainerApp}`);
-    
+
     // Pattern: iex (irm 'script.ps1'); Then call function with parameters
     return `iex (irm '${scriptUrl}'); Update-SCIMTool ${args.join(' ')}`;
   }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp]);
@@ -323,14 +323,14 @@ const AppContent: React.FC = () => {
         </>
       )}
       </div>
-      
+
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <span>Made by <strong>Loïc MICHEL</strong></span>
           <span>v{localVersion?.version || '0.3.0'}</span>
-          <a 
-            href="https://github.com/kayasax/SCIMTool" 
-            target="_blank" 
+          <a
+            href="https://github.com/kayasax/SCIMTool"
+            target="_blank"
             rel="noopener noreferrer"
             className={styles.footerLink}
           >

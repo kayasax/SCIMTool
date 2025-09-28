@@ -18,7 +18,7 @@
 📺 **Live Notifications** - Browser tab badges and real-time activity monitoring
 💰 **Cost Efficient** - Azure Container Apps with auto-scaling, pay only for what you use
 🔄 **Auto Updates** - Built-in version detection with one-click upgrade commands
-🛡️ **Enterprise Ready** - Full SCIM 2.0 compliance with Microsoft Entra ID  
+🛡️ **Enterprise Ready** - Full SCIM 2.0 compliance with Microsoft Entra ID
 
 ---
 
