@@ -3,23 +3,23 @@
 <#
 .SYNOPSIS
     Deploy SCIMTool to Azure Container Apps
-    
+
 .DESCRIPTION
     Deploys the SCIM server to Azure Container Apps for production use with
     automatic HTTPS, scaling, and monitoring.
-    
+
 .PARAMETER ResourceGroup
     Azure resource group name
-    
-.PARAMETER AppName  
+
+.PARAMETER AppName
     Container app name
-    
+
 .PARAMETER Location
     Azure region
-    
+
 .PARAMETER ScimSecret
     Production SCIM shared secret
-    
+
 .EXAMPLE
     .\deploy-azure.ps1 -ResourceGroup "scim-rg" -AppName "scimtool-prod" -Location "eastus" -ScimSecret "your-secure-secret"
 #>
@@ -27,12 +27,12 @@
 param(
     [Parameter(Mandatory)]
     [string]$ResourceGroup,
-    
+
     [Parameter(Mandatory)]
     [string]$AppName,
-    
+
     [string]$Location = "eastus",
-    
+
     [Parameter(Mandatory)]
     [string]$ScimSecret
 )
@@ -87,12 +87,12 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✅ Deployment successful!" -ForegroundColor Green
     Write-Host ""
-    
+
     # Get the app details separately
     Write-Host "🔍 Getting app details..." -ForegroundColor Yellow
     try {
         $appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
-        
+
         if ($appDetails -and $appDetails.properties.configuration.ingress.fqdn) {
             $url = "https://$($appDetails.properties.configuration.ingress.fqdn)"
         } else {
@@ -103,7 +103,7 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "⚠️  Could not retrieve app details: $($_.Exception.Message)" -ForegroundColor Yellow
         $url = "Unable to retrieve URL"
     }
-        
+
     Write-Host ""
     Write-Host "🎉 Deployment successful!" -ForegroundColor Green
     Write-Host ""
@@ -113,7 +113,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "   URL: $url" -ForegroundColor Yellow
     Write-Host "   SCIM Endpoint: $url/scim" -ForegroundColor Yellow
     Write-Host ""
-    
+
     # Test the deployed endpoint
     Write-Host "🧪 Testing deployed endpoint..." -ForegroundColor Yellow
     try {
@@ -124,7 +124,7 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "⚠️  Endpoint test failed (may take a few minutes to start)" -ForegroundColor Yellow
         Write-Host "   Test manually: $url/scim/ServiceProviderConfig" -ForegroundColor Gray
     }
-    
+
     Write-Host ""
     Write-Host "📝 Next Steps:" -ForegroundColor Cyan
     Write-Host "1. Create Enterprise App manually in Azure Portal"
@@ -137,7 +137,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "   Azure Portal: https://portal.azure.com"
     Write-Host "   Resource: $ResourceGroup > $AppName"
     Write-Host ""
-    
+
 } else {
     Write-Host "❌ Deployment failed" -ForegroundColor Red
     Write-Host "Error details:" -ForegroundColor Red

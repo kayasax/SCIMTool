@@ -27,21 +27,21 @@ export class ScimAuthGuard implements CanActivate {
       if (token !== this.legacyBearerToken) {
         console.log('🔍 Attempting OAuth token validation...');
         const payload = await this.oauthService.validateAccessToken(token);
-        
+
         // Add token payload to request for later use
         request.oauth = payload;
         request.authType = 'oauth';
-        
+
         console.log('✅ OAuth authentication successful:', payload.client_id);
         return true;
       }
-      
+
       // Fall back to legacy bearer token for backward compatibility
       console.log('🔍 Using legacy bearer token authentication...');
       request.authType = 'legacy';
       console.log('✅ Legacy authentication successful');
       return true;
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('❌ Authentication failed:', errorMessage);

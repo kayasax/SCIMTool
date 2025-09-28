@@ -36,11 +36,24 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [newActivityCount, setNewActivityCount] = useState(0);
   const [lastActivityId, setLastActivityId] = useState<string>('');
+  
+  // Store last activity ID in localStorage for persistence across component re-renders
+  const storeLastActivityId = (id: string) => {
+    setLastActivityId(id);
+    localStorage.setItem('scimtool-last-activity-id', id);
+  };
+  
+  const getStoredLastActivityId = () => {
+    const stored = localStorage.getItem('scimtool-last-activity-id');
+    return stored || lastActivityId;
+  };
 
   const updateTabTitle = (count: number) => {
     const baseTitle = 'SCIMTool - SCIM 2.0 Provisioning Monitor';
+    
     if (count > 0) {
-      document.title = `(${count}) ${baseTitle}`;
+      const newTitle = `(${count}) ${baseTitle}`;
+      document.title = newTitle;
       updateFavicon(count);
     } else {
       document.title = baseTitle;
@@ -49,60 +62,91 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   };
 
   const updateFavicon = (count: number) => {
-    // Create a canvas to draw the favicon with notification badge
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 32;
-    canvas.height = 32;
+    try {
+      // Create a canvas to draw the favicon with notification badge
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 32;
+      canvas.height = 32;
 
-    if (!ctx) return;
+      if (!ctx) {
+        console.error('❌ Failed to get canvas context for favicon');
+        return;
+      }
 
-    // Draw base favicon (blue circle with "S")
-    ctx.fillStyle = '#0078d4';
-    ctx.beginPath();
-    ctx.arc(16, 16, 15, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Add "S" text
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 18px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('S', 16, 16);
-
-    // Add notification badge if count > 0
-    if (count > 0) {
-      // Red notification circle
-      ctx.fillStyle = '#ff4444';
+      // Draw base favicon (blue circle with "S")
+      ctx.fillStyle = '#0078d4';
       ctx.beginPath();
-      ctx.arc(24, 8, 7, 0, 2 * Math.PI);
+      ctx.arc(16, 16, 15, 0, 2 * Math.PI);
       ctx.fill();
 
-      // White border
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Notification count text
+      // Add "S" text
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 10px Arial';
+      ctx.font = 'bold 18px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const displayCount = count > 9 ? '9+' : count.toString();
-      ctx.fillText(displayCount, 24, 8);
-    }
+      ctx.fillText('S', 16, 16);
 
-    // Update favicon
-    const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
-    if (favicon) {
-      favicon.href = canvas.toDataURL('image/png');
-    } else {
-      // Create favicon link if it doesn't exist
-      const newFavicon = document.createElement('link');
-      newFavicon.rel = 'icon';
-      newFavicon.type = 'image/png';
-      newFavicon.href = canvas.toDataURL('image/png');
-      document.head.appendChild(newFavicon);
+      // Add notification badge if count > 0
+      if (count > 0) {
+        // Red notification circle
+        ctx.fillStyle = '#ff4444';
+        ctx.beginPath();
+        ctx.arc(24, 8, 7, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // White border (draw before text)
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(24, 8, 7, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Notification count text (draw last so it's on top)
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 9px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const displayCount = count > 9 ? '9+' : count.toString();
+        ctx.fillText(displayCount, 24, 8);
+      }
+
+      // Generate the data URL
+      const dataURL = canvas.toDataURL('image/png');
+
+      // Update or create favicon
+      let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      
+      if (favicon) {
+        favicon.href = dataURL;
+      } else {
+        // Remove any existing favicon elements first
+        const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+        existingFavicons.forEach(el => el.remove());
+        
+        // Create new favicon link
+        const newFavicon = document.createElement('link');
+        newFavicon.rel = 'icon';
+        newFavicon.type = 'image/png';
+        newFavicon.href = dataURL;
+        document.head.appendChild(newFavicon);
+        
+        // Also add as shortcut icon for better browser compatibility
+        const shortcutIcon = document.createElement('link');
+        shortcutIcon.rel = 'shortcut icon';
+        shortcutIcon.type = 'image/png';
+        shortcutIcon.href = dataURL;
+        document.head.appendChild(shortcutIcon);
+      }
+
+      // Force browser refresh by adding timestamp
+      const timestamp = Date.now();
+      favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      if (favicon && !favicon.href.includes('?')) {
+        favicon.href = `${dataURL}?t=${timestamp}`;
+      }
+    } catch (error) {
+      console.error('❌ Error updating favicon:', error);
     }
   };
 
@@ -117,13 +161,13 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     } else {
       setIsRefreshing(true);
     }
-    
+
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
       });
-      
+
       if (filters.type) params.append('type', filters.type);
       if (filters.severity) params.append('severity', filters.severity);
       if (filters.search) params.append('search', filters.search);
@@ -132,38 +176,46 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       const response = await fetch(`/scim/admin/activity?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (!response.ok) throw new Error('Failed to fetch activities');
-      
+
       const data = await response.json();
-      
+
       // Check for new activities when doing silent refresh
       if (silent && data.activities?.length > 0) {
         const latestActivity = data.activities[0];
-        
-        if (lastActivityId && latestActivity.id !== lastActivityId) {
+        const storedLastActivityId = getStoredLastActivityId();
+
+        // If we have a last known activity ID and it's different from the latest
+        if (storedLastActivityId && latestActivity.id !== storedLastActivityId) {
           // Count new activities since last known activity
-          const lastActivityIndex = data.activities.findIndex((activity: ActivitySummary) => activity.id === lastActivityId);
+          const lastActivityIndex = data.activities.findIndex((activity: ActivitySummary) => activity.id === storedLastActivityId);
           const newCount = lastActivityIndex === -1 ? data.activities.length : lastActivityIndex;
-          
+
           if (newCount > 0) {
             const updatedCount = newActivityCount + newCount;
             setNewActivityCount(updatedCount);
             updateTabTitle(updatedCount);
           }
+        } else if (!storedLastActivityId && data.activities.length > 0) {
+          // If no last activity ID is stored, this is first time - just set the baseline
+          storeLastActivityId(latestActivity.id);
         }
-        
-        // Update last known activity ID
-        if (latestActivity) {
-          setLastActivityId(latestActivity.id);
+
+        // Always update last known activity ID for future comparisons
+        if (latestActivity && latestActivity.id !== storedLastActivityId) {
+          storeLastActivityId(latestActivity.id);
         }
       } else if (!silent && data.activities?.length > 0) {
-        // Initial load or manual refresh - just set the latest activity ID
-        setLastActivityId(data.activities[0].id);
-        setNewActivityCount(0);
-        updateTabTitle(0);
+        // Initial load or manual refresh - set baseline but don't clear existing badge
+        storeLastActivityId(data.activities[0].id);
+        // Only clear badge count if this is truly the first load (no activities in state yet)
+        if (activities.length === 0) {
+          setNewActivityCount(0);
+          updateTabTitle(0);
+        }
       }
-      
+
       setActivities(data.activities);
       setPagination(data.pagination);
     } catch (error) {
@@ -183,15 +235,23 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       const response = await fetch('/scim/admin/activity/summary', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (!response.ok) throw new Error('Failed to fetch activity summary');
-      
+
       const data = await response.json();
       setSummary(data.summary);
     } catch (error) {
       console.error('Error fetching activity summary:', error);
     }
   };
+
+  // Initialize stored activity ID on component mount
+  useEffect(() => {
+    const stored = localStorage.getItem('scimtool-last-activity-id');
+    if (stored && !lastActivityId) {
+      setLastActivityId(stored);
+    }
+  }, []);
 
   useEffect(() => {
     fetchActivities();
@@ -208,17 +268,25 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     }
   }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh]);
 
-  // Clear badge when user focuses on the tab
+  // Clear badge when user focuses on the tab - but wait a moment to let them see it
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && newActivityCount > 0) {
-        clearNewActivityBadge();
+        setTimeout(() => {
+          if (newActivityCount > 0) {
+            clearNewActivityBadge();
+          }
+        }, 3000); // Give user 3 seconds to see the badge
       }
     };
 
     const handleFocus = () => {
       if (newActivityCount > 0) {
-        clearNewActivityBadge();
+        setTimeout(() => {
+          if (newActivityCount > 0) {
+            clearNewActivityBadge();
+          }
+        }, 3000); // Give user 3 seconds to see the badge
       }
     };
 
@@ -293,7 +361,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
           </h2>
           <p>Human-readable view of SCIM provisioning activities</p>
         </div>
-        
+
         {summary && (
           <div className={styles.summaryCards}>
             <div className={styles.summaryCard}>
@@ -326,7 +394,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
             className={styles.searchInput}
           />
         </div>
-        
+
         <div className={styles.filterGroup}>
           <select
             value={filters.type}
@@ -339,7 +407,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
             <option value="group">🏢 Groups</option>
             <option value="system">⚙️ System</option>
           </select>
-          
+
           <select
             value={filters.severity}
             onChange={(e) => handleFilterChange('severity', e.target.value)}
@@ -353,7 +421,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
             <option value="error">❌ Error</option>
           </select>
         </div>
-        
+
         <div className={styles.autoRefreshGroup}>
           <label className={styles.autoRefreshLabel}>
             <input
@@ -390,19 +458,19 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
                   <div className={styles.activityIcon}>
                     {activity.icon}
                   </div>
-                  
+
                   <div className={styles.activityContent}>
                     <div className={styles.activityMessage}>
                       {activity.message}
                     </div>
-                    
+
                     {activity.details && (
                       <div className={styles.activityDetails}>
                         {activity.details}
                       </div>
                     )}
                   </div>
-                  
+
                   <div className={styles.activityMeta}>
                     <div className={styles.activityTime}>
                       {formatTimestamp(activity.timestamp)}

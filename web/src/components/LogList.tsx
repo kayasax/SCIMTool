@@ -76,10 +76,10 @@ export const LogList: React.FC<Props> = ({ items, onSelect, loading, selected })
             {items.map(i => {
               const isSelected = selected?.id === i.id;
               const hasError = i.errorMessage || (i.status && i.status >= 400);
-              
+
               return (
-                <tr 
-                  key={i.id} 
+                <tr
+                  key={i.id}
                   className={`${styles.tableRow} ${isSelected ? styles.selected : ''} ${hasError ? styles.error : ''}`}
                   onClick={() => onSelect(i)}
                 >

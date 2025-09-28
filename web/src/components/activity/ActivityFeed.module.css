@@ -466,47 +466,47 @@
   .activityFeed {
     padding: 16px;
   }
-  
+
   .summaryCards {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .searchBox {
     min-width: unset;
   }
-  
+
   .filterGroup {
     justify-content: stretch;
   }
-  
+
   .filterSelect {
     flex: 1;
     min-width: unset;
   }
-  
+
   .activityItem {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .activityMeta {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
     align-self: stretch;
   }
-  
+
   .pagination {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .paginationControls {
     justify-content: center;
   }

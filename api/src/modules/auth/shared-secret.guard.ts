@@ -32,7 +32,7 @@ export class SharedSecretGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    
+
     if (isPublic) {
       return true;
     }
@@ -54,11 +54,11 @@ export class SharedSecretGuard implements CanActivate {
       try {
         console.log('🔍 Attempting OAuth 2.0 token validation...');
         const payload = await this.oauthService.validateAccessToken(token);
-        
+
         // Add OAuth payload to request for later use
         request.oauth = payload;
         request.authType = 'oauth';
-        
+
         console.log('✅ OAuth 2.0 authentication successful:', payload.client_id);
         return true;
       } catch (oauthError) {

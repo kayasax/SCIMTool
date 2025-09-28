@@ -16,7 +16,7 @@ Write-Host ""
 # Function to create a test user
 function New-TestUser {
     param([string]$suffix)
-    
+
     $timestamp = [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
     $userData = @{
         schemas = @("urn:ietf:params:scim:schemas:core:2.0:User")
@@ -45,7 +45,7 @@ function New-TestUser {
 # Function to create a test group
 function New-TestGroup {
     param([string]$suffix)
-    
+
     $timestamp = [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
     $groupData = @{
         schemas = @("urn:ietf:params:scim:schemas:core:2.0:Group")

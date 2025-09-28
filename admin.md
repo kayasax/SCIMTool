@@ -102,7 +102,7 @@ Banner should show new version if the running instance version < latest release/
 The UI now provides a streamlined update experience:
 
 **Compact Banner**:
-- Shows: "New version available: [current] → [latest]"  
+- Shows: "New version available: [current] → [latest]"
 - **More** button opens modal with release notes
 - **Copy Update Command** button provides one-liner command
 

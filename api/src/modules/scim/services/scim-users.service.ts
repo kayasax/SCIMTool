@@ -218,7 +218,7 @@ export class ScimUsersService {
       }
 
       const path = operation.path?.toLowerCase();
-      
+
       // Handle different operations
       if (op === 'add' || op === 'replace') {
         if (path === 'active') {

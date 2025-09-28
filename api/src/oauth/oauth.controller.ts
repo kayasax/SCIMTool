@@ -76,7 +76,7 @@ export class OAuthController {
       };
     } catch (error) {
       console.error('❌ OAuth Token Generation Failed:', error instanceof Error ? error.message : String(error));
-      
+
       throw new HttpException(
         {
           error: 'invalid_client',

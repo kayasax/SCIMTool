@@ -5,7 +5,7 @@
 .github/
 
 # Node.js
-**/node_modules  
+**/node_modules
 api/node_modules
 web/node_modules
 npm-debug.log*
@@ -27,10 +27,10 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Test files  
+# Test files
 test/
 tests/
-**/__tests__ 
+**/__tests__
 **/*.test.js
 **/*.test.ts
 **/*.spec.js

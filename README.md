@@ -21,7 +21,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 **What you get:**
 - ✨ Beautiful monitoring dashboard
 - 🔍 Real-time activity feed with human language
-- � Database browser for users & groups  
+- � Database browser for users & groups
 - 🌙 Auto light/dark theme
 - 💰 Azure Container Apps (pay-per-use)
 - 🔄 Auto-updates built-in
@@ -32,13 +32,13 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 
 ### **� Before SCIMTool**
 - *"Why did provisioning fail?"* → Dig through raw JSON logs
-- *"Did the user get created?"* → Check Azure portal manually  
+- *"Did the user get created?"* → Check Azure portal manually
 - *"What changed?"* → No visibility into operations
 - *Team asks for status* → No easy way to share
 
-### **😎 After SCIMTool**  
+### **😎 After SCIMTool**
 - **"Sarah Johnson was added to Marketing Team"** ← Clear, instant visibility
-- **Live dashboard** everyone can access ← Real-time monitoring  
+- **Live dashboard** everyone can access ← Real-time monitoring
 - **Search & filter everything** ← Find issues fast
 - **Beautiful interface** ← Actually enjoyable to use
 
@@ -54,7 +54,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 ### **2️⃣ Configure Entra ID (2 minutes)**
 1. **Enterprise Applications** → **New** → **Create your own**
 2. **Provisioning** → **Automatic**
-3. **Tenant URL**: `https://[your-url]/scim`  
+3. **Tenant URL**: `https://[your-url]/scim`
 4. **Secret**: `changeme`
 
 ### **3️⃣ Start Monitoring**
@@ -72,7 +72,7 @@ Visit your dashboard and watch provisioning happen in real-time! 🎉
 
 ### **🎨 Beautiful Interface**
 - **Auto light/dark theme** that follows your system
-- **Real-time updates** with smooth animations  
+- **Real-time updates** with smooth animations
 - **Browser tab notifications** - see `(3) SCIMTool` when activity happens
 - **Search & filter everything** instantly
 
@@ -82,7 +82,7 @@ Visit your dashboard and watch provisioning happen in real-time! 🎉
 - **Real-time stats** and activity counts
 - Export data for compliance
 
-### **🚀 Enterprise Ready**  
+### **🚀 Enterprise Ready**
 - **Full SCIM 2.0** compliance
 - **Auto-scaling** Azure Container Apps
 - **Zero maintenance** - auto-updates included
@@ -94,7 +94,7 @@ Visit your dashboard and watch provisioning happen in real-time! 🎉
 
 **Azure Container Apps**: Pay only when provisioning happens
 - **Idle**: $0/month (scales to zero)
-- **Light usage**: ~$5-15/month  
+- **Light usage**: ~$5-15/month
 - **Enterprise**: Auto-scales to handle any load
 
 *Much cheaper than building your own monitoring solution!*
@@ -108,7 +108,7 @@ Visit your dashboard and watch provisioning happen in real-time! 🎉
 # Custom secret token
 .\scripts\deploy-azure.ps1 -ScimSecret "your-secure-token"
 
-# Custom resource names  
+# Custom resource names
 .\scripts\deploy-azure.ps1 -ResourceGroup "my-scim-rg" -AppName "my-scimtool"
 ```
 
@@ -133,7 +133,7 @@ Visit your dashboard and watch provisioning happen in real-time! 🎉
 
 - ⭐ **Star the repo** to show support
 - 🐛 **Report issues** on GitHub
-- 🔀 **Submit PRs** for improvements  
+- 🔀 **Submit PRs** for improvements
 - 💡 **Request features** via Issues
 
 ---
@@ -147,7 +147,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 
 **Then configure Entra ID:**
 1. **Enterprise Apps** → **New** → **Create your own**
-2. **Provisioning** → **Automatic**  
+2. **Provisioning** → **Automatic**
 3. **Tenant URL**: `https://[your-url]/scim`
 4. **Secret**: `changeme`
 

@@ -81,7 +81,7 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
               <div className={styles.infoLabel}>URL</div>
               <div className={styles.infoValue}>{log.url}</div>
             </div>
-            
+
             <div className={styles.infoCard}>
               <div className={styles.infoLabel}>Status</div>
               <div className={styles.infoValue}>
@@ -92,24 +92,24 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
                 ) : '—'}
               </div>
             </div>
-            
+
             <div className={styles.infoCard}>
               <div className={styles.infoLabel}>Duration</div>
               <div className={styles.infoValue}>{log.durationMs ? `${log.durationMs}ms` : '—'}</div>
             </div>
-            
+
             <div className={styles.infoCard}>
               <div className={styles.infoLabel}>Timestamp</div>
               <div className={styles.infoValue}>{new Date(log.createdAt).toLocaleString()}</div>
             </div>
-            
+
             {log.reportableIdentifier && (
               <div className={styles.infoCard}>
                 <div className={styles.infoLabel}>Identifier</div>
                 <div className={styles.infoValue}>{log.reportableIdentifier}</div>
               </div>
             )}
-            
+
             {log.errorMessage && (
               <div className={`${styles.infoCard} ${styles.errorCard}`}>
                 <div className={styles.infoLabel}>Error</div>
@@ -122,7 +122,7 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
             <div className={styles.sectionTitle}>
               <span>Request Headers</span>
               {log.requestHeaders && (
-                <button 
+                <button
                   className={`${styles.copyButton} ${copied === 'reqHeaders' ? styles.copied : ''}`}
                   onClick={() => copy('reqHeaders', log.requestHeaders)}
                 >
@@ -144,7 +144,7 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
             <div className={styles.sectionTitle}>
               <span>Response Headers</span>
               {log.responseHeaders && (
-                <button 
+                <button
                   className={`${styles.copyButton} ${copied === 'resHeaders' ? styles.copied : ''}`}
                   onClick={() => copy('resHeaders', log.responseHeaders)}
                 >
@@ -166,7 +166,7 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
             <div className={styles.sectionTitle}>
               <span>Request Body</span>
               {log.requestBody !== undefined && log.requestBody !== null && (
-                <button 
+                <button
                   className={`${styles.copyButton} ${copied === 'reqBody' ? styles.copied : ''}`}
                   onClick={() => copy('reqBody', log.requestBody)}
                 >
@@ -188,7 +188,7 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
             <div className={styles.sectionTitle}>
               <span>Response Body</span>
               {log.responseBody !== undefined && log.responseBody !== null && (
-                <button 
+                <button
                   className={`${styles.copyButton} ${copied === 'resBody' ? styles.copied : ''}`}
                   onClick={() => copy('resBody', log.responseBody)}
                 >

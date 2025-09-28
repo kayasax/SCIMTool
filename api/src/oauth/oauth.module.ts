@@ -7,7 +7,7 @@ import { OAuthService } from './oauth.service';
   imports: [
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'scimtool-oauth-secret-key-2025',
-      signOptions: { 
+      signOptions: {
         issuer: 'scimtool-oauth-server'
       },
     }),

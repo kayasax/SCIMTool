@@ -3,14 +3,14 @@
 <#
 .SYNOPSIS
     SCIMTool - Setup Microsoft Entra SCIM Integration
-    
+
 .DESCRIPTION
     Complete setup for SCIMTool SCIM 2.0 server with Microsoft Entra provisioning.
     Provides dev tunnel setup, local testing, and clear Azure Portal instructions.
-    
+
 .PARAMETER TestLocal
     Test the local SCIM server endpoints
-    
+
 .PARAMETER StartTunnel
     Start dev tunnel to expose SCIM server publicly
 
@@ -19,7 +19,7 @@
 
 .PARAMETER DeployContainer
     Deploy containerized SCIM server with embedded web UI to Azure Container Apps
-    
+
 .EXAMPLE
     .\setup.ps1 -TestLocal
     .\setup.ps1 -StartTunnel
@@ -40,7 +40,7 @@ if ([string]::IsNullOrWhiteSpace($ScimSecret)) {
     Write-Host "🔐 SCIM Secret Configuration" -ForegroundColor Yellow
     Write-Host "For security, each deployment needs a unique secret token." -ForegroundColor Gray
     $UserSecret = Read-Host -Prompt "Enter your SCIM secret token (press Enter for auto-generated)"
-    
+
     if ([string]::IsNullOrWhiteSpace($UserSecret)) {
         $ScimSecret = "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format "yyyyMMdd")"
         Write-Host "✅ Generated secure random secret: $ScimSecret" -ForegroundColor Green
@@ -60,21 +60,21 @@ if ($TestLocal) {
     Write-Host "🧪 Testing Local SCIM Server" -ForegroundColor Cyan
     Write-Host "═══════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    
+
     try {
         $headers = @{
             Authorization = "Bearer $ScimSecret"
             "Content-Type" = "application/scim+json"
         }
-        
+
         Write-Host "Testing ServiceProviderConfig..." -ForegroundColor Yellow
         $config = Invoke-RestMethod -Uri "http://localhost:3000/scim/ServiceProviderConfig" -Headers $headers -TimeoutSec 5
         Write-Host "✅ ServiceProviderConfig: OK" -ForegroundColor Green
-        
+
         Write-Host "Testing OAuth endpoint..." -ForegroundColor Yellow
         $oauth = Invoke-RestMethod -Uri "http://localhost:3000/scim/oauth/test" -Method GET -TimeoutSec 5
         Write-Host "✅ OAuth endpoint: OK" -ForegroundColor Green
-        
+
         Write-Host "Testing OAuth token generation..." -ForegroundColor Yellow
         $tokenRequest = @{
             grant_type = "client_credentials"
@@ -82,19 +82,19 @@ if ($TestLocal) {
             client_secret = "scimtool-secret-2025"
             scope = "scim.read"
         } | ConvertTo-Json
-        
+
         $token = Invoke-RestMethod -Uri "http://localhost:3000/scim/oauth/token" -Method POST -ContentType "application/json" -Body $tokenRequest -TimeoutSec 5
         Write-Host "✅ OAuth token generation: OK" -ForegroundColor Green
-        
+
         Write-Host ""
         Write-Host "🎉 All SCIM endpoints working perfectly!" -ForegroundColor Green
         Write-Host "   Ready for Microsoft Entra integration" -ForegroundColor White
-        
+
     } catch {
         Write-Host "❌ SCIM server not running" -ForegroundColor Red
         Write-Host "   Start with: cd api && npm run start:dev" -ForegroundColor Yellow
     }
-    
+
     return
 }
 
@@ -102,7 +102,7 @@ if ($StartTunnel) {
     Write-Host "🌐 Starting Dev Tunnel" -ForegroundColor Cyan
     Write-Host "════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    
+
     # Check dev tunnel CLI
     try {
         $null = Get-Command devtunnel -ErrorAction Stop
@@ -111,23 +111,23 @@ if ($StartTunnel) {
         Write-Host "   Install: winget install Microsoft.devtunnel" -ForegroundColor Yellow
         return
     }
-    
+
     # Setup tunnel (one-time)
     $tunnelName = "scimtool"
     Write-Host "Setting up tunnel '$tunnelName'..." -ForegroundColor Yellow
-    
+
     devtunnel create $tunnelName --allow-anonymous 2>$null
     devtunnel port create $tunnelName --port-number 3000 --protocol https 2>$null
-    
+
     Write-Host "✅ Tunnel configured" -ForegroundColor Green
     Write-Host ""
     Write-Host "🚀 Starting tunnel host..." -ForegroundColor Yellow
     Write-Host "   Press Ctrl+C to stop" -ForegroundColor Gray
     Write-Host ""
-    
+
     # Start hosting (this will block)
     devtunnel host $tunnelName
-    
+
     return
 }
 
@@ -177,12 +177,12 @@ if ($ConfigureWebUI) {
     Write-Host "🖥️ Configuring Web UI for Production" -ForegroundColor Cyan
     Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    
+
     $azureUrl = "https://scimtool-prod.bravewater-b8848185.eastus.azurecontainerapps.io"
     $webEnvPath = "web\.env"
-    
+
     Write-Host "Updating web UI configuration..." -ForegroundColor Yellow
-    
+
     $envContent = @"
 # Production environment configuration for SCIMTool Web UI
 # Points to the deployed Azure Container Apps SCIM server
@@ -190,16 +190,16 @@ if ($ConfigureWebUI) {
 VITE_API_BASE=$azureUrl
 VITE_SCIM_TOKEN=$ScimSecret
 "@
-    
+
     $envContent | Out-File -FilePath $webEnvPath -Encoding UTF8
     Write-Host "✅ Updated $webEnvPath" -ForegroundColor Green
     Write-Host ""
-    
+
     Write-Host "Configuration:" -ForegroundColor Green
     Write-Host "• API Base: $azureUrl" -ForegroundColor White
     Write-Host "• Token: $ScimSecret" -ForegroundColor White
     Write-Host ""
-    
+
     Write-Host "Next Steps:" -ForegroundColor Yellow
     Write-Host "1. cd web"
     Write-Host "2. npm install"
@@ -215,7 +215,7 @@ if ($DeployContainer) {
     Write-Host "🚀 Deploying Containerized SCIM Server + Web UI" -ForegroundColor Cyan
     Write-Host "════════════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    
+
     Write-Host "Building web client for container..." -ForegroundColor Yellow
     Push-Location web
     try {
@@ -227,16 +227,16 @@ if ($DeployContainer) {
     } finally {
         Pop-Location
     }
-    
+
     Write-Host "Copying web build to API container..." -ForegroundColor Yellow
     Remove-Item api/public/* -Recurse -Force -ErrorAction SilentlyContinue
     Copy-Item web/dist/* api/public/ -Recurse -Force
-    
+
     Write-Host "Deploying to Azure Container Apps..." -ForegroundColor Yellow
     Write-Host "This may take 2-3 minutes..." -ForegroundColor Gray
-    
+
     $result = az containerapp up --name "scimtool-prod" --resource-group "scimtool-rg" --location "eastus" --env-vars "SCIM_SHARED_SECRET=$ScimSecret" "NODE_ENV=production" "PORT=80" "DATABASE_URL=file:./data.db" --ingress external --target-port 80 --source "./api" 2>&1
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Deployment successful!" -ForegroundColor Green
         Write-Host ""
@@ -258,7 +258,7 @@ if ($DeployContainer) {
         Write-Host "❌ Deployment failed!" -ForegroundColor Red
         Write-Host $result -ForegroundColor Red
     }
-    
+
     return
 }
 

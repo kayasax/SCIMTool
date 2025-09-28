@@ -12,10 +12,10 @@ export const Header: React.FC = () => {
           <div className={styles.logo}>
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
               <rect width="28" height="28" rx="4" fill="var(--color-primary)" />
-              <path 
-                d="M8 11h12M8 15h8M8 19h10" 
-                stroke="white" 
-                strokeWidth="1.5" 
+              <path
+                d="M8 11h12M8 15h8M8 19h10"
+                stroke="white"
+                strokeWidth="1.5"
                 strokeLinecap="round"
               />
             </svg>
@@ -25,7 +25,7 @@ export const Header: React.FC = () => {
             <p className={styles.subtitle}>SCIM 2.0 Provisioning Monitor</p>
           </div>
         </div>
-        
+
         <div className={styles.actions}>
           <div className={styles.status}>
             <div className={styles.statusIndicator}>
@@ -33,8 +33,8 @@ export const Header: React.FC = () => {
               <span className={styles.statusText}>Active</span>
             </div>
           </div>
-          
-          <button 
+
+          <button
             className={styles.themeToggle}
             onClick={toggleTheme}
             title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}

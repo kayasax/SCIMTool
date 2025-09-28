@@ -37,16 +37,16 @@ export class OAuthService {
     clientSecret: string,
     requestedScope?: string
   ): Promise<AccessToken> {
-    console.log('🔍 OAuth Service - Validating client:', { 
-      clientId, 
+    console.log('🔍 OAuth Service - Validating client:', {
+      clientId,
       clientSecret: clientSecret ? '***redacted***' : 'MISSING',
       availableClients: Array.from(this.validClients.keys())
     });
-    
+
     // Validate client credentials
     const client = this.validClients.get(clientId);
     console.log('🔍 Found client:', client ? 'YES' : 'NO');
-    
+
     if (!client || client.clientSecret !== clientSecret) {
       console.log('❌ Client validation failed:', {
         clientFound: !!client,
@@ -57,7 +57,7 @@ export class OAuthService {
 
     // Validate and filter scopes
     const requestedScopes = requestedScope ? requestedScope.split(' ') : [];
-    const allowedScopes = requestedScopes.filter(scope => 
+    const allowedScopes = requestedScopes.filter(scope =>
       client.scopes.includes(scope)
     );
 

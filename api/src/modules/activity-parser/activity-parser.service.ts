@@ -16,7 +16,7 @@ export interface ActivitySummary {
 @Injectable()
 export class ActivityParserService {
   constructor(private prisma: PrismaService) {}
-  
+
   /**
    * Parse a SCIM request log into a human-readable activity summary
    */
@@ -38,7 +38,7 @@ export class ActivityParserService {
     // Parse request and response bodies
     let requestData: any = {};
     let responseData: any = {};
-    
+
     try {
       if (log.requestBody) {
         requestData = JSON.parse(log.requestBody);
@@ -162,10 +162,10 @@ export class ActivityParserService {
 
       case 'PATCH':
         const operations = requestData?.Operations || [];
-        const deactivateOp = operations.find((op: any) => 
+        const deactivateOp = operations.find((op: any) =>
           op.path === 'active' && op.value === false
         );
-        const activateOp = operations.find((op: any) => 
+        const activateOp = operations.find((op: any) =>
           op.path === 'active' && op.value === true
         );
 
@@ -307,7 +307,7 @@ export class ActivityParserService {
 
       case 'PATCH':
         const operations = requestData?.Operations || [];
-        const memberOps = operations.filter((op: any) => 
+        const memberOps = operations.filter((op: any) =>
           op.path === 'members' || op.path?.startsWith('members[')
         );
 
@@ -326,7 +326,7 @@ export class ActivityParserService {
               })
             );
             const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
-            
+
             return {
               id,
               timestamp,
@@ -348,7 +348,7 @@ export class ActivityParserService {
               })
             );
             const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
-            
+
             return {
               id,
               timestamp,
@@ -495,9 +495,9 @@ export class ActivityParserService {
 
     // Try to extract from request or response data
     const data = requestData || responseData || {};
-    
-    return data.userName || 
-           data.name?.formatted || 
+
+    return data.userName ||
+           data.name?.formatted ||
            data.displayName ||
            data.emails?.[0]?.value ||
            data.id ||
@@ -512,8 +512,8 @@ export class ActivityParserService {
 
     // Try to extract from request or response data
     const data = requestData || responseData || {};
-    
-    return data.displayName || 
+
+    return data.displayName ||
            data.id ||
            undefined;
   }
@@ -522,12 +522,12 @@ export class ActivityParserService {
     if (!data) return undefined;
 
     const details: string[] = [];
-    
+
     if (data.name?.givenName || data.name?.familyName) {
       const fullName = `${data.name.givenName || ''} ${data.name.familyName || ''}`.trim();
       if (fullName) details.push(fullName);
     }
-    
+
     if (data.active !== undefined) {
       details.push(data.active ? 'Active' : 'Inactive');
     }
@@ -543,7 +543,7 @@ export class ActivityParserService {
     if (!data) return undefined;
 
     const details: string[] = [];
-    
+
     if (data.members?.length > 0) {
       details.push(`${data.members.length} member${data.members.length !== 1 ? 's' : ''}`);
     }
@@ -560,7 +560,7 @@ export class ActivityParserService {
         where: { scimId: userId },
         select: { userName: true, rawPayload: true },
       });
-      
+
       if (user) {
         // Try to get display name from raw payload first
         try {
@@ -592,7 +592,7 @@ export class ActivityParserService {
         where: { scimId: groupId },
         select: { displayName: true },
       });
-      
+
       if (group?.displayName) {
         return group.displayName;
       }

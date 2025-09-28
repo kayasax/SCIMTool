@@ -3,11 +3,11 @@
 <#
 .SYNOPSIS
     SCIMTool - One-Click Deployment for Microsoft Colleagues
-    
+
 .DESCRIPTION
     Downloads and deploys SCIMTool SCIM 2.0 server to Azure Container Apps.
     No git clone needed - everything downloads automatically!
-    
+
 .EXAMPLE
     iwr https://raw.githubusercontent.com/kayasax/SCIMTool/main/deploy.ps1 | iex
 #>
@@ -59,35 +59,35 @@ Push-Location $TempDir
 
 try {
     Write-Host "📥 Downloading SCIMTool source..." -ForegroundColor Cyan
-    
+
     # Download the source as ZIP
     $RepoUrl = "https://github.com/kayasax/SCIMTool/archive/refs/heads/$Branch.zip"
     $ZipPath = Join-Path $TempDir "scimtool.zip"
-    
+
     Invoke-WebRequest -Uri $RepoUrl -OutFile $ZipPath -UseBasicParsing
-    
+
     # Extract ZIP
     Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
     $ExtractedDir = Get-ChildItem -Directory | Select-Object -First 1
     Set-Location $ExtractedDir.FullName
-    
+
     Write-Host "✅ Source downloaded and extracted" -ForegroundColor Green
     Write-Host ""
-    
+
     # Deploy to Azure
     Write-Host "🚀 Deploying to Azure Container Apps..." -ForegroundColor Cyan
     Write-Host "This may take 3-5 minutes..." -ForegroundColor Gray
     Write-Host ""
-    
+
     $result = az containerapp up --name "scimtool-prod" --resource-group "scimtool-rg" --location "eastus" --env-vars "SCIM_SHARED_SECRET=$ScimSecret" "NODE_ENV=production" "PORT=80" "DATABASE_URL=file:./data.db" --ingress external --target-port 80 --source "./api" 2>&1
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Deployment successful!" -ForegroundColor Green
         Write-Host ""
-        
+
         # Extract URL from az output
         $AppUrl = ($result | Where-Object { $_ -match "https://.*\.azurecontainerapps\.io" } | Select-Object -First 1) -replace '.*?(https://[^\s]+).*', '$1'
-        
+
         if ($AppUrl) {
             Write-Host "🌐 Your SCIMTool is ready!" -ForegroundColor Green
             Write-Host "   URL: $AppUrl" -ForegroundColor Cyan
@@ -105,7 +105,7 @@ try {
         Write-Host "❌ Deployment failed. Error details above." -ForegroundColor Red
         exit 1
     }
-    
+
 } finally {
     # Cleanup
     Pop-Location

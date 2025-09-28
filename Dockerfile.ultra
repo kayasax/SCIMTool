@@ -15,7 +15,7 @@ RUN apk add --no-cache openssl python3 make g++
 COPY api/package*.json ./api/
 RUN cd api && npm ci --no-audit --no-fund
 
-# Web dependencies  
+# Web dependencies
 COPY web/package*.json ./web/
 RUN cd web && npm ci --no-audit --no-fund
 

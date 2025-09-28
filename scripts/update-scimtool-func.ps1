@@ -6,7 +6,7 @@ function Update-SCIMTool {
     param(
         [Parameter(Mandatory)]
         [string]$Version,
-        [string]$ResourceGroup = "scimtool-rg", 
+        [string]$ResourceGroup = "scimtool-rg",
         [string]$AppName = "scimtool-prod",
         [string]$Registry = "scimtoolpublic.azurecr.io",
         [switch]$NoPrompt,
@@ -30,8 +30,8 @@ function Update-SCIMTool {
     try {
         Write-Host "Checking Azure CLI authentication..." -ForegroundColor Cyan
         $account = az account show --output json 2>$null | ConvertFrom-Json
-        if (-not $account) { 
-            throw "Not authenticated" 
+        if (-not $account) {
+            throw "Not authenticated"
         }
         Write-Host "✅ Authenticated as $($account.user.name)" -ForegroundColor Green
         Write-Host "   Subscription: $($account.name)" -ForegroundColor Gray
@@ -78,7 +78,7 @@ function Update-SCIMTool {
     # Execute the Azure CLI command
     try {
         Invoke-Expression $updateCommand
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host ""
             Write-Host "✅ Container app updated successfully!" -ForegroundColor Green
@@ -112,7 +112,7 @@ if ($args.Count -gt 0) {
             }
         }
     }
-    
+
     if ($params.Count -gt 0) {
         Update-SCIMTool @params
     } else {

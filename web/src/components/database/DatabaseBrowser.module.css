@@ -620,42 +620,42 @@
   .databaseBrowser {
     padding: 16px;
   }
-  
+
   .tabs {
     flex-direction: column;
   }
-  
+
   .tab {
     justify-content: flex-start;
   }
-  
+
   .controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .searchInput {
     min-width: unset;
   }
-  
+
   .statisticsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .pagination {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .paginationControls {
     justify-content: center;
   }
-  
+
   .table {
     font-size: 12px;
   }
-  
+
   .table th,
   .table td {
     padding: 8px 12px;
@@ -791,19 +791,19 @@
   .modalOverlay {
     padding: 10px;
   }
-  
+
   .modal {
     max-height: 90vh;
   }
-  
+
   .modalHeader {
     padding: 16px 20px;
   }
-  
+
   .modalContent {
     padding: 20px;
   }
-  
+
   .detailItem {
     gap: 4px;
   }

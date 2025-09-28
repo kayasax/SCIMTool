@@ -51,7 +51,7 @@ export const DatabaseBrowser: React.FC = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [statisticsLoading, setStatisticsLoading] = useState(false);
-  
+
   // Modal state
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -84,7 +84,7 @@ export const DatabaseBrowser: React.FC = () => {
         page: usersPagination.page.toString(),
         limit: usersPagination.limit.toString(),
       });
-      
+
       if (usersSearchTerm) params.append('search', usersSearchTerm);
       if (usersActiveFilter) params.append('active', usersActiveFilter);
 
@@ -93,7 +93,7 @@ export const DatabaseBrowser: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch users');
-      
+
       const data = await response.json();
       setUsers(data.users);
       setUsersPagination(data.pagination);
@@ -111,7 +111,7 @@ export const DatabaseBrowser: React.FC = () => {
         page: groupsPagination.page.toString(),
         limit: groupsPagination.limit.toString(),
       });
-      
+
       if (groupsSearchTerm) params.append('search', groupsSearchTerm);
 
       const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
@@ -119,7 +119,7 @@ export const DatabaseBrowser: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch groups');
-      
+
       const data = await response.json();
       setGroups(data.groups);
       setGroupsPagination(data.pagination);
@@ -138,7 +138,7 @@ export const DatabaseBrowser: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch statistics');
-      
+
       const data = await response.json();
       setStatistics(data);
     } catch (error) {
@@ -298,7 +298,7 @@ export const DatabaseBrowser: React.FC = () => {
                   <strong>Updated:</strong>
                   <span>{new Date(selectedUser.updatedAt).toLocaleString()}</span>
                 </div>
-                
+
                 {/* Display SCIM attributes */}
                 {(selectedUser as any).displayName && (
                   <div className={styles.detailItem}>
@@ -328,7 +328,7 @@ export const DatabaseBrowser: React.FC = () => {
                     <span>{(selectedUser as any).emails[0].value}</span>
                   </div>
                 )}
-                
+
                 {/* Groups */}
                 <div className={styles.detailItem}>
                   <strong>Groups:</strong>
@@ -344,7 +344,7 @@ export const DatabaseBrowser: React.FC = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Raw JSON for debugging */}
                 <div className={styles.detailItem}>
                   <strong>Raw Data:</strong>
@@ -388,7 +388,7 @@ export const DatabaseBrowser: React.FC = () => {
                   <strong>Updated:</strong>
                   <span>{new Date(selectedGroup.updatedAt).toLocaleString()}</span>
                 </div>
-                
+
                 {/* Raw JSON for debugging */}
                 <div className={styles.detailItem}>
                   <strong>Raw Data:</strong>
