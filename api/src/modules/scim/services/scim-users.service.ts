@@ -210,7 +210,7 @@ export class ScimUsersService {
 
     for (const operation of patchDto.Operations) {
       const op = operation.op?.toLowerCase();
-      if (op !== 'replace') {
+      if (!['add', 'replace', 'remove'].includes(op || '')) {
         throw createScimError({
           status: 400,
           detail: `Patch operation '${operation.op}' is not supported.`
@@ -218,18 +218,56 @@ export class ScimUsersService {
       }
 
       const path = operation.path?.toLowerCase();
-      if (path === 'active') {
-        const value = this.extractBooleanValue(operation.value);
-        active = value;
-        rawPayload = {
-          ...rawPayload,
-          active: value
-        };
-      } else {
-        throw createScimError({
-          status: 400,
-          detail: `Patch path '${operation.path ?? ''}' is not supported.`
-        });
+      
+      // Handle different operations
+      if (op === 'add' || op === 'replace') {
+        if (path === 'active') {
+          const value = this.extractBooleanValue(operation.value);
+          active = value;
+          rawPayload = {
+            ...rawPayload,
+            active: value
+          };
+        } else if (path && operation.value !== undefined) {
+          // For other attributes, store in rawPayload
+          rawPayload = {
+            ...rawPayload,
+            [path]: operation.value
+          };
+        } else if (!path && typeof operation.value === 'object' && operation.value !== null) {
+          // No path specified - update the entire resource (common for add operations)
+          const updateObj = operation.value as Record<string, unknown>;
+          if ('active' in updateObj) {
+            active = this.extractBooleanValue(updateObj.active);
+          }
+          rawPayload = {
+            ...rawPayload,
+            ...updateObj
+          };
+        } else {
+          throw createScimError({
+            status: 400,
+            detail: `Patch path '${operation.path ?? ''}' is not supported.`
+          });
+        }
+      } else if (op === 'remove') {
+        if (path === 'active') {
+          // Cannot remove active attribute, set to false instead
+          active = false;
+          rawPayload = {
+            ...rawPayload,
+            active: false
+          };
+        } else if (path) {
+          // Remove attribute from rawPayload
+          const { [path]: removed, ...remaining } = rawPayload;
+          rawPayload = remaining;
+        } else {
+          throw createScimError({
+            status: 400,
+            detail: `Remove operation requires a path.`
+          });
+        }
       }
     }
 
