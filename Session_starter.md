@@ -91,6 +91,9 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - ✅ API endpoint testing confirmed: `/scim/admin/database/groups` returns 2 groups correctly
 - ✅ **RESOLVED:** Groups display issue - both groups now showing correctly with proper alignment! 
 - ✅ **FIXED:** Grid alignment in Groups tab for consistent row formatting and better readability
+- ✅ **RELEASED:** Version 0.4.4 deployed with enhanced Groups display and activity parser improvements
+- ✅ **DEPLOYED:** Container pushed to Azure Container Registry (scimtoolpublic.azurecr.io/scimtool:0.4.4)
+- ✅ **README REWRITE:** Completely redesigned - eye-catching, concise, removed duplicates and hallucinations
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**
