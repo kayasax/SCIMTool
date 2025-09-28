@@ -84,7 +84,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**
-- NestJS controllers for `/Users`, `/Groups`, `/ServiceProviderConfig`, `/Schemas` 
+- NestJS controllers for `/Users`, `/Groups`, `/ServiceProviderConfig`, `/Schemas`
 - Full CRUD operations: POST, GET, PUT, PATCH, DELETE
 - Prisma + SQLite for data persistence and request logging
 - Bearer token + OAuth 2.0 dual authentication
@@ -259,7 +259,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 cd api && npm run start:dev        # Start SCIM server
 cd web && npm run dev              # Start log viewer UI
 
-# Production deployment  
+# Production deployment
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer updates

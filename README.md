@@ -11,14 +11,14 @@
 
 ## ✨ **What Makes SCIMTool Special**
 
-🎯 **One-Command Deploy** - Deploy to Azure in seconds, no configuration needed  
-🌙 **Dual Theme UI** - Beautiful light/dark theme that adapts to your preference  
-� **Smart Activity Parser** - Human-readable activity feed instead of raw JSON logs  
-🔍 **Database Browser** - Explore users and groups with advanced search and filtering  
-📺 **Live Notifications** - Browser tab badges and real-time activity monitoring  
-💰 **Cost Efficient** - Azure Container Apps with auto-scaling, pay only for what you use  
-🔄 **Auto Updates** - Built-in version detection with one-click upgrade commands  
-🛡️ **Enterprise Ready** - Full SCIM 2.0 compliance with Microsoft Entra ID  
+🎯 **One-Command Deploy** - Deploy to Azure in seconds, no configuration needed
+🌙 **Dual Theme UI** - Beautiful light/dark theme that adapts to your preference
+� **Smart Activity Parser** - Human-readable activity feed instead of raw JSON logs
+🔍 **Database Browser** - Explore users and groups with advanced search and filtering
+📺 **Live Notifications** - Browser tab badges and real-time activity monitoring
+💰 **Cost Efficient** - Azure Container Apps with auto-scaling, pay only for what you use
+🔄 **Auto Updates** - Built-in version detection with one-click upgrade commands
+🛡️ **Enterprise Ready** - Full SCIM 2.0 compliance with Microsoft Entra ID
 
 ---
 
@@ -265,7 +265,7 @@ After deploying to Azure Container Apps, configure the web UI to connect to your
 ### **🌅 Light Theme Experience**
 Beautiful, clean interface perfect for daytime work - complete with activity badges, real-time updates, and intuitive navigation.
 
-### **🌙 Dark Theme Experience** 
+### **🌙 Dark Theme Experience**
 Easy on the eyes for those late-night provisioning sessions - fully optimized colors and contrast for perfect visibility.
 
 ### **📱 Activity Feed In Action**
