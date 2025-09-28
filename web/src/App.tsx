@@ -4,6 +4,8 @@ import { LogList } from './components/LogList';
 import { LogDetail } from './components/LogDetail';
 import { LogFilters } from './components/LogFilters';
 import { Header } from './components/Header';
+import { DatabaseBrowser } from './components/database/DatabaseBrowser';
+import { ActivityFeed } from './components/activity/ActivityFeed';
 import { ThemeProvider } from './hooks/useTheme';
 import './theme.css';
 import styles from './app.module.css';
@@ -12,7 +14,10 @@ const updateScriptUrl =
   import.meta.env.VITE_UPDATE_SCRIPT_URL ??
   'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool.ps1';
 
+type AppView = 'logs' | 'database' | 'activity';
+
 const AppContent: React.FC = () => {
+  const [currentView, setCurrentView] = useState<AppView>('activity');
   const [items, setItems] = useState<RequestLogItem[]>([]);
   const [meta, setMeta] = useState<Omit<LogListResponse,'items'>>();
   const [loading, setLoading] = useState(false);
@@ -188,7 +193,6 @@ const AppContent: React.FC = () => {
     <div className={styles.app}>
       <Header />
       <div className={styles.page}>
-        <h2 className={styles.title}>SCIMTool Logs</h2>
       {upgradeAvailable && latestTag && (
         <div className={styles.upgradeBanner}>
           <span className={styles.upgradeBannerNew}>NEW</span>
@@ -254,30 +258,63 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      <p className={styles.subtitle}>Inspect raw SCIM traffic captured by the troubleshooting endpoint.</p>
-      {error && <div className={styles.error}>{error}</div>}
-      <LogFilters
-        value={filters}
-        onChange={setFilters}
-        onReset={() => { setFilters({ page:1 }); }}
-        onFilterCommit={(next) => { load(false, next); }}
-        loading={loading}
-      />
-      <div className={styles.toolbar}>
-        <button onClick={() => load()} disabled={loading}>Refresh</button>
-        <label className={styles.autoLabel}>
-          <input type='checkbox' checked={auto} onChange={e => setAuto(e.target.checked)} /> Auto-refresh
-        </label>
-        <button onClick={handleClear} disabled={loading}>Clear Logs</button>
-        {meta && <span className={styles.meta}>Total {meta.total} • Page {meta.page} / {Math.ceil(meta.total / meta.pageSize)}</span>}
-        <div className={styles.pager}>
-          <button disabled={loading || !meta?.hasPrev} onClick={() => { if (meta?.hasPrev) { const next = { ...filters, page: (filters.page ?? 1) - 1 }; load(false, next); } }}>Prev</button>
-          <button disabled={loading || !meta?.hasNext} onClick={() => { if (meta?.hasNext) { const next = { ...filters, page: (filters.page ?? 1) + 1 }; load(false, next); } }}>Next</button>
-
-        </div>
+      {/* Navigation Tabs */}
+      <div className={styles.viewTabs}>
+        <button
+          className={`${styles.viewTab} ${currentView === 'activity' ? styles.active : ''}`}
+          onClick={() => setCurrentView('activity')}
+        >
+          � Activity Feed
+        </button>
+        <button
+          className={`${styles.viewTab} ${currentView === 'database' ? styles.active : ''}`}
+          onClick={() => setCurrentView('database')}
+        >
+          🗄️ Database Browser
+        </button>
+        <button
+          className={`${styles.viewTab} ${currentView === 'logs' ? styles.active : ''}`}
+          onClick={() => setCurrentView('logs')}
+        >
+          📋 Raw Logs
+        </button>
       </div>
-      <LogList items={items} loading={loading} onSelect={handleSelect} />
-      <LogDetail log={selected} onClose={() => setSelected(null)} />
+
+      {currentView === 'activity' && (
+        <ActivityFeed />
+      )}
+
+      {currentView === 'database' && (
+        <DatabaseBrowser />
+      )}
+
+      {currentView === 'logs' && (
+        <>
+          <p className={styles.subtitle}>Inspect raw SCIM traffic captured by the troubleshooting endpoint.</p>
+          {error && <div className={styles.error}>{error}</div>}
+          <LogFilters
+            value={filters}
+            onChange={setFilters}
+            onReset={() => { setFilters({ page:1 }); }}
+            onFilterCommit={(next) => { load(false, next); }}
+            loading={loading}
+          />
+          <div className={styles.toolbar}>
+            <button onClick={() => load()} disabled={loading}>Refresh</button>
+            <label className={styles.autoLabel}>
+              <input type='checkbox' checked={auto} onChange={e => setAuto(e.target.checked)} /> Auto-refresh
+            </label>
+            <button onClick={handleClear} disabled={loading}>Clear Logs</button>
+            {meta && <span className={styles.meta}>Total {meta.total} • Page {meta.page} / {Math.ceil(meta.total / meta.pageSize)}</span>}
+            <div className={styles.pager}>
+              <button disabled={loading || !meta?.hasPrev} onClick={() => { if (meta?.hasPrev) { const next = { ...filters, page: (filters.page ?? 1) - 1 }; load(false, next); } }}>Prev</button>
+              <button disabled={loading || !meta?.hasNext} onClick={() => { if (meta?.hasNext) { const next = { ...filters, page: (filters.page ?? 1) + 1 }; load(false, next); } }}>Next</button>
+            </div>
+          </div>
+          <LogList items={items} loading={loading} onSelect={handleSelect} />
+          <LogDetail log={selected} onClose={() => setSelected(null)} />
+        </>
+      )}
       </div>
       
       <footer className={styles.footer}>
