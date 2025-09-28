@@ -543,6 +543,8 @@
   border: 1px solid var(--border-light);
   border-radius: 8px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .groupsHeader {
@@ -555,6 +557,7 @@
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 .groupRow {
@@ -566,6 +569,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .groupRow:hover {
@@ -803,4 +807,12 @@
   .detailItem {
     gap: 4px;
   }
+}
+
+/* Tab Content */
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
 }
