@@ -177,6 +177,13 @@ const AppContent: React.FC = () => {
     return () => clearInterval(h);
   }, [auto, loading, selected, filters]);
 
+  // Refresh logs when switching to Raw Logs tab
+  useEffect(() => {
+    if (currentView === 'logs') {
+      load();
+    }
+  }, [currentView]);
+
   async function handleSelect(partial: RequestLogItem) {
     try {
       // If we already have bodies (e.g., future optimization), just set.

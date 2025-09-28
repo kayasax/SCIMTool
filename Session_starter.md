@@ -1,6 +1,8 @@
 | Date | Achievement |
 |------|-------------|
-| 2025-01-XX | 📚 **README.md Complete Rewrite** - Transformed from technical docs to beautiful user-focused marketing content with features highlights! |
+| 2025-09-28 | � **README Streamlined** - Focused on container deployment only, moved other options to DEPLOYMENT.md for cleaner user experience! |
+| 2025-09-28 | �🔄 **Auto Log Refresh** - Raw Logs tab now automatically refreshes when opened - no more empty screens! |
+| 2025-09-28 | 📚 **README.md Complete Rewrite** - Transformed from technical docs to beautiful user-focused marketing content with features highlights! |
 | 2025-09-28 | 📊 **v0.4.3 Activity Badges** - Browser tab notifications + visual badges for new activities - Perfect UX! |
 | 2025-09-28 | 🔧 **v0.4.2 Critical Fix** - SCIM PATCH 'Add' operations now supported - Microsoft Entra compatibility restored! |ate | Achievement |
 |------|-------------|

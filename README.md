@@ -1,4 +1,4 @@
-﻿# 🚀 SCIMTool - Professional SCIM 2.0 Provisioning Monitor
+# 🚀 SCIMTool - Professional SCIM 2.0 Provisioning Monitor
 
 > **The most beautiful and comprehensive SCIM server for Microsoft Entra ID provisioning with real-time monitoring**
 
@@ -13,12 +13,12 @@
 
 🎯 **One-Command Deploy** - Deploy to Azure in seconds, no configuration needed
 🌙 **Dual Theme UI** - Beautiful light/dark theme that adapts to your preference
-� **Smart Activity Parser** - Human-readable activity feed instead of raw JSON logs
+👀 **Smart Activity Parser** - Human-readable activity feed instead of raw JSON logs
 🔍 **Database Browser** - Explore users and groups with advanced search and filtering
 📺 **Live Notifications** - Browser tab badges and real-time activity monitoring
 💰 **Cost Efficient** - Azure Container Apps with auto-scaling, pay only for what you use
 🔄 **Auto Updates** - Built-in version detection with one-click upgrade commands
-🛡️ **Enterprise Ready** - Full SCIM 2.0 compliance with Microsoft Entra ID
+🛡️ **Enterprise Ready** - Full SCIM 2.0 compliance with Microsoft Entra ID  
 
 ---
 
@@ -77,31 +77,23 @@ Visit `https://[your-container-url]/` to see your beautiful monitoring dashboard
 - **Error Tracking**: Immediate visibility into failed operations
 - **Export Capabilities**: Download activity data for compliance and analysis
 
-## � Container Image Sharing Options
-
-**Option 1: Build from Source (Recommended)**
-```powershell
-git clone [this-repo]
-.\setup.ps1 -DeployContainer
-```
-
-**Option 2: Azure Container Registry** *(coming soon)*
-- Pre-built image ready for deployment
-- `az acr import` to your subscription
-
-**Option 3: Docker Hub** *(coming soon)*
-- Public container image
-- `docker pull scimtool:latest`
-
-## ⚠️ Important Notes
-
-- **Enterprise Apps must be created manually** in Azure Portal (not via API)
-- **Secret Token**: Automatically generated unique per deployment (or provide your own)
-- **Team Access**: Share your container URL - colleagues can monitor without setup
-
 ---
 
-**Perfect for Microsoft colleagues - 3 steps and you're monitoring SCIM provisioning! 🚀**
+## 🎯 **Perfect for Microsoft Teams**
+
+### **✅ Enterprise Integration**
+- **Microsoft Entra Native**: Built specifically for Microsoft identity ecosystems
+- **Azure-First Design**: Optimized for Azure Container Apps with automatic scaling
+- **Team Collaboration**: Share one instance across your entire team
+- **Zero Maintenance**: Auto-updates and security patches included
+
+### **🚀 Ready in Minutes**
+1. **Deploy**: One PowerShell command deploys everything
+2. **Configure**: Simple Azure Portal setup - no complex configuration files
+3. **Monitor**: Beautiful dashboard shows all provisioning activity in real-time
+4. **Share**: Team members can access the same dashboard instantly
+
+*Perfect for Microsoft colleagues - 3 steps and you're monitoring SCIM provisioning!* 🚀
 
 ## � **Cost-Effective Solution**
 
@@ -111,10 +103,11 @@ git clone [this-repo]
 - **Team Productivity**: Your entire team can use the same instance - no individual setups
 - **Enterprise Ready**: Scale from testing to production without changing anything
 
-### **Multiple Deployment Options**
-- **🌐 Hosted Service** (Recommended): Instant access, zero maintenance
-- **📦 Docker Container**: One command deployment for privacy requirements
-- **🔧 Local Development**: Full source code access for customization
+### **Azure Container Apps Benefits**
+- **🔒 Enterprise Security**: Automatic HTTPS and managed certificates
+- **� Smart Scaling**: Auto-scales from 0 to handle any load
+- **🌐 Global Reach**: Deploy to any Azure region worldwide
+- **🔧 Zero Maintenance**: Automatic updates and health monitoring
 
 ---
 
@@ -156,107 +149,38 @@ git clone [this-repo]
 
 ---
 
-## 🚀 **Deployment Made Simple**
+## � **Production Ready**
 
-### **✨ One-Command Deploy**
-Choose your preferred method - all are enterprise-ready:
+Your SCIMTool deployment automatically handles:
+- **Load Spikes**: Scales up during busy provisioning periods
+- **Cost Optimization**: Scales to zero when not in use
+- **Global Users**: Fast response times from Azure's global network
+- **Enterprise SLA**: 99.95% uptime guarantee
 
-```powershell
-# Option 1: Use our free hosted service (Fastest)
-# Just go to https://scimtool.azurewebsites.net - that's it!
-
-# Option 2: Deploy your own container (Most flexible)
-.\setup.ps1 -DeployContainer
-
-# Option 3: Local development (Most customizable)
-.\setup.ps1 -TestLocal
-```
-
-### **🎯 Which Option Should I Choose?**
-
-| Option | Best For | Effort | Cost |
-|--------|----------|---------|------|
-| **🌐 Hosted Service** | Quick testing, team sharing | 0 minutes | Free |
-| **📦 Container Deploy** | Production, custom domains | 5 minutes | ~$10/month |
-| **🔧 Local Development** | Customization, air-gapped | 10 minutes | Free |
+*Need other deployment options? See [DEPLOYMENT.md](./DEPLOYMENT.md) for hosted service, local development, and advanced scenarios.*
 
 ---
 
-## 🏗️ **Production Deployment** (Azure Container Apps)
+## 🏗️ **Advanced Configuration**
 
-For production use, deploy to Azure Container Apps for scalability and reliability:
-
-### Quick Deploy Script
+### **Custom Secret Token**
 ```powershell
-# Use the included deployment script
-.\scripts\deploy-azure.ps1 -ResourceGroup "scim-rg" -AppName "scimtool-prod" -ScimSecret "your-secure-secret"
+# Deploy with your own secret token
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1') -SecretToken "your-secure-token-here"
 ```
 
-### Manual Deploy (Alternative)
-```bash
-# Deploy to Azure Container Apps manually
-az containerapp up \
-  --name scimtool \
-  --resource-group your-rg \
-  --location eastus \
-  --environment-variables SCIM_SHARED_SECRET=your-production-secret PORT=80 \
-  --ingress external \
-  --target-port 80 \
-  --source ./api
+### **Custom Resource Names**
+```powershell
+# Deploy with custom resource group and app name
+.\scripts\deploy-azure.ps1 -ResourceGroup "my-scim-rg" -AppName "my-scimtool" -ScimSecret "my-secret"
 ```
 
-### Benefits
-- ✅ **Automatic HTTPS** with custom domain support
-- ✅ **Auto-scaling** based on demand
-- ✅ **High availability** with multiple replicas
-- ✅ **Integrated monitoring** and logging
-- ✅ **Secure secrets** management
-
-### Configuration
-1. **Custom Domain**: Point your domain to the Container App
-2. **SSL Certificate**: Automatic with Azure-managed certificates
-3. **Environment Variables**: Set via Azure Portal or CLI
-4. **Scaling**: Configure min/max replicas based on load
-
-### Azure Portal Setup
-1. **Tenant URL**: `https://your-domain.com/scim`
-2. **Secret Token**: Your production secret from Key Vault
-3. **Authentication**: Bearer token or OAuth 2.0
-
-### 🖥️ Configure Web UI for Production
-
-After deploying to Azure Container Apps, configure the web UI to connect to your deployed server:
-
-1. **Update Environment Configuration**:
-   ```powershell
-   # Edit web/.env
-   VITE_API_BASE=https://scimtool-prod.bravewater-b8848185.eastus.azurecontainerapps.io
-   VITE_SCIM_TOKEN=S@g@r2011
-   ```
-
-2. **Start Web UI**:
-   ```powershell
-   cd web
-   npm install
-   npm run dev
-   # Opens at http://localhost:5173
-   ```
-
-3. **View Production Logs**:
-   - Web UI now connects to your Azure Container Apps SCIM server
-   - Monitor real-time provisioning requests from Microsoft Entra
-   - Debug authentication and SCIM operations
-
-## 🔧 Local Development vs Production
-
-| Aspect | Local Development | Production (Container Apps) |
-|--------|-------------------|------------------------------|
-| **Hosting** | Dev tunnels | Azure Container Apps |
-| **HTTPS** | Tunnel-provided | Azure-managed SSL |
-| **Secrets** | `.env` file | Azure Key Vault |
-| **Scaling** | Single instance | Auto-scaling |
-| **Monitoring** | Console logs | Application Insights |
-| **Domain** | Random tunnel URL | Custom domain |
+### **Environment Variables**
+Configure additional settings through environment variables:
+- `SCIM_SHARED_SECRET`: Your authentication token
+- `DATABASE_URL`: SQLite database location (default: `file:/app/data/scim.db`)
+- `LOG_LEVEL`: Logging level (`info`, `debug`, `error`)
+- `CORS_ORIGINS`: Allowed origins for web UI access
 
 ---
 
@@ -300,100 +224,50 @@ Explore your provisioned users and groups with advanced search, filtering, and r
 
 ---
 
-## 🚀 **Ready to Get Started?**
+## 🚀 **Deploy Now**
 
-**🌐 Try the Hosted Version** (Instant gratification):
-1. Go to https://scimtool.azurewebsites.net
-2. Configure your Entra Enterprise App to use the SCIM endpoint
-3. Watch provisioning happen in real-time!
-
-**📦 Deploy Your Own** (5 minutes):
-```powershell
-.\setup.ps1 -DeployContainer
-```
-
-**🔧 Local Development** (10 minutes):
-```powershell
-.\setup.ps1 -TestLocal
-```
-
-That's it! Your SCIM monitoring solution is ready. Welcome to effortless provisioning visibility! 🎉
-## 🔄 Upgrading / New Releases
-You do not need to maintain a manual version manifest. Each time you publish a GitHub Release (tag) and push a container image with the same tag (e.g. `v0.2.0`), you can upgrade your running Azure Container App to that version.
-
-### Option A: Interactive Upgrade Helper (Recommended)
-Run the helper script which discovers available versions live from GitHub Releases and performs the update:
+Ready to deploy your own SCIMTool instance? It takes just 2-3 minutes:
 
 ```powershell
-./scripts/upgrade-help.ps1 -ResourceGroup scimtool-rg -AppName scimtool-prod -Image myacr.azurecr.io/scimtool
+# One command deployment to Azure
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 ```
 
-Parameters:
-* `-Prerelease` include pre-release tags
-* `-DryRun` show the command without executing
-* `-GitHubRepo owner/name` override repository (defaults to `kayasax/SCIMTool`)
+After deployment:
+1. **Note your container URL** from the deployment output
+2. **Configure your Enterprise App** with the SCIM endpoint: `https://[your-url]/scim`
+3. **Start provisioning** and watch it happen in real-time!
 
-What it does:
-1. Reads current running version from `/scim/admin/version` (if reachable)
-2. Fetches GitHub Releases (`https://api.github.com/repos/<repo>/releases`)
-3. Lets you choose a target tag
-4. Executes: `az containerapp update -n <AppName> -g <RG> --image <image>:<tag>`
+*Exploring other options? See [DEPLOYMENT.md](./DEPLOYMENT.md) for hosted service, local development, and advanced scenarios.*
 
-### Option B: Manual Command
-If you already know the tag:
-```powershell
-az containerapp update -n scimtool-prod -g scimtool-rg --image myacr.azurecr.io/scimtool:v0.2.0
-```
+---
 
-### Frontend Upgrade Banner
-The UI auto-fetches the latest GitHub release (no manifest needed). If the release tag is greater than the running version, a banner appears with a copyable `az containerapp update` command.
+**Welcome to effortless SCIM provisioning visibility!** 🎉
 
-### Release Tag Discipline
-1. Tag repo: `git tag v0.2.0 && git push origin v0.2.0`
-2. Build & push: `docker build -t myacr.azurecr.io/scimtool:v0.2.0 .` then push
-3. Run upgrade script (or manual update). Done.
+---
 
-### Rollback
-Use the same update command with an older tag, or select an older release in the helper script.
+## 🔄 **Automatic Updates**
 
-### Verifying Upgrade
-After a few minutes:
-```powershell
-curl -H "Authorization: Bearer <secret>" https://<fqdn>/scim/admin/version
-```
-Ensure `version` matches your target tag.
-\n+## 🔄 Upgrading / New Releases
-You do not need to maintain a manual version manifest. Each time you publish a GitHub Release (tag) and push a container image with the same tag (e.g. `v0.2.0`), you can upgrade your running Azure Container App to that version.
-\n+### Option A: Interactive Upgrade Helper (Recommended)
-Run the new helper script which discovers available versions live from GitHub Releases and performs the update:
-\n+```powershell
-./scripts/upgrade-help.ps1 -ResourceGroup scimtool-rg -AppName scimtool-prod -Image myacr.azurecr.io/scimtool
-```
-Parameters:
-* `-Prerelease` include pre-release tags
-* `-DryRun` show the command without executing
-* `-GitHubRepo owner/name` override repository (defaults to `kayasax/SCIMTool`)
-\n+What it does:
-1. Reads current running version from `/scim/admin/version` (if reachable)
-2. Fetches GitHub Releases (`https://api.github.com/repos/<repo>/releases`)
-3. Lets you choose a target tag
-4. Executes: `az containerapp update -n <AppName> -g <RG> --image <image>:<tag>`
-\n+### Option B: Manual Command
-If you already know the tag:
-```powershell
-az containerapp update -n scimtool-prod -g scimtool-rg --image myacr.azurecr.io/scimtool:v0.2.0
-```
-\n+### Frontend Upgrade Banner (Optional)
-The UI currently supports an optional remote manifest (`VITE_REMOTE_MANIFEST_URL`) to show an in-app “Update available” banner. If you prefer zero-maintenance, simply skip that variable; the system works fine without it. A future enhancement may query GitHub Releases directly to eliminate the manifest entirely.
-\n+### Release Tag Discipline
-1. Tag repo: `git tag v0.2.0 && git push origin v0.2.0`
-2. Build & push: `docker build -t myacr.azurecr.io/scimtool:v0.2.0 .` then `az acr login` & `docker push ...`
-3. Run upgrade script (or manual update). Done.
-\n+### Rollback
-Use the same update command with an older tag, or select an older release in the helper script.
-\n+### Verifying Upgrade
-After a few minutes:
-```powershell
-curl -H "Authorization: Bearer <secret>" https://<fqdn>/scim/admin/version
-```
-Ensure `version` matches your target tag.
+### **✨ Smart Update Notifications**
+SCIMTool automatically checks for new versions and shows you when updates are available right in the dashboard with a beautiful notification banner.
+
+### **🚀 One-Click Updates**
+When a new version is available:
+1. **Click "Copy Update Command"** in the notification banner
+2. **Paste and run** in PowerShell - that's it!
+3. **Your deployment updates** automatically with zero downtime
+
+### **🛡️ Always Current**
+- **Security Updates**: Automatic security patches and improvements
+- **New Features**: Get the latest enhancements without any hassle
+- **Bug Fixes**: Issues resolved quickly with seamless updates
+- **Backward Compatible**: Updates never break your existing configuration
+
+### **📊 Release History**
+Visit our [GitHub Releases](https://github.com/kayasax/SCIMTool/releases) page to see what's new in each version, including:
+- 🎨 **UI Improvements**: Better user experience and design
+- 🔧 **Performance Enhancements**: Faster and more efficient monitoring
+- 🛡️ **Security Updates**: Latest security improvements
+- ✨ **New Features**: Enhanced SCIM compatibility and monitoring capabilities
+
+*Stay updated effortlessly - SCIMTool takes care of the technical details!* ⚡
