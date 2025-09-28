@@ -74,17 +74,19 @@ export class ActivityController {
     ]);
 
     // Parse each log into an activity summary
-    let activities: ActivitySummary[] = logs.map(log => 
-      this.activityParser.parseActivity({
-        id: log.id,
-        method: log.method,
-        url: log.url,
-        status: log.status || undefined,
-        requestBody: log.requestBody || undefined,
-        responseBody: log.responseBody || undefined,
-        createdAt: log.createdAt.toISOString(),
-        identifier: log.identifier || undefined,
-      })
+    let activities: ActivitySummary[] = await Promise.all(
+      logs.map(async log => 
+        await this.activityParser.parseActivity({
+          id: log.id,
+          method: log.method,
+          url: log.url,
+          status: log.status || undefined,
+          requestBody: log.requestBody || undefined,
+          responseBody: log.responseBody || undefined,
+          createdAt: log.createdAt.toISOString(),
+          identifier: log.identifier || undefined,
+        })
+      )
     );
 
     // Apply client-side filters

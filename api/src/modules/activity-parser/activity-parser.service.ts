@@ -1,4 +1,5 @@
 ﻿import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface ActivitySummary {
   id: string;
@@ -14,11 +15,12 @@ export interface ActivitySummary {
 
 @Injectable()
 export class ActivityParserService {
+  constructor(private prisma: PrismaService) {}
   
   /**
    * Parse a SCIM request log into a human-readable activity summary
    */
-  parseActivity(log: {
+  async parseActivity(log: {
     id: string;
     method: string;
     url: string;
@@ -27,7 +29,7 @@ export class ActivityParserService {
     responseBody?: string;
     createdAt: string;
     identifier?: string;
-  }): ActivitySummary {
+  }): Promise<ActivitySummary> {
     const timestamp = log.createdAt;
     const method = log.method.toUpperCase();
     const url = log.url;
@@ -65,7 +67,7 @@ export class ActivityParserService {
 
     // Handle different operation types
     if (isUsersOperation) {
-      return this.parseUserActivity({
+      return await this.parseUserActivity({
         id: log.id,
         timestamp,
         method,
@@ -78,7 +80,7 @@ export class ActivityParserService {
         isGetOperation,
       });
     } else if (isGroupsOperation) {
-      return this.parseGroupActivity({
+      return await this.parseGroupActivity({
         id: log.id,
         timestamp,
         method,
@@ -101,7 +103,7 @@ export class ActivityParserService {
     }
   }
 
-  private parseUserActivity(params: {
+  private async parseUserActivity(params: {
     id: string;
     timestamp: string;
     method: string;
@@ -112,8 +114,11 @@ export class ActivityParserService {
     userIdentifier?: string;
     isListOperation: boolean;
     isGetOperation: boolean;
-  }): ActivitySummary {
+  }): Promise<ActivitySummary> {
     const { id, timestamp, method, status, requestData, responseData, userIdentifier, isListOperation, isGetOperation } = params;
+
+    // For now, just mark as async without changing logic - can enhance later with user name resolution
+    await Promise.resolve();
 
     // Handle errors first
     if (status >= 400) {
@@ -246,7 +251,7 @@ export class ActivityParserService {
     };
   }
 
-  private parseGroupActivity(params: {
+  private async parseGroupActivity(params: {
     id: string;
     timestamp: string;
     method: string;
@@ -257,7 +262,7 @@ export class ActivityParserService {
     groupIdentifier?: string;
     isListOperation: boolean;
     isGetOperation: boolean;
-  }): ActivitySummary {
+  }): Promise<ActivitySummary> {
     const { id, timestamp, method, status, requestData, responseData, groupIdentifier, isListOperation, isGetOperation } = params;
 
     // Handle errors first
@@ -311,25 +316,45 @@ export class ActivityParserService {
           const removeOps = memberOps.filter((op: any) => op.op === 'remove');
 
           if (addOps.length > 0 && removeOps.length === 0) {
-            const memberNames = addOps.map((op: any) => op.value?.display || op.value?.value || 'Unknown user').join(', ');
+            // Resolve user names for add operations
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const memberIds = addOps.map((op: any) => op.value?.value || op.value?.display || 'Unknown user');
+            const memberNames = await Promise.all(
+              memberIds.map(async (id: string) => {
+                if (id === 'Unknown user') return id;
+                return await this.resolveUserName(id);
+              })
+            );
+            const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
+            
             return {
               id,
               timestamp,
               icon: '➕',
-              message: `${groupIdentifier || 'Group'} gained new member${addOps.length > 1 ? 's' : ''}`,
-              details: memberNames,
+              message: `${memberNames.join(', ')} ${memberNames.length > 1 ? 'were' : 'was'} added to ${resolvedGroupName}`,
+              details: `${addOps.length} member${addOps.length > 1 ? 's' : ''} added`,
               type: 'group',
               severity: 'success',
               groupIdentifier,
             };
           } else if (removeOps.length > 0 && addOps.length === 0) {
-            const memberNames = removeOps.map((op: any) => op.value?.display || op.value?.value || 'Unknown user').join(', ');
+            // Resolve user names for remove operations
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const memberIds = removeOps.map((op: any) => op.value?.value || op.value?.display || 'Unknown user');
+            const memberNames = await Promise.all(
+              memberIds.map(async (id: string) => {
+                if (id === 'Unknown user') return id;
+                return await this.resolveUserName(id);
+              })
+            );
+            const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
+            
             return {
               id,
               timestamp,
               icon: '➖',
-              message: `${groupIdentifier || 'Group'} lost member${removeOps.length > 1 ? 's' : ''}`,
-              details: memberNames,
+              message: `${memberNames.join(', ')} ${memberNames.length > 1 ? 'were' : 'was'} removed from ${resolvedGroupName}`,
+              details: `${removeOps.length} member${removeOps.length > 1 ? 's' : ''} removed`,
               type: 'group',
               severity: 'info',
               groupIdentifier,
@@ -524,5 +549,56 @@ export class ActivityParserService {
     }
 
     return details.length > 0 ? details.join(' • ') : undefined;
+  }
+
+  /**
+   * Resolve user ID to display name
+   */
+  private async resolveUserName(userId: string): Promise<string> {
+    try {
+      const user = await this.prisma.scimUser.findUnique({
+        where: { scimId: userId },
+        select: { userName: true, rawPayload: true },
+      });
+      
+      if (user) {
+        // Try to get display name from raw payload first
+        try {
+          if (user.rawPayload && typeof user.rawPayload === 'string') {
+            const payload = JSON.parse(user.rawPayload);
+            if (payload.displayName) return payload.displayName;
+            if (payload.name?.formatted) return payload.name.formatted;
+            if (payload.name?.givenName && payload.name?.familyName) {
+              return `${payload.name.givenName} ${payload.name.familyName}`;
+            }
+          }
+        } catch (e) {
+          // Fall back to userName if payload parsing fails
+        }
+        return user.userName;
+      }
+    } catch (e) {
+      // If lookup fails, return the original ID
+    }
+    return userId;
+  }
+
+  /**
+   * Resolve group ID to display name
+   */
+  private async resolveGroupName(groupId: string): Promise<string> {
+    try {
+      const group = await this.prisma.scimGroup.findUnique({
+        where: { scimId: groupId },
+        select: { displayName: true },
+      });
+      
+      if (group?.displayName) {
+        return group.displayName;
+      }
+    } catch (e) {
+      // If lookup fails, return the original ID
+    }
+    return groupId;
   }
 }
