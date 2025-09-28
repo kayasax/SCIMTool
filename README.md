@@ -1,318 +1,161 @@
-# 🎯 SCIMTool# 🎯 SCIMTool
+# 🎯 SCIMTool
+### *The Beautiful SCIM 2.0 Monitor for Microsoft Entra ID*
 
-### *The Beautiful SCIM 2.0 Monitor for Microsoft Entra ID*### *The Beautiful SCIM 2.0 Monitor for Microsoft Entra ID*
+[![Latest Release](https://img.shields.io/github/v/release/kayasax/SCIMTool?style=flat-square&color=2ea043)](https://github.com/kayasax/SCIMTool/releases) [![Docker Image](https://img.shields.io/badge/Azure_Container_Registry-Ready-0078d4?style=flat-square)](https://scimtoolpublic.azurecr.io/scimtool:latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
 
+**Never wonder "what's happening with provisioning?" again.**
 
+Turn cryptic SCIM logs into beautiful, human-readable activity feeds. Deploy to Azure in 60 seconds. Monitor everything in real-time.
 
-[![Latest Release](https://img.shields.io/github/v/release/kayasax/SCIMTool?style=flat-square&color=2ea043)](https://github.com/kayasax/SCIMTool/releases) [![Docker Image](https://img.shields.io/badge/Azure_Container_Registry-Ready-0078d4?style=flat-square)](https://scimtoolpublic.azurecr.io/scimtool:latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)[![Latest Release](https://img.shields.io/github/v/release/kayasax/SCIMTool?style=flat-square&color=2ea043)](https://github.com/kayasax/SCIMTool/releases) [![Docker Image](https://img.shields.io/badge/Azure_Container_Registry-Ready-0078d4?style=flat-square)](https://scimtoolpublic.azurecr.io/scimtool:latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
+![SCIMTool Demo](https://img.shields.io/badge/�_Demo-Coming_Soon-gray?style=flat-square)
 
+---
 
+## 🚀 **Deploy in 60 Seconds**
 
-**Never wonder "what's happening with provisioning?" again.****Never wonder "what's happening with provisioning?" again.**
+```powershell
+# One command. That's it.
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+```
 
+**What you get:**
+- ✨ Beautiful monitoring dashboard
+- 🔍 Real-time activity feed with human language
+- � Database browser for users & groups  
+- 🌙 Auto light/dark theme
+- 💰 Azure Container Apps (pay-per-use)
+- 🔄 Auto-updates built-in
 
+---
 
-Turn cryptic SCIM logs into beautiful, human-readable activity feeds. Deploy to Azure in 60 seconds. Monitor everything in real-time.Turn cryptic SCIM logs into beautiful, human-readable activity feeds. Deploy to Azure in 60 seconds. Monitor everything in real-time.
+## 🎯 **Before & After**
 
+### **� Before SCIMTool**
+- *"Why did provisioning fail?"* → Dig through raw JSON logs
+- *"Did the user get created?"* → Check Azure portal manually  
+- *"What changed?"* → No visibility into operations
+- *Team asks for status* → No easy way to share
 
+### **😎 After SCIMTool**  
+- **"Sarah Johnson was added to Marketing Team"** ← Clear, instant visibility
+- **Live dashboard** everyone can access ← Real-time monitoring  
+- **Search & filter everything** ← Find issues fast
+- **Beautiful interface** ← Actually enjoyable to use
 
-![SCIMTool Demo](https://img.shields.io/badge/🎥_Demo-Coming_Soon-gray?style=flat-square)![SCIMTool Demo](https://img.shields.io/badge/�_Demo-Coming_Soon-gray?style=flat-square)
+---
 
+## ⚡ **Setup Guide**
 
+### **1️⃣ Deploy (60 seconds)**
+```powershell
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+```
 
-------
+### **2️⃣ Configure Entra ID (2 minutes)**
+1. **Enterprise Applications** → **New** → **Create your own**
+2. **Provisioning** → **Automatic**
+3. **Tenant URL**: `https://[your-url]/scim`  
+4. **Secret**: `changeme`
 
+### **3️⃣ Start Monitoring**
+Visit your dashboard and watch provisioning happen in real-time! 🎉
 
+---
 
-## 🚀 **Deploy in 60 Seconds**## 🚀 **Deploy in 60 Seconds**
+## ✨ **What Makes It Special**
 
+### **🧠 Smart Activity Parser**
+```
+❌ Raw SCIM:  {"operation":"add","path":"members","value":[{"value":"a1c9c6e4b8f5"}]}
+✅ SCIMTool:  "John Doe was added to Marketing Team"
+```
 
+### **🎨 Beautiful Interface**
+- **Auto light/dark theme** that follows your system
+- **Real-time updates** with smooth animations  
+- **Browser tab notifications** - see `(3) SCIMTool` when activity happens
+- **Search & filter everything** instantly
 
-```powershell```powershell
+### **🗄️ Database Browser**
+- Browse **all users & groups** with advanced search
+- See **group memberships** and relationships
+- **Real-time stats** and activity counts
+- Export data for compliance
 
-# One command. That's it.# One command. That's it.
+### **🚀 Enterprise Ready**  
+- **Full SCIM 2.0** compliance
+- **Auto-scaling** Azure Container Apps
+- **Zero maintenance** - auto-updates included
+- **Team sharing** - one URL, everyone can access
 
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+---
 
-``````
+## 💰 **Pricing**
 
+**Azure Container Apps**: Pay only when provisioning happens
+- **Idle**: $0/month (scales to zero)
+- **Light usage**: ~$5-15/month  
+- **Enterprise**: Auto-scales to handle any load
 
+*Much cheaper than building your own monitoring solution!*
 
-**What you get:****What you get:**
+---
 
-- ✨ Beautiful monitoring dashboard- ✨ Beautiful monitoring dashboard
+## 🛠️ **Advanced Options**
 
-- 🔍 Real-time activity feed with human language- 🔍 Real-time activity feed with human language
+### **Custom Deployment**
+```powershell
+# Custom secret token
+.\scripts\deploy-azure.ps1 -ScimSecret "your-secure-token"
 
-- 👥 Database browser for users & groups  - � Database browser for users & groups  
+# Custom resource names  
+.\scripts\deploy-azure.ps1 -ResourceGroup "my-scim-rg" -AppName "my-scimtool"
+```
 
-- 🌙 Auto light/dark theme- 🌙 Auto light/dark theme
+### **Other Deployment Methods**
+- **Docker**: `docker run scimtoolpublic.azurecr.io/scimtool:latest`
+- **Local Development**: See [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **Kubernetes**: Helm chart available
 
-- 💰 Azure Container Apps (pay-per-use)- 💰 Azure Container Apps (pay-per-use)
+---
 
-- 🔄 Auto-updates built-in- 🔄 Auto-updates built-in
+## 🏃 **Quick Troubleshooting**
 
+| Issue | Solution |
+|-------|----------|
+| Connection test fails | Check your container URL and secret token |
+| No provisioning tab | Create app manually in Portal (not via API) |
+| Theme issues | Update to latest version (v0.4.4+) |
 
+---
 
-------
+## 🤝 **Contributing**
 
+- ⭐ **Star the repo** to show support
+- 🐛 **Report issues** on GitHub
+- 🔀 **Submit PRs** for improvements  
+- 💡 **Request features** via Issues
 
+---
 
-## 🎯 **Before & After**## 🎯 **Before & After**
+## 🚀 **Ready to Deploy?**
 
+```powershell
+# Deploy your own SCIMTool in 60 seconds
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+```
 
+**Then configure Entra ID:**
+1. **Enterprise Apps** → **New** → **Create your own**
+2. **Provisioning** → **Automatic**  
+3. **Tenant URL**: `https://[your-url]/scim`
+4. **Secret**: `changeme`
 
-### **😤 Before SCIMTool**### **� Before SCIMTool**
+**Start monitoring SCIM provisioning like a pro!** 🎉
 
-- *"Why did provisioning fail?"* → Dig through raw JSON logs- *"Why did provisioning fail?"* → Dig through raw JSON logs
+---
 
-- *"Did the user get created?"* → Check Azure portal manually  - *"Did the user get created?"* → Check Azure portal manually  
-
-- *"What changed?"* → No visibility into operations- *"What changed?"* → No visibility into operations
-
-- *Team asks for status* → No easy way to share- *Team asks for status* → No easy way to share
-
-
-
-### **😎 After SCIMTool**  ### **😎 After SCIMTool**  
-
-- **"Sarah Johnson was added to Marketing Team"** ← Clear, instant visibility- **"Sarah Johnson was added to Marketing Team"** ← Clear, instant visibility
-
-- **Live dashboard** everyone can access ← Real-time monitoring  - **Live dashboard** everyone can access ← Real-time monitoring  
-
-- **Search & filter everything** ← Find issues fast- **Search & filter everything** ← Find issues fast
-
-- **Beautiful interface** ← Actually enjoyable to use- **Beautiful interface** ← Actually enjoyable to use
-
-
-
-------
-
-
-
-## ⚡ **Setup Guide**## ⚡ **Setup Guide**
-
-
-
-### **1️⃣ Deploy (60 seconds)**### **1️⃣ Deploy (60 seconds)**
-
-```powershell```powershell
-
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
-
-``````
-
-
-
-### **2️⃣ Configure Entra ID (2 minutes)**### **2️⃣ Configure Entra ID (2 minutes)**
-
-1. **Enterprise Applications** → **New** → **Create your own**1. **Enterprise Applications** → **New** → **Create your own**
-
-2. **Provisioning** → **Automatic**2. **Provisioning** → **Automatic**
-
-3. **Tenant URL**: `https://[your-url]/scim`  3. **Tenant URL**: `https://[your-url]/scim`  
-
-4. **Secret**: `changeme`4. **Secret**: `changeme`
-
-
-
-### **3️⃣ Start Monitoring**### **3️⃣ Start Monitoring**
-
-Visit your dashboard and watch provisioning happen in real-time! 🎉Visit your dashboard and watch provisioning happen in real-time! 🎉
-
-
-
-------
-
-
-
-## ✨ **What Makes It Special**## ✨ **What Makes It Special**
-
-
-
-### **🧠 Smart Activity Parser**### **🧠 Smart Activity Parser**
-
-``````
-
-❌ Raw SCIM:  {"operation":"add","path":"members","value":[{"value":"a1c9c6e4b8f5"}]}❌ Raw SCIM:  {"operation":"add","path":"members","value":[{"value":"a1c9c6e4b8f5"}]}
-
-✅ SCIMTool:  "John Doe was added to Marketing Team"✅ SCIMTool:  "John Doe was added to Marketing Team"
-
-``````
-
-
-
-### **🎨 Beautiful Interface**### **🎨 Beautiful Interface**
-
-- **Auto light/dark theme** that follows your system- **Auto light/dark theme** that follows your system
-
-- **Real-time updates** with smooth animations  - **Real-time updates** with smooth animations  
-
-- **Browser tab notifications** - see `(3) SCIMTool` when activity happens- **Browser tab notifications** - see `(3) SCIMTool` when activity happens
-
-- **Search & filter everything** instantly- **Search & filter everything** instantly
-
-
-
-### **🗄️ Database Browser**### **🗄️ Database Browser**
-
-- Browse **all users & groups** with advanced search- Browse **all users & groups** with advanced search
-
-- See **group memberships** and relationships- See **group memberships** and relationships
-
-- **Real-time stats** and activity counts- **Real-time stats** and activity counts
-
-- Export data for compliance- Export data for compliance
-
-
-
-### **🚀 Enterprise Ready**  ### **🚀 Enterprise Ready**  
-
-- **Full SCIM 2.0** compliance- **Full SCIM 2.0** compliance
-
-- **Auto-scaling** Azure Container Apps- **Auto-scaling** Azure Container Apps
-
-- **Zero maintenance** - auto-updates included- **Zero maintenance** - auto-updates included
-
-- **Team sharing** - one URL, everyone can access- **Team sharing** - one URL, everyone can access
-
-
-
-------
-
-
-
-## 💰 **Pricing**## 💰 **Pricing**
-
-
-
-**Azure Container Apps**: Pay only when provisioning happens**Azure Container Apps**: Pay only when provisioning happens
-
-- **Idle**: $0/month (scales to zero)- **Idle**: $0/month (scales to zero)
-
-- **Light usage**: ~$5-15/month  - **Light usage**: ~$5-15/month  
-
-- **Enterprise**: Auto-scales to handle any load- **Enterprise**: Auto-scales to handle any load
-
-
-
-*Much cheaper than building your own monitoring solution!**Much cheaper than building your own monitoring solution!*
-
-
-
-------
-
-
-
-## 🛠️ **Advanced Options**## 🛠️ **Advanced Options**
-
-
-
-### **Custom Deployment**### **Custom Deployment**
-
-```powershell```powershell
-
-# Custom secret token# Custom secret token
-
-.\scripts\deploy-azure.ps1 -ScimSecret "your-secure-token".\scripts\deploy-azure.ps1 -ScimSecret "your-secure-token"
-
-
-
-# Custom resource names  # Custom resource names  
-
-.\scripts\deploy-azure.ps1 -ResourceGroup "my-scim-rg" -AppName "my-scimtool".\scripts\deploy-azure.ps1 -ResourceGroup "my-scim-rg" -AppName "my-scimtool"
-
-``````
-
-
-
-### **Other Deployment Methods**### **Other Deployment Methods**
-
-- **Docker**: `docker run scimtoolpublic.azurecr.io/scimtool:latest`- **Docker**: `docker run scimtoolpublic.azurecr.io/scimtool:latest`
-
-- **Local Development**: See [DEPLOYMENT.md](./DEPLOYMENT.md)- **Local Development**: See [DEPLOYMENT.md](./DEPLOYMENT.md)
-
-- **Kubernetes**: Helm chart available- **Kubernetes**: Helm chart available
-
-
-
-------
-
-
-
-## 🏃 **Quick Troubleshooting**## 🏃 **Quick Troubleshooting**
-
-
-
-| Issue | Solution || Issue | Solution |
-
-|-------|----------||-------|----------|
-
-| Connection test fails | Check your container URL and secret token || Connection test fails | Check your container URL and secret token |
-
-| No provisioning tab | Create app manually in Portal (not via API) || No provisioning tab | Create app manually in Portal (not via API) |
-
-| Theme issues | Update to latest version (v0.4.4+) || Theme issues | Update to latest version (v0.4.4+) |
-
-
-
-------
-
-
-
-## 🤝 **Contributing**## 🤝 **Contributing**
-
-
-
-- ⭐ **Star the repo** to show support- ⭐ **Star the repo** to show support
-
-- 🐛 **Report issues** on GitHub- 🐛 **Report issues** on GitHub
-
-- 🔀 **Submit PRs** for improvements  - 🔀 **Submit PRs** for improvements  
-
-- 💡 **Request features** via Issues- 💡 **Request features** via Issues
-
-
-
-------
-
-
-
-## 🚀 **Ready to Deploy?**## 🚀 **Ready to Deploy?**
-
-
-
-```powershell```powershell
-
-# Deploy your own SCIMTool in 60 seconds# Deploy your own SCIMTool in 60 seconds
-
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
-
-``````
-
-
-
-**Then configure Entra ID:****Then configure Entra ID:**
-
-1. **Enterprise Apps** → **New** → **Create your own**1. **Enterprise Apps** → **New** → **Create your own**
-
-2. **Provisioning** → **Automatic**  2. **Provisioning** → **Automatic**  
-
-3. **Tenant URL**: `https://[your-url]/scim`3. **Tenant URL**: `https://[your-url]/scim`
-
-4. **Secret**: `changeme`4. **Secret**: `changeme`
-
-
-
-**Start monitoring SCIM provisioning like a pro!** 🎉**Start monitoring SCIM provisioning like a pro!** 🎉
-
-
-
-------
-
-
-
-*MIT License • Made with ❤️ for the Microsoft community**MIT License • Made with ❤️ for the Microsoft community*
+*MIT License • Made with ❤️ for the Microsoft community*
 
 ### **✅ Enterprise Integration**
 - **Microsoft Entra Native**: Built specifically for Microsoft identity ecosystems

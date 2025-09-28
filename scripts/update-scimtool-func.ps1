@@ -49,14 +49,22 @@ function Update-SCIMTool {
     Write-Host "  $updateCommand" -ForegroundColor Yellow
     Write-Host ""
 
+    # ⚠️ DATA WARNING
+    Write-Host "⚠️  WARNING: EXISTING DATA WILL BE DELETED" -ForegroundColor Red -BackgroundColor Yellow
+    Write-Host "   This update will replace the container with a new version." -ForegroundColor Red
+    Write-Host "   All existing activity logs, users, and groups will be lost." -ForegroundColor Red
+    Write-Host "   Make sure to backup any important data before proceeding." -ForegroundColor Red
+    Write-Host ""
+
     if ($DryRun) {
         Write-Host "🔍 Dry run mode - command would execute but no changes made" -ForegroundColor Yellow
         return
     }
 
     if (-not $NoPrompt) {
+        Write-Host "Please confirm you understand the data loss warning above." -ForegroundColor Yellow
         do {
-            $response = Read-Host "Proceed with container app update? [y/N]"
+            $response = Read-Host "Proceed with container app update and data deletion? [y/N]"
             if ([string]::IsNullOrWhiteSpace($response) -or $response -in @('n','N','no','No')) {
                 Write-Host "❌ Update cancelled by user" -ForegroundColor Yellow
                 return

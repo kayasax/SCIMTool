@@ -41,8 +41,68 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     const baseTitle = 'SCIMTool - SCIM 2.0 Provisioning Monitor';
     if (count > 0) {
       document.title = `(${count}) ${baseTitle}`;
+      updateFavicon(count);
     } else {
       document.title = baseTitle;
+      updateFavicon(0);
+    }
+  };
+
+  const updateFavicon = (count: number) => {
+    // Create a canvas to draw the favicon with notification badge
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 32;
+    canvas.height = 32;
+
+    if (!ctx) return;
+
+    // Draw base favicon (blue circle with "S")
+    ctx.fillStyle = '#0078d4';
+    ctx.beginPath();
+    ctx.arc(16, 16, 15, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Add "S" text
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('S', 16, 16);
+
+    // Add notification badge if count > 0
+    if (count > 0) {
+      // Red notification circle
+      ctx.fillStyle = '#ff4444';
+      ctx.beginPath();
+      ctx.arc(24, 8, 7, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // White border
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Notification count text
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const displayCount = count > 9 ? '9+' : count.toString();
+      ctx.fillText(displayCount, 24, 8);
+    }
+
+    // Update favicon
+    const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    if (favicon) {
+      favicon.href = canvas.toDataURL('image/png');
+    } else {
+      // Create favicon link if it doesn't exist
+      const newFavicon = document.createElement('link');
+      newFavicon.rel = 'icon';
+      newFavicon.type = 'image/png';
+      newFavicon.href = canvas.toDataURL('image/png');
+      document.head.appendChild(newFavicon);
     }
   };
 
@@ -80,6 +140,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       // Check for new activities when doing silent refresh
       if (silent && data.activities?.length > 0) {
         const latestActivity = data.activities[0];
+        
         if (lastActivityId && latestActivity.id !== lastActivityId) {
           // Count new activities since last known activity
           const lastActivityIndex = data.activities.findIndex((activity: ActivitySummary) => activity.id === lastActivityId);
