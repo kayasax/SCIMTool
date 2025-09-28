@@ -1,5 +1,9 @@
 | Date | Achievement |
 |------|-------------|
+| 2025-09-28 | 🎨 **Enhanced Activity Parser** - Shows "John Doe was added to Marketing Team" instead of technical IDs - Beautiful UX! |
+| 2025-09-28 | 📦 **README Streamlined** - Focused on container deployment only, moved other options to DEPLOYMENT.md for cleaner user experience! |
+| 2025-09-28 | 🔄 **Auto Log Refresh** - Raw Logs tab now automatically refreshes when opened - no more empty screens! |te | Achievement |
+|------|-------------|
 | 2025-09-28 | � **README Streamlined** - Focused on container deployment only, moved other options to DEPLOYMENT.md for cleaner user experience! |
 | 2025-09-28 | �🔄 **Auto Log Refresh** - Raw Logs tab now automatically refreshes when opened - no more empty screens! |
 | 2025-09-28 | 📚 **README.md Complete Rewrite** - Transformed from technical docs to beautiful user-focused marketing content with features highlights! |
@@ -82,7 +86,11 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 ## 🎯 Current State
 **Build Status:** 🔄 In development (backend + log viewer UI functional)
 **Key Achievements (recent):**
-- Request/response logging with detailed modal and search across large text columns
+- ✅ Enhanced activity parser with human-readable names (John Doe was added to Marketing Team)
+- ✅ Auto log refresh functionality for Raw Logs tab
+- ✅ API endpoint testing confirmed: `/scim/admin/database/groups` returns 2 groups correctly
+- ✅ **RESOLVED:** Groups display issue - both groups now showing correctly! 
+- 🔄 **CURRENT:** Fixed alignment issue in Groups tab for better readability
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**
