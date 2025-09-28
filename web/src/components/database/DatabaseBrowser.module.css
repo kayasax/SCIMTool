@@ -578,20 +578,23 @@
 
 .groupInfo {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  justify-content: center;
+  align-items: center;
 }
 
 .groupName {
   font-weight: 600;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .groupMeta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-family: monospace;
+  font-weight: normal;
+  opacity: 0.7;
 }
 
 .groupMembers {

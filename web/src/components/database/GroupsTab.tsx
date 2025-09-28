@@ -66,8 +66,10 @@ export const GroupsTab: React.FC<GroupsTabProps> = ({
                 onClick={() => onGroupClick(group)}
               >
                 <div className={styles.groupInfo}>
-                  <div className={styles.groupName}>{group.displayName}</div>
-                  <div className={styles.groupMeta}>ID: {group.id}</div>
+                  <div className={styles.groupName}>
+                    {group.displayName}
+                    <span className={styles.groupMeta}> • {group.id.slice(-8)}</span>
+                  </div>
                 </div>
                 <div className={styles.groupMembers}>
                   <span className={styles.memberCount}>
