@@ -49,7 +49,7 @@
 .tab {
   flex: 1;
   padding: 12px 16px;
-  border: none;
+  border: 2px solid #555;
   background: transparent;
   color: var(--text-secondary);
   font-size: 14px;
@@ -66,11 +66,13 @@
 .tab:hover {
   background: var(--background-hover);
   color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .tab.active {
   background: var(--accent-primary);
   color: white;
+  border-color: var(--accent-primary);
   box-shadow: var(--shadow-small);
 }
 
@@ -433,7 +435,7 @@
   gap: 16px;
   padding: 12px 16px;
   background: var(--background-secondary);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 2px solid #555;
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
@@ -444,7 +446,7 @@
   grid-template-columns: 2fr 1.5fr 1.5fr 1fr 1fr 1fr;
   gap: 16px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid #444;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -549,7 +551,7 @@
   gap: 16px;
   padding: 12px 16px;
   background: var(--background-secondary);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 2px solid #555;
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
@@ -560,7 +562,7 @@
   grid-template-columns: 3fr 1fr 1fr;
   gap: 16px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid #444;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -646,5 +648,152 @@
   .table th,
   .table td {
     padding: 8px 12px;
+  }
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--background-primary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--accent-color);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--background-secondary);
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: var(--background-tertiary);
+  color: var(--text-primary);
+}
+
+.modalContent {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+}
+
+.detailsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detailItem strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.detailItem span {
+  color: var(--text-secondary);
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.groupsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.groupBadge {
+  background: var(--accent-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.jsonData {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Modal responsive */
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 10px;
+  }
+  
+  .modal {
+    max-height: 90vh;
+  }
+  
+  .modalHeader {
+    padding: 16px 20px;
+  }
+  
+  .modalContent {
+    padding: 20px;
+  }
+  
+  .detailItem {
+    gap: 4px;
   }
 }

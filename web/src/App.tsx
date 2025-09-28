@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { fetchLogs, clearLogs, fetchLog, RequestLogItem, LogQuery, LogListResponse, fetchLocalVersion, VersionInfo } from './api/client';
 import { LogList } from './components/LogList';
 import { LogDetail } from './components/LogDetail';
@@ -264,19 +264,19 @@ const AppContent: React.FC = () => {
           className={`${styles.viewTab} ${currentView === 'activity' ? styles.active : ''}`}
           onClick={() => setCurrentView('activity')}
         >
-          � Activity Feed
-        </button>
-        <button
-          className={`${styles.viewTab} ${currentView === 'database' ? styles.active : ''}`}
-          onClick={() => setCurrentView('database')}
-        >
-          🗄️ Database Browser
+          📈 Activity Feed
         </button>
         <button
           className={`${styles.viewTab} ${currentView === 'logs' ? styles.active : ''}`}
           onClick={() => setCurrentView('logs')}
         >
           📋 Raw Logs
+        </button>
+        <button
+          className={`${styles.viewTab} ${currentView === 'database' ? styles.active : ''}`}
+          onClick={() => setCurrentView('database')}
+        >
+          🗄️ Database Browser
         </button>
       </div>
 
@@ -344,3 +344,4 @@ const AppWithTheme: React.FC = () => {
 };
 
 export const App = AppWithTheme;
+

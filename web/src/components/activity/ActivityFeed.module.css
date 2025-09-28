@@ -1,16 +1,16 @@
 ﻿/* Activity Feed Container */
 .activityFeed {
-  background: var(--background-secondary);
+  background: var(--current-surface-secondary);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: var(--shadow-medium);
+  box-shadow: var(--current-shadow-8);
   min-height: 600px;
 }
 
 /* Header Section */
 .header {
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--current-border);
   padding-bottom: 16px;
 }
 
@@ -19,7 +19,7 @@
 }
 
 .titleSection h2 {
-  color: var(--text-primary);
+  color: var(--current-foreground);
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
@@ -34,7 +34,7 @@
 }
 
 .titleSection p {
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
   margin: 0;
   font-size: 14px;
 }
@@ -47,8 +47,8 @@
 }
 
 .summaryCard {
-  background: var(--background-primary);
-  border: 1px solid var(--border-light);
+  background: var(--current-surface);
+  border: 1px solid var(--current-border);
   border-radius: 8px;
   padding: 16px;
   text-align: center;
@@ -56,20 +56,20 @@
 }
 
 .summaryCard:hover {
-  border-color: var(--accent-primary);
-  box-shadow: var(--shadow-small);
+  border-color: var(--color-primary);
+  box-shadow: var(--current-shadow-4);
 }
 
 .summaryValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--accent-primary);
+  color: var(--color-primary);
   margin-bottom: 4px;
 }
 
 .summaryLabel {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
   font-weight: 500;
 }
 
@@ -90,22 +90,26 @@
 .searchInput {
   width: 100%;
   padding: 10px 16px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--current-border);
   border-radius: 6px;
-  background: var(--background-primary);
-  color: var(--text-primary);
+  background: var(--current-surface);
+  color: var(--current-foreground);
   font-size: 14px;
   transition: border-color 0.2s ease;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.searchInput:hover {
+  border-color: var(--current-border-strong);
 }
 
 .searchInput::placeholder {
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
 }
 
 .filterGroup {
@@ -115,26 +119,88 @@
 
 .filterSelect {
   padding: 10px 16px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--current-border);
   border-radius: 6px;
-  background: var(--background-primary);
-  color: var(--text-primary);
+  background: var(--current-surface);
+  color: var(--current-foreground);
   font-size: 14px;
   cursor: pointer;
   transition: border-color 0.2s ease;
   min-width: 140px;
+  /* Force color scheme for better browser support */
+  color-scheme: dark light;
+}
+
+/* Light theme options */
+:root .filterSelect option {
+  background: #ffffff !important;
+  color: #201f1e !important;
+  padding: 8px 12px;
+}
+
+/* Dark theme options */
+:root[data-theme="dark"] .filterSelect option {
+  background: #252423 !important;
+  color: #ffffff !important;
+  padding: 8px 12px;
+}
+
+/* Additional browser-specific fixes */
+.filterSelect::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filterSelect::-webkit-scrollbar-track {
+  background: var(--current-surface-secondary);
+}
+
+.filterSelect::-webkit-scrollbar-thumb {
+  background: var(--current-border);
+  border-radius: 4px;
+}
+
+.filterSelect:hover {
+  border-color: var(--current-border-strong);
 }
 
 .filterSelect:focus {
   outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+/* Auto-refresh Controls */
+.autoRefreshGroup {
+  display: flex;
+  align-items: center;
+}
+
+.autoRefreshLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--current-foreground-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.autoRefreshCheckbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.autoRefreshLabel:hover {
+  color: var(--current-foreground);
 }
 
 /* Activities List */
 .activitiesList {
-  background: var(--background-primary);
-  border: 1px solid var(--border-light);
+  background: var(--current-surface);
+  border: 1px solid var(--current-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -144,13 +210,13 @@
   align-items: flex-start;
   gap: 16px;
   padding: 16px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--current-border);
   transition: background-color 0.2s ease;
   position: relative;
 }
 
 .activityItem:hover {
-  background: var(--background-hover);
+  background: var(--current-surface-secondary);
 }
 
 .activityItem:last-child {
@@ -164,7 +230,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--border-light);
+  background: var(--current-border);
   transition: background-color 0.2s ease;
 }
 
@@ -207,9 +273,9 @@
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  background: var(--background-secondary);
+  background: var(--current-surface-secondary);
   border-radius: 50%;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--current-border);
 }
 
 /* Activity Content */
@@ -221,14 +287,14 @@
 .activityMessage {
   font-size: 16px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--current-foreground);
   margin-bottom: 4px;
   line-height: 1.4;
 }
 
 .activityDetails {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
   line-height: 1.4;
 }
 
@@ -244,14 +310,14 @@
 
 .activityTime {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
   font-weight: 500;
 }
 
 .activityType {
   font-size: 11px;
-  color: var(--text-secondary);
-  background: var(--background-secondary);
+  color: var(--current-foreground-secondary);
+  background: var(--current-surface-secondary);
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -265,7 +331,7 @@
   justify-content: center;
   align-items: center;
   padding: 60px 20px;
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
   font-size: 16px;
 }
 
@@ -285,7 +351,7 @@
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
 }
 
 .emptyIcon {
@@ -294,7 +360,7 @@
 }
 
 .emptyState h3 {
-  color: var(--text-primary);
+  color: var(--current-foreground);
   margin: 0 0 8px 0;
   font-size: 18px;
 }
@@ -310,12 +376,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--current-border);
   margin-top: 20px;
 }
 
 .paginationInfo {
-  color: var(--text-secondary);
+  color: var(--current-foreground-secondary);
   font-size: 14px;
 }
 
@@ -327,9 +393,9 @@
 
 .paginationButton {
   padding: 8px 12px;
-  border: 1px solid var(--border-light);
-  background: var(--background-primary);
-  color: var(--text-primary);
+  border: 1px solid var(--current-border);
+  background: var(--current-surface);
+  color: var(--current-foreground);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;

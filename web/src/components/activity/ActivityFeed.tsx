@@ -32,6 +32,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     search: '',
   });
   const [summary, setSummary] = useState<any>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -81,7 +82,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   useEffect(() => {
     fetchActivities();
     fetchSummary();
-  }, [pagination.page, filters.type, filters.severity, filters.search]);
+
+    // Auto-refresh every 10 seconds when enabled
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        fetchActivities();
+        fetchSummary();
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh]);
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
@@ -197,6 +208,18 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
             <option value="warning">⚠️ Warning</option>
             <option value="error">❌ Error</option>
           </select>
+        </div>
+        
+        <div className={styles.autoRefreshGroup}>
+          <label className={styles.autoRefreshLabel}>
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className={styles.autoRefreshCheckbox}
+            />
+            🔄 Auto-refresh (10s)
+          </label>
         </div>
       </div>
 

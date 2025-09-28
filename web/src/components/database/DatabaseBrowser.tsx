@@ -51,6 +51,12 @@ export const DatabaseBrowser: React.FC = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [statisticsLoading, setStatisticsLoading] = useState(false);
+  
+  // Modal state
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
   // Users state
   const [usersPagination, setUsersPagination] = useState({
@@ -154,13 +160,23 @@ export const DatabaseBrowser: React.FC = () => {
   }, [activeTab, usersPagination.page, usersSearchTerm, usersActiveFilter, groupsPagination.page, groupsSearchTerm]);
 
   const handleUserClick = (user: User) => {
-    // TODO: Show user details modal
-    console.log('User clicked:', user);
+    setSelectedUser(user);
+    setShowUserModal(true);
   };
 
   const handleGroupClick = (group: Group) => {
-    // TODO: Show group details modal
-    console.log('Group clicked:', group);
+    setSelectedGroup(group);
+    setShowGroupModal(true);
+  };
+
+  const closeUserModal = () => {
+    setShowUserModal(false);
+    setSelectedUser(null);
+  };
+
+  const closeGroupModal = () => {
+    setShowGroupModal(false);
+    setSelectedGroup(null);
   };
 
   const handleUsersSearch = (term: string) => {
@@ -243,6 +259,148 @@ export const DatabaseBrowser: React.FC = () => {
           />
         )}
       </div>
+
+      {/* User Details Modal */}
+      {showUserModal && selectedUser && (
+        <div className={styles.modalOverlay} onClick={closeUserModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>User Details</h3>
+              <button className={styles.closeButton} onClick={closeUserModal}>×</button>
+            </div>
+            <div className={styles.modalContent}>
+              <div className={styles.detailsGrid}>
+                <div className={styles.detailItem}>
+                  <strong>Username:</strong>
+                  <span>{selectedUser.userName}</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>SCIM ID:</strong>
+                  <span>{selectedUser.scimId}</span>
+                </div>
+                {selectedUser.externalId && (
+                  <div className={styles.detailItem}>
+                    <strong>External ID:</strong>
+                    <span>{selectedUser.externalId}</span>
+                  </div>
+                )}
+                <div className={styles.detailItem}>
+                  <strong>Status:</strong>
+                  <span className={selectedUser.active ? styles.active : styles.inactive}>
+                    {selectedUser.active ? '✅ Active' : '❌ Inactive'}
+                  </span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>Created:</strong>
+                  <span>{new Date(selectedUser.createdAt).toLocaleString()}</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>Updated:</strong>
+                  <span>{new Date(selectedUser.updatedAt).toLocaleString()}</span>
+                </div>
+                
+                {/* Display SCIM attributes */}
+                {(selectedUser as any).displayName && (
+                  <div className={styles.detailItem}>
+                    <strong>Display Name:</strong>
+                    <span>{(selectedUser as any).displayName}</span>
+                  </div>
+                )}
+                {(selectedUser as any).name && (
+                  <>
+                    {(selectedUser as any).name.givenName && (
+                      <div className={styles.detailItem}>
+                        <strong>First Name:</strong>
+                        <span>{(selectedUser as any).name.givenName}</span>
+                      </div>
+                    )}
+                    {(selectedUser as any).name.familyName && (
+                      <div className={styles.detailItem}>
+                        <strong>Last Name:</strong>
+                        <span>{(selectedUser as any).name.familyName}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+                {(selectedUser as any).emails && (selectedUser as any).emails.length > 0 && (
+                  <div className={styles.detailItem}>
+                    <strong>Email:</strong>
+                    <span>{(selectedUser as any).emails[0].value}</span>
+                  </div>
+                )}
+                
+                {/* Groups */}
+                <div className={styles.detailItem}>
+                  <strong>Groups:</strong>
+                  <div className={styles.groupsList}>
+                    {selectedUser.groups.length > 0 ? (
+                      selectedUser.groups.map((group) => (
+                        <span key={group.id} className={styles.groupBadge}>
+                          {group.displayName}
+                        </span>
+                      ))
+                    ) : (
+                      <span className={styles.noGroups}>No groups assigned</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Raw JSON for debugging */}
+                <div className={styles.detailItem}>
+                  <strong>Raw Data:</strong>
+                  <pre className={styles.jsonData}>
+                    {JSON.stringify(selectedUser, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Details Modal */}
+      {showGroupModal && selectedGroup && (
+        <div className={styles.modalOverlay} onClick={closeGroupModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Group Details</h3>
+              <button className={styles.closeButton} onClick={closeGroupModal}>×</button>
+            </div>
+            <div className={styles.modalContent}>
+              <div className={styles.detailsGrid}>
+                <div className={styles.detailItem}>
+                  <strong>Display Name:</strong>
+                  <span>{selectedGroup.displayName}</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>ID:</strong>
+                  <span>{selectedGroup.id}</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>Member Count:</strong>
+                  <span>{selectedGroup.memberCount} members</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>Created:</strong>
+                  <span>{new Date(selectedGroup.createdAt).toLocaleString()}</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <strong>Updated:</strong>
+                  <span>{new Date(selectedGroup.updatedAt).toLocaleString()}</span>
+                </div>
+                
+                {/* Raw JSON for debugging */}
+                <div className={styles.detailItem}>
+                  <strong>Raw Data:</strong>
+                  <pre className={styles.jsonData}>
+                    {JSON.stringify(selectedGroup, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

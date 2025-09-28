@@ -111,7 +111,7 @@
 .viewTab {
   flex: 1;
   padding: var(--spacing-md) var(--spacing-lg);
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.15);
   background: transparent;
   color: var(--current-foreground-secondary);
   font-size: var(--font-size-300);
@@ -128,11 +128,13 @@
 .viewTab:hover {
   background: var(--current-surface-secondary);
   color: var(--current-foreground);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .viewTab.active {
   background: var(--color-primary);
   color: white;
+  border-color: var(--color-primary);
   box-shadow: var(--shadow-small);
 }
 

@@ -21,24 +21,36 @@ export class ActivityController {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause for filtering logs
-    const where: any = {
-      // Only include SCIM operations, exclude admin endpoints
-      url: {
-        not: {
-          contains: '/admin/',
+    // Build where clause for filtering logs  
+    const baseConditions = {
+      AND: [
+        {
+          OR: [
+            { url: { contains: '/scim/Users' } },
+            { url: { contains: '/scim/Groups' } },
+          ],
         },
-      },
+        {
+          NOT: {
+            url: { contains: '/admin/' }
+          }
+        }
+      ],
     };
 
-    if (search) {
-      where.OR = [
-        { url: { contains: search, mode: 'insensitive' } },
-        { identifier: { contains: search, mode: 'insensitive' } },
-        { requestBody: { contains: search, mode: 'insensitive' } },
-        { responseBody: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+    const where = search ? {
+      AND: [
+        ...baseConditions.AND,
+        {
+          OR: [
+            { url: { contains: search } },
+            { identifier: { contains: search } },
+            { requestBody: { contains: search } },
+            { responseBody: { contains: search } },
+          ],
+        },
+      ],
+    } : baseConditions;
 
     // Fetch logs from database
     const [logs, total] = await Promise.all([
