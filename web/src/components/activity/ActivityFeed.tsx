@@ -34,6 +34,22 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   const [summary, setSummary] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [newActivityCount, setNewActivityCount] = useState(0);
+  const [lastActivityId, setLastActivityId] = useState<string>('');
+
+  const updateTabTitle = (count: number) => {
+    const baseTitle = 'SCIMTool - SCIM 2.0 Provisioning Monitor';
+    if (count > 0) {
+      document.title = `(${count}) ${baseTitle}`;
+    } else {
+      document.title = baseTitle;
+    }
+  };
+
+  const clearNewActivityBadge = () => {
+    setNewActivityCount(0);
+    updateTabTitle(0);
+  };
 
   const fetchActivities = async (silent = false) => {
     if (!silent) {
@@ -60,6 +76,33 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       if (!response.ok) throw new Error('Failed to fetch activities');
       
       const data = await response.json();
+      
+      // Check for new activities when doing silent refresh
+      if (silent && data.activities?.length > 0) {
+        const latestActivity = data.activities[0];
+        if (lastActivityId && latestActivity.id !== lastActivityId) {
+          // Count new activities since last known activity
+          const lastActivityIndex = data.activities.findIndex((activity: ActivitySummary) => activity.id === lastActivityId);
+          const newCount = lastActivityIndex === -1 ? data.activities.length : lastActivityIndex;
+          
+          if (newCount > 0) {
+            const updatedCount = newActivityCount + newCount;
+            setNewActivityCount(updatedCount);
+            updateTabTitle(updatedCount);
+          }
+        }
+        
+        // Update last known activity ID
+        if (latestActivity) {
+          setLastActivityId(latestActivity.id);
+        }
+      } else if (!silent && data.activities?.length > 0) {
+        // Initial load or manual refresh - just set the latest activity ID
+        setLastActivityId(data.activities[0].id);
+        setNewActivityCount(0);
+        updateTabTitle(0);
+      }
+      
       setActivities(data.activities);
       setPagination(data.pagination);
     } catch (error) {
@@ -103,6 +146,29 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       return () => clearInterval(interval);
     }
   }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh]);
+
+  // Clear badge when user focuses on the tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && newActivityCount > 0) {
+        clearNewActivityBadge();
+      }
+    };
+
+    const handleFocus = () => {
+      if (newActivityCount > 0) {
+        clearNewActivityBadge();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [newActivityCount]);
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
@@ -156,7 +222,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     <div className={styles.activityFeed}>
       <div className={styles.header}>
         <div className={styles.titleSection}>
-          <h2>Activity Feed</h2>
+          <h2>
+            Activity Feed
+            {newActivityCount > 0 && (
+              <span className={styles.newActivityBadge} onClick={clearNewActivityBadge}>
+                {newActivityCount}
+              </span>
+            )}
+          </h2>
           <p>Human-readable view of SCIM provisioning activities</p>
         </div>
         
