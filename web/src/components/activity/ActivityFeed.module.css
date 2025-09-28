@@ -197,6 +197,26 @@
   color: var(--current-foreground);
 }
 
+.refreshIcon {
+  margin-right: 4px;
+  transition: transform 0.2s ease;
+}
+
+.refreshIcon.refreshing {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
 /* Activities List */
 .activitiesList {
   background: var(--current-surface);

@@ -33,9 +33,15 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   });
   const [summary, setSummary] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchActivities = async () => {
-    setLoading(true);
+  const fetchActivities = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+    
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
@@ -59,7 +65,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   };
 
@@ -86,7 +96,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     // Auto-refresh every 10 seconds when enabled
     if (autoRefresh) {
       const interval = setInterval(() => {
-        fetchActivities();
+        fetchActivities(true); // Silent refresh - no loading state
         fetchSummary();
       }, 10000);
 
@@ -218,7 +228,10 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
               onChange={(e) => setAutoRefresh(e.target.checked)}
               className={styles.autoRefreshCheckbox}
             />
-            🔄 Auto-refresh (10s)
+            <span className={`${styles.refreshIcon} ${isRefreshing ? styles.refreshing : ''}`}>
+              🔄
+            </span>
+            Auto-refresh (10s)
           </label>
         </div>
       </div>
