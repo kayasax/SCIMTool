@@ -1,6 +1,7 @@
 | Date | Achievement |
 |------|-------------|
-| 2025-09-28 | 🚀 **v0.4.1 Ready** - Complete UI polish: dropdown theme fixes, emoji icons, perfect theme consistency |
+| 2025-09-28 | � **v0.4.2 Critical Fix** - SCIM PATCH 'Add' operations now supported - Microsoft Entra compatibility restored! |
+| 2025-09-28 | �🚀 **v0.4.1 Ready** - Complete UI polish: dropdown theme fixes, emoji icons, perfect theme consistency |
 | 2025-09-28 | 🎨 **Dark Theme Fixed** - Dropdown options now visible in dark theme with proper contrast |
 | 2025-09-28 | 🌙 **Theme Toggle Enhanced** - Replaced tiny SVG with clear emoji icons (☀️🌙) |
 | 2025-01-17 | 🎨 **Theme-Aware Filters** - Fixed Activity Feed filters to work properly with both light and dark themes |
