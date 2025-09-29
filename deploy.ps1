@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     SCIMTool - One-Click Deployment for Microsoft Colleagues
 
