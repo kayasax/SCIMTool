@@ -9,11 +9,11 @@
     No git clone needed - everything downloads automatically!
 
 .EXAMPLE
-    iwr https://raw.githubusercontent.com/kayasax/SCIMTool/main/deploy.ps1 | iex
+    iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1 | iex
 #>
 
 param(
-    [string]$Branch = "main"
+    [string]$Branch = "master"
 )
 
 Write-Host "🚀 SCIMTool - One-Click Deployment" -ForegroundColor Green
@@ -79,7 +79,9 @@ try {
     Write-Host "This may take 3-5 minutes..." -ForegroundColor Gray
     Write-Host ""
 
-    $result = az containerapp up --name "scimtool-prod" --resource-group "scimtool-rg" --location "eastus" --env-vars "SCIM_SHARED_SECRET=$ScimSecret" "NODE_ENV=production" "PORT=80" "DATABASE_URL=file:./data.db" --ingress external --target-port 80 --source "./api" 2>&1
+    # Use the deploy-azure.ps1 script from the SCIMTool project
+    $deployResult = .\scripts\deploy-azure.ps1 -ResourceGroup "scimtool-rg" -AppName "scimtool-prod" -ScimSecret $ScimSecret -Location "eastus"
+    $result = $deployResult
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Deployment successful!" -ForegroundColor Green
