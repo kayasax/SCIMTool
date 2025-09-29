@@ -330,52 +330,113 @@ export class ActivityParserService {
           const addOps = memberOps.filter((op: ScimPatchOperation) => op.op === 'add');
           const removeOps = memberOps.filter((op: ScimPatchOperation) => op.op === 'remove');
 
-          if (addOps.length > 0 && removeOps.length === 0) {
-            // Extract user IDs and resolve names from database
+          // Extract and resolve member IDs for add operations
+          const addedMemberIds: string[] = [];
+          for (const op of addOps) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const memberIds = addOps.map((op: any) => op.value?.value || 'Unknown user');
-            const memberNames = await Promise.all(
-              memberIds.map(async (id: string) => {
-                if (id === 'Unknown user') return id;
-                return await this.resolveUserName(id);
-              })
-            );
-            const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
+            const opValue = (op as any).value;
+            if (Array.isArray(opValue)) {
+              // Multiple members in array: [{value: "id1"}, {value: "id2"}]
+              for (const v of opValue) {
+                if (v?.value) {
+                  addedMemberIds.push(v.value);
+                } else if (typeof v === 'string') {
+                  addedMemberIds.push(v);
+                }
+              }
+            } else if (opValue?.value) {
+              // Single member: {value: "id"}
+              addedMemberIds.push(opValue.value);
+            } else if (typeof opValue === 'string') {
+              // Direct string value
+              addedMemberIds.push(opValue);
+            }
+          }
 
+          // Extract and resolve member IDs for remove operations
+          const removedMemberIds: string[] = [];
+          for (const op of removeOps) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const opValue = (op as any).value;
+            if (Array.isArray(opValue)) {
+              for (const v of opValue) {
+                if (v?.value) {
+                  removedMemberIds.push(v.value);
+                } else if (typeof v === 'string') {
+                  removedMemberIds.push(v);
+                }
+              }
+            } else if (opValue?.value) {
+              removedMemberIds.push(opValue.value);
+            } else if (typeof opValue === 'string') {
+              // Direct string value or path-based removal
+              removedMemberIds.push(opValue);
+            }
+          }
+
+          // Resolve all names
+          const addedMemberNames = await Promise.all(
+            addedMemberIds.map(async (id: string) => {
+              if (id === 'Unknown') return id;
+              return await this.resolveUserName(id);
+            })
+          );
+
+          const removedMemberNames = await Promise.all(
+            removedMemberIds.map(async (id: string) => {
+              if (id === 'Unknown') return id;
+              return await this.resolveUserName(id);
+            })
+          );
+
+          const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
+
+          // Build detailed message based on operations
+          if (addedMemberIds.length > 0 && removedMemberIds.length === 0) {
+            // Only additions
             return {
               id,
               timestamp,
               icon: '➕',
-              message: `${memberNames.join(', ')} ${memberNames.length > 1 ? 'were' : 'was'} added to ${resolvedGroupName}`,
-              details: `${addOps.length} member${addOps.length > 1 ? 's' : ''} added`,
+              message: `${addedMemberNames.join(', ')} ${addedMemberNames.length > 1 ? 'were' : 'was'} added to ${resolvedGroupName}`,
+              details: `${addedMemberIds.length} member${addedMemberIds.length > 1 ? 's' : ''} added`,
               type: 'group',
               severity: 'success',
               groupIdentifier,
             };
-          } else if (removeOps.length > 0 && addOps.length === 0) {
-            // Extract user IDs and resolve names from database
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const memberIds = removeOps.map((op: any) => op.value?.value || 'Unknown user');
-            const memberNames = await Promise.all(
-              memberIds.map(async (id: string) => {
-                if (id === 'Unknown user') return id;
-                return await this.resolveUserName(id);
-              })
-            );
-            const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
-
+          } else if (removedMemberIds.length > 0 && addedMemberIds.length === 0) {
+            // Only removals
             return {
               id,
               timestamp,
               icon: '➖',
-              message: `${memberNames.join(', ')} ${memberNames.length > 1 ? 'were' : 'was'} removed from ${resolvedGroupName}`,
-              details: `${removeOps.length} member${removeOps.length > 1 ? 's' : ''} removed`,
+              message: `${removedMemberNames.join(', ')} ${removedMemberNames.length > 1 ? 'were' : 'was'} removed from ${resolvedGroupName}`,
+              details: `${removedMemberIds.length} member${removedMemberIds.length > 1 ? 's' : ''} removed`,
+              type: 'group',
+              severity: 'info',
+              groupIdentifier,
+            };
+          } else if (addedMemberIds.length > 0 && removedMemberIds.length > 0) {
+            // Both additions and removals
+            const changes: string[] = [];
+            if (addedMemberNames.length > 0) {
+              changes.push(`Added: ${addedMemberNames.join(', ')}`);
+            }
+            if (removedMemberNames.length > 0) {
+              changes.push(`Removed: ${removedMemberNames.join(', ')}`);
+            }
+            return {
+              id,
+              timestamp,
+              icon: '👥',
+              message: `${resolvedGroupName} membership updated`,
+              details: changes.join(' | '),
               type: 'group',
               severity: 'info',
               groupIdentifier,
             };
           } else {
-            const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
+            // Couldn't extract member info, show generic message
             return {
               id,
               timestamp,
@@ -395,7 +456,7 @@ export class ActivityParserService {
             message: `Group modified${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
             details: `${operations.length} change${operations.length !== 1 ? 's' : ''}`,
             type: 'group',
-            severity: 'info',
+              severity: 'info',
             groupIdentifier,
           };
         }
@@ -640,49 +701,83 @@ export class ActivityParserService {
     
     for (const op of operations) {
       try {
-        switch (op.path) {
-          case 'manager':
-            if (op.op === 'replace' && op.value?.value) {
-              const managerName = await this.resolveUserName(op.value.value);
-              changes.push(`Manager changed to ${managerName}`);
-            } else if (op.op === 'remove') {
-              changes.push('Manager removed');
+        let path = op.path?.toLowerCase() || '';
+        
+        // Extract field name from URN format
+        // e.g., "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager" → "manager"
+        if (path.includes(':')) {
+          const parts = path.split(':');
+          path = parts[parts.length - 1];
+        }
+        
+        // Handle manager changes
+        if (path === 'manager' || path.includes('manager')) {
+          if ((op.op === 'replace' || op.op === 'add') && op.value) {
+            // Handle both nested format {value: "id"} and direct string
+            const managerId = typeof op.value === 'object' ? op.value.value : op.value;
+            if (managerId) {
+              const managerName = await this.resolveUserName(managerId);
+              changes.push(`Manager → ${managerName}`);
             }
-            break;
-            
-          case 'displayName':
-            if (op.op === 'replace') {
-              changes.push(`Display name changed to "${op.value}"`);
+          } else if (op.op === 'remove') {
+            changes.push('Manager removed');
+          }
+          continue;
+        }
+        
+        // Handle displayName changes
+        if (path === 'displayname' || path.includes('displayname')) {
+          if (op.op === 'replace' || op.op === 'add') {
+            changes.push(`Display name → "${op.value}"`);
+          }
+          continue;
+        }
+        
+        // Handle title changes
+        if (path === 'title') {
+          if (op.op === 'replace' || op.op === 'add') {
+            changes.push(`Title → "${op.value}"`);
+          }
+          continue;
+        }
+        
+        // Handle department changes
+        if (path === 'department') {
+          if (op.op === 'replace' || op.op === 'add') {
+            changes.push(`Department → "${op.value}"`);
+          }
+          continue;
+        }
+        
+        // Handle email changes
+        if (path === 'emails' || path.includes('email')) {
+          if (op.op === 'replace' || op.op === 'add') {
+            const email = Array.isArray(op.value) ? op.value[0]?.value : op.value?.value || op.value;
+            if (email) {
+              changes.push(`Email → ${email}`);
             }
-            break;
-            
-          case 'title':
-            if (op.op === 'replace') {
-              changes.push(`Title changed to "${op.value}"`);
-            }
-            break;
-            
-          case 'department':
-            if (op.op === 'replace') {
-              changes.push(`Department changed to "${op.value}"`);
-            }
-            break;
-            
-          case 'emails':
-            if (op.op === 'replace') {
-              const email = Array.isArray(op.value) ? op.value[0]?.value : op.value?.value;
-              if (email) {
-                changes.push(`Email changed to ${email}`);
-              }
-            }
-            break;
-            
-          default:
-            // Handle generic path changes
-            if (op.path && op.op === 'replace') {
-              changes.push(`${op.path} changed`);
-            }
-            break;
+          }
+          continue;
+        }
+        
+        // Handle active/enabled status changes
+        if (path === 'active' || path.includes('active')) {
+          if (op.op === 'replace' || op.op === 'add') {
+            changes.push(`Status → ${op.value ? 'Active' : 'Inactive'}`);
+          }
+          continue;
+        }
+        
+        // Handle other common attributes
+        if (path && (op.op === 'replace' || op.op === 'add') && op.value !== undefined) {
+          // Make path more readable
+          const readablePath = path.charAt(0).toUpperCase() + path.slice(1).replace(/([A-Z])/g, ' $1');
+          const valueStr = typeof op.value === 'object' ? JSON.stringify(op.value) : String(op.value);
+          if (valueStr && valueStr.length < 50) {
+            changes.push(`${readablePath} → ${valueStr}`);
+          } else {
+            changes.push(`${readablePath} changed`);
+          }
         }
       } catch (e) {
         // Ignore parsing errors for individual operations
