@@ -1,5 +1,4 @@
-﻿#requires -Version 7.0
-<#!
+﻿<#!
 .SYNOPSIS
   Re-pulls the latest image tag (e.g. :latest) for the running Container App.
 .DESCRIPTION

@@ -1,6 +1,4 @@
-﻿#Requires -Version 7.0
-
-<#
+﻿<#
 .SYNOPSIS
     Deploy SCIMTool to Azure Container Apps
 

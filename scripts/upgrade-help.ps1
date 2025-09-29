@@ -1,5 +1,4 @@
-﻿#requires -Version 7.0
-<#!
+﻿<#!
 .SYNOPSIS
   Provides an assisted upgrade workflow for an existing SCIMTool Azure Container App deployment.
 .DESCRIPTION
@@ -63,7 +62,8 @@ $currentUrl = "https://$fqdn/scim/admin/version"
 
 $currentVersion = $null
 try {
-  $currentVersion = Invoke-RestMethod -Uri $currentUrl -Headers @{ Authorization = 'Bearer ' + ($env:SCIM_SHARED_SECRET ?? 'changeme') } -TimeoutSec 15
+  $scimSecret = if ($env:SCIM_SHARED_SECRET) { $env:SCIM_SHARED_SECRET } else { 'changeme' }
+  $currentVersion = Invoke-RestMethod -Uri $currentUrl -Headers @{ Authorization = 'Bearer ' + $scimSecret } -TimeoutSec 15
   Write-Host "Current Running Version: $($currentVersion.version)" -ForegroundColor Yellow
 } catch {
   Write-Host "⚠️  Could not query local version endpoint ($currentUrl). Proceeding anyway." -ForegroundColor Yellow
