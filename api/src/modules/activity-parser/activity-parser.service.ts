@@ -88,7 +88,7 @@ export class ActivityParserService {
         status,
         requestData,
         responseData,
-        groupIdentifier,
+        groupIdentifier: groupIdentifier || this.extractGroupIdFromUrl(url),
         isListOperation,
         isGetOperation,
       });
@@ -538,6 +538,14 @@ export class ActivityParserService {
     return data.displayName ||
            data.id ||
            undefined;
+  }
+
+  /**
+   * Extract group ID from URL path for group operations
+   */
+  private extractGroupIdFromUrl(url: string): string | undefined {
+    const match = url.match(/\/Groups\/([^/?]+)/);
+    return match ? match[1] : undefined;
   }
 
   private extractUserDetails(data: any): string | undefined {
