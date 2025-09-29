@@ -70,18 +70,21 @@ Write-Host "   Location: $Location" -ForegroundColor Gray
 Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor Gray
 Write-Host ""
 
-# Deploy using correct az containerapp up syntax (validated with MS docs)
+# Deploy using pre-built image to avoid Docker naming issues
 Write-Host "Running deployment command..." -ForegroundColor Gray
 Write-Host "This may take several minutes..." -ForegroundColor Yellow
+
+# Use pre-built image from public registry
+$ImageName = "scimtoolpublic.azurecr.io/scimtool:0.4.6"
 
 az containerapp up `
     --name $AppName `
     --resource-group $ResourceGroup `
     --location $Location `
+    --image $ImageName `
     --env-vars "SCIM_SHARED_SECRET=$ScimSecret" "NODE_ENV=production" "PORT=80" `
     --ingress external `
-    --target-port 80 `
-    --source "./api"
+    --target-port 80
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
