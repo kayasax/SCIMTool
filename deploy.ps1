@@ -52,6 +52,28 @@ if ([string]::IsNullOrWhiteSpace($UserSecret)) {
 }
 Write-Host ""
 
+# Azure deployment configuration
+Write-Host "🏗️ Azure Deployment Configuration" -ForegroundColor Yellow
+Write-Host "Configure your Azure resources (press Enter for defaults):" -ForegroundColor Gray
+
+$ResourceGroup = Read-Host -Prompt "Resource Group name (default: scimtool-rg)"
+if ([string]::IsNullOrWhiteSpace($ResourceGroup)) {
+    $ResourceGroup = "scimtool-rg"
+}
+
+$AppName = Read-Host -Prompt "Container App name (default: scimtool-prod)"
+if ([string]::IsNullOrWhiteSpace($AppName)) {
+    $AppName = "scimtool-prod"
+}
+
+$Location = Read-Host -Prompt "Azure region (default: eastus)"
+if ([string]::IsNullOrWhiteSpace($Location)) {
+    $Location = "eastus"
+}
+
+Write-Host "✅ Will deploy to: $ResourceGroup / $AppName in $Location" -ForegroundColor Green
+Write-Host ""
+
 # Create temp directory
 $TempDir = Join-Path $env:TEMP "SCIMTool-$(Get-Random)"
 New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
@@ -80,7 +102,7 @@ try {
     Write-Host ""
 
     # Use the deploy-azure.ps1 script from the SCIMTool project
-    $deployResult = .\scripts\deploy-azure.ps1 -ResourceGroup "scimtool-rg" -AppName "scimtool-prod" -ScimSecret $ScimSecret -Location "eastus"
+    $deployResult = .\scripts\deploy-azure.ps1 -ResourceGroup $ResourceGroup -AppName $AppName -ScimSecret $ScimSecret -Location $Location
     $result = $deployResult
 
     if ($LASTEXITCODE -eq 0) {
