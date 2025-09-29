@@ -617,6 +617,17 @@ export class ActivityParserService {
       if (fullName) details.push(fullName);
     }
 
+    // Extract title from root level
+    if (data.title) {
+      details.push(data.title);
+    }
+
+    // Extract department from enterprise extension
+    const enterpriseExt = data['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'];
+    if (enterpriseExt?.department) {
+      details.push(enterpriseExt.department);
+    }
+
     if (data.active !== undefined) {
       details.push(data.active ? 'Active' : 'Inactive');
     }
