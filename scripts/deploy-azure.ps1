@@ -70,22 +70,49 @@ Write-Host "   Location: $Location" -ForegroundColor Gray
 Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor Gray
 Write-Host ""
 
-# Deploy using source build with proper image naming
-Write-Host "Running deployment command..." -ForegroundColor Gray
-Write-Host "This may take several minutes..." -ForegroundColor Yellow
+# Create ACR in the same subscription and build/push image
+Write-Host "🏗️ Setting up Azure Container Registry..." -ForegroundColor Yellow
 
-# Create a lowercase image name to avoid Docker registry naming issues
-$ImageName = $AppName.ToLower() -replace '[^a-z0-9\-]', '-'
+# Create a unique ACR name (globally unique, lowercase, alphanumeric only)
+$AcrName = "scimtool$(Get-Random -Minimum 1000 -Maximum 9999)"
+Write-Host "   ACR Name: $AcrName" -ForegroundColor Gray
+
+# Create ACR in the same resource group
+$acrExists = az acr show --name $AcrName --resource-group $ResourceGroup 2>$null
+if (-not $acrExists) {
+    Write-Host "📝 Creating Azure Container Registry..." -ForegroundColor Yellow
+    az acr create --name $AcrName --resource-group $ResourceGroup --sku Basic --location $Location --output none
+    Write-Host "✅ ACR created" -ForegroundColor Green
+} else {
+    Write-Host "✅ ACR already exists" -ForegroundColor Green
+}
+
+# Build and push image to ACR
+Write-Host "🔨 Building and pushing container image..." -ForegroundColor Yellow
+Write-Host "This may take several minutes..." -ForegroundColor Gray
+
+az acr build --registry $AcrName --image "scimtool:0.4.6" "./api"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Failed to build/push image" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "✅ Image built and pushed to ACR" -ForegroundColor Green
+
+# Deploy using the ACR image
+Write-Host "🚀 Deploying Container App..." -ForegroundColor Yellow
+$ImageName = "$AcrName.azurecr.io/scimtool:0.4.6"
 
 az containerapp up `
     --name $AppName `
     --resource-group $ResourceGroup `
     --location $Location `
     --image $ImageName `
+    --registry-server "$AcrName.azurecr.io" `
     --env-vars "SCIM_SHARED_SECRET=$ScimSecret" "NODE_ENV=production" "PORT=80" `
     --ingress external `
-    --target-port 80 `
-    --source "./api"
+    --target-port 80
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
