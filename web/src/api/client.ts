@@ -61,7 +61,7 @@ export async function fetchLogs(q: LogQuery = {}): Promise<LogListResponse> {
     params.set(k, String(v));
   });
   const qs = params.toString();
-  const url = `${base}/scim/admin/logs${qs ? `?${qs}` : ''}`;
+  const url = `/scim/admin/logs${qs ? `?${qs}` : ''}`;
   const res = await fetch(url, { headers: authHeader() });
   if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
   return res.json();
