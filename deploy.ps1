@@ -71,6 +71,39 @@ if ([string]::IsNullOrWhiteSpace($UserSecret)) {
 }
 Write-Host ""
 
+# Helper function to suggest valid Container App name
+function Get-ValidContainerAppName {
+    param([string]$inputName)
+    
+    if ([string]::IsNullOrWhiteSpace($inputName)) {
+        return "scimtool-prod"
+    }
+    
+    # Convert to lowercase
+    $suggested = $inputName.ToLower()
+    
+    # Replace invalid characters with hyphens
+    $suggested = $suggested -replace '[^a-z0-9\-]', '-'
+    
+    # Remove consecutive hyphens
+    $suggested = $suggested -replace '--+', '-'
+    
+    # Ensure starts with letter
+    if ($suggested -match '^[^a-z]') {
+        $suggested = "scim-$suggested"
+    }
+    
+    # Ensure ends with alphanumeric
+    $suggested = $suggested -replace '-+$', ''
+    
+    # Truncate if too long
+    if ($suggested.Length -gt 32) {
+        $suggested = $suggested.Substring(0, 32) -replace '-+$', ''
+    }
+    
+    return $suggested
+}
+
 # Azure deployment configuration
 Write-Host "🏗️ Azure Deployment Configuration" -ForegroundColor Yellow
 Write-Host "Configure your Azure resources (press Enter for defaults):" -ForegroundColor Gray
@@ -80,10 +113,56 @@ if ([string]::IsNullOrWhiteSpace($ResourceGroup)) {
     $ResourceGroup = "scimtool-rg"
 }
 
-$AppName = Read-Host -Prompt "Container App name (default: scimtool-prod)"
-if ([string]::IsNullOrWhiteSpace($AppName)) {
-    $AppName = "scimtool-prod"
-}
+# Container App name validation
+do {
+    $AppName = Read-Host -Prompt "Container App name (default: scimtool-prod)"
+    if ([string]::IsNullOrWhiteSpace($AppName)) {
+        $AppName = "scimtool-prod"
+    }
+    
+    # Validate Container App naming requirements
+    $isValidName = $true
+    $validationErrors = @()
+    
+    if ($AppName.Length -lt 2 -or $AppName.Length -gt 32) {
+        $isValidName = $false
+        $validationErrors += "Name must be 2-32 characters long (current: $($AppName.Length))"
+    }
+    
+    if ($AppName -notmatch '^[a-z][a-z0-9\-]*[a-z0-9]$' -and $AppName.Length -gt 1) {
+        $isValidName = $false
+        $validationErrors += "Must start with letter, contain only lowercase letters/numbers/hyphens, end with letter/number"
+    }
+    
+    if ($AppName -match '--') {
+        $isValidName = $false
+        $validationErrors += "Cannot contain consecutive hyphens (--)"
+    }
+    
+    if (-not $isValidName) {
+        Write-Host ""
+        Write-Host "⚠️  Invalid Container App name: '$AppName'" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "📋 Azure Container Apps naming requirements:" -ForegroundColor Yellow
+        Write-Host "• 2-32 characters long" -ForegroundColor Gray
+        Write-Host "• Start with a letter (a-z)" -ForegroundColor Gray
+        Write-Host "• Contain only lowercase letters, numbers, and hyphens" -ForegroundColor Gray
+        Write-Host "• End with a letter or number" -ForegroundColor Gray
+        Write-Host "• No consecutive hyphens (--)" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "❌ Issues found:" -ForegroundColor Red
+        foreach ($error in $validationErrors) {
+            Write-Host "   • $error" -ForegroundColor Red
+        }
+        Write-Host ""
+        
+        # Suggest a valid name
+        $suggestedName = Get-ValidContainerAppName -inputName $AppName
+        Write-Host "💡 Suggested valid name: $suggestedName" -ForegroundColor Cyan
+        Write-Host "   Or try: scimtool-prod, scim-monitor, my-scim-app" -ForegroundColor Gray
+        Write-Host ""
+    }
+} while (-not $isValidName)
 
 $Location = Read-Host -Prompt "Azure region (default: eastus)"
 if ([string]::IsNullOrWhiteSpace($Location)) {
