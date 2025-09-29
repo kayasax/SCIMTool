@@ -1,7 +1,7 @@
 # 🎯 SCIMTool
 **A clean, fast SCIM 2.0 activity monitor for Microsoft Entra ID**
 
-[![v0.4.6](https://img.shields.io/badge/Version-0.4.6-2ea043?style=flat-square)](https://github.com/kayasax/SCIMTool/releases/tag/v0.4.6) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
+[![v0.4.8](https://img.shields.io/badge/Version-0.4.8-2ea043?style=flat-square)](https://github.com/kayasax/SCIMTool/releases/tag/v0.4.8) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
 
 Stop parsing raw JSON provisioning logs. Get instant, human‑readable events, real‑time browser tab badges, and a searchable view of users & groups.
 
