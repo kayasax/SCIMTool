@@ -117,8 +117,9 @@ export class ActivityParserService {
   }): Promise<ActivitySummary> {
     const { id, timestamp, method, status, requestData, responseData, userIdentifier, isListOperation, isGetOperation } = params;
 
-    // For now, just mark as async without changing logic - can enhance later with user name resolution
-    await Promise.resolve();
+    // Resolve user name for better display
+    const resolvedUserName = userIdentifier ? await this.resolveUserName(userIdentifier) : undefined;
+    const displayName = resolvedUserName || userIdentifier;
 
     // Handle errors first
     if (status >= 400) {
@@ -126,7 +127,7 @@ export class ActivityParserService {
         id,
         timestamp,
         icon: '❌',
-        message: `Failed to ${method.toLowerCase()} user${userIdentifier ? `: ${userIdentifier}` : ''}`,
+        message: `Failed to ${method.toLowerCase()} user${displayName ? `: ${displayName}` : ''}`,
         details: `HTTP ${status}`,
         type: 'user',
         severity: 'error',
@@ -141,7 +142,7 @@ export class ActivityParserService {
           id,
           timestamp,
           icon: '👤',
-          message: `User created${userIdentifier ? `: ${userIdentifier}` : ''}`,
+          message: `User created${displayName ? `: ${displayName}` : ''}`,
           details: this.extractUserDetails(requestData),
           type: 'user',
           severity: 'success',
@@ -153,20 +154,20 @@ export class ActivityParserService {
           id,
           timestamp,
           icon: '✏️',
-          message: `User updated${userIdentifier ? `: ${userIdentifier}` : ''}`,
+          message: `User updated${displayName ? `: ${displayName}` : ''}`,
           details: this.extractUserDetails(requestData),
           type: 'user',
           severity: 'info',
           userIdentifier,
         };
 
-      case 'PATCH':
+      case 'PATCH': {
         const operations = requestData?.Operations || [];
         const deactivateOp = operations.find((op: any) =>
-          op.path === 'active' && op.value === false
+          op.path === 'active' && (op.value === false || op.value === 'false' || op.value === 'False')
         );
         const activateOp = operations.find((op: any) =>
-          op.path === 'active' && op.value === true
+          op.path === 'active' && (op.value === true || op.value === 'true' || op.value === 'True')
         );
 
         if (deactivateOp) {
@@ -174,7 +175,7 @@ export class ActivityParserService {
             id,
             timestamp,
             icon: '⚠️',
-            message: `User deactivated${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            message: `User deactivated${displayName ? `: ${displayName}` : ''}`,
             type: 'user',
             severity: 'warning',
             userIdentifier,
@@ -184,7 +185,7 @@ export class ActivityParserService {
             id,
             timestamp,
             icon: '✅',
-            message: `User activated${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            message: `User activated${displayName ? `: ${displayName}` : ''}`,
             type: 'user',
             severity: 'success',
             userIdentifier,
@@ -194,20 +195,21 @@ export class ActivityParserService {
             id,
             timestamp,
             icon: '✏️',
-            message: `User modified${userIdentifier ? `: ${userIdentifier}` : ''}`,
+            message: `User modified${displayName ? `: ${displayName}` : ''}`,
             details: `${operations.length} change${operations.length !== 1 ? 's' : ''}`,
             type: 'user',
             severity: 'info',
             userIdentifier,
           };
         }
+      }
 
       case 'DELETE':
         return {
           id,
           timestamp,
           icon: '🗑️',
-          message: `User deleted${userIdentifier ? `: ${userIdentifier}` : ''}`,
+          message: `User deleted${displayName ? `: ${displayName}` : ''}`,
           type: 'user',
           severity: 'warning',
           userIdentifier,
