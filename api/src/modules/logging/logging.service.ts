@@ -210,6 +210,11 @@ export class LoggingService {
       }
     } catch { /* column might not exist yet or query failed */ }
 
+    // Map records with async user resolution
+    const items = await Promise.all(
+      records.map((r) => this.mapLog(r, identifierMap))
+    );
+
     return {
       total,
       page,
@@ -217,11 +222,11 @@ export class LoggingService {
       count: records.length,
       hasNext: skip + records.length < total,
       hasPrev: page > 1,
-      items: records.map((r) => this.mapLog(r, identifierMap))
+      items
     };
   }
 
-  private mapLog(r: {
+  private async mapLog(r: {
     id: string;
     method: string;
     url: string;
@@ -230,7 +235,17 @@ export class LoggingService {
     createdAt: Date;
     errorMessage: string | null;
   }, identifierMap?: Record<string, string | null>) {
-    const identifier = identifierMap?.[r.id] || this.deriveIdentifierFromUrl(r.url);
+    let identifier = identifierMap?.[r.id] || this.deriveIdentifierFromUrl(r.url);
+    
+    // Resolve user display names for better readability
+    if (identifier && r.url.includes('/Users') && !identifier.includes('@')) {
+      // If this looks like a user ID or userName, try to resolve to display name
+      const resolvedName = await this.resolveUserDisplayName(identifier);
+      if (resolvedName) {
+        identifier = resolvedName;
+      }
+    }
+    
     return {
       id: r.id,
       method: r.method,
@@ -325,6 +340,47 @@ export class LoggingService {
     const last = parts[parts.length - 1];
     if (/^[0-9a-fA-F-]{8,}$/.test(last)) return last;
     return undefined;
+  }
+
+  /**
+   * Resolve user identifier to display name for better readability
+   */
+  private async resolveUserDisplayName(identifier: string): Promise<string | null> {
+    try {
+      // Try to find user by SCIM ID first
+      let user = await this.prisma.scimUser.findUnique({
+        where: { scimId: identifier },
+        select: { userName: true, rawPayload: true },
+      });
+
+      // If not found by SCIM ID, try by userName
+      if (!user) {
+        user = await this.prisma.scimUser.findFirst({
+          where: { userName: identifier },
+          select: { userName: true, rawPayload: true },
+        });
+      }
+
+      if (user) {
+        // Try to get display name from raw payload first
+        try {
+          if (user.rawPayload && typeof user.rawPayload === 'string') {
+            const payload = JSON.parse(user.rawPayload);
+            if (payload.displayName) return payload.displayName;
+            if (payload.name?.formatted) return payload.name.formatted;
+            if (payload.name?.givenName && payload.name?.familyName) {
+              return `${payload.name.givenName} ${payload.name.familyName}`;
+            }
+          }
+        } catch (e) {
+          // Fall back to userName if payload parsing fails
+        }
+        return user.userName;
+      }
+    } catch (e) {
+      // If lookup fails, return null to use original identifier
+    }
+    return null;
   }
 
   private deriveGroupDisplayName(req: Record<string, unknown> | null, resp: Record<string, unknown> | null): string | undefined {
