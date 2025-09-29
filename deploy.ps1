@@ -1,5 +1,4 @@
 ﻿
-
 <#
 .SYNOPSIS
     SCIMTool - One-Click Deployment for Microsoft Colleagues
@@ -9,12 +8,15 @@
     No git clone needed - everything downloads automatically!
 
 .EXAMPLE
-    iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1 | iex
+    iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+    # Or with custom branch:
+    $Branch = "dev"; iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 #>
 
-param(
-    [string]$Branch = "master"
-)
+# Default branch - can be overridden by setting $Branch variable before calling
+if (-not (Get-Variable -Name "Branch" -ErrorAction SilentlyContinue)) {
+    $Branch = "master"
+}
 
 Write-Host "🚀 SCIMTool - One-Click Deployment" -ForegroundColor Green
 Write-Host "═══════════════════════════════════" -ForegroundColor Green
