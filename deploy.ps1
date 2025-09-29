@@ -38,6 +38,25 @@ if (-not $account) {
 Write-Host "✅ Logged in as: $($account.user.name)" -ForegroundColor Green
 Write-Host ""
 
+# Subscription selection
+Write-Host "📋 Azure Subscription" -ForegroundColor Yellow
+Write-Host "Current subscription: $($account.name) ($($account.id))" -ForegroundColor Cyan
+$ChangeSubscription = Read-Host -Prompt "Change subscription? (y/N)"
+
+if ($ChangeSubscription -eq 'y' -or $ChangeSubscription -eq 'Y') {
+    Write-Host "📋 Available subscriptions:" -ForegroundColor Cyan
+    az account list --query "[].{Name:name, Id:id, IsDefault:isDefault}" --output table
+    Write-Host ""
+    $NewSubscriptionId = Read-Host -Prompt "Enter subscription ID or name"
+    
+    if (-not [string]::IsNullOrWhiteSpace($NewSubscriptionId)) {
+        az account set --subscription $NewSubscriptionId
+        $account = az account show | ConvertFrom-Json
+        Write-Host "✅ Switched to: $($account.name)" -ForegroundColor Green
+    }
+}
+Write-Host ""
+
 # Generate secure secret
 Write-Host "🔐 SCIM Secret Configuration" -ForegroundColor Yellow
 Write-Host "For security, each deployment needs a unique secret token." -ForegroundColor Gray
