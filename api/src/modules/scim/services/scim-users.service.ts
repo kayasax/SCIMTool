@@ -286,16 +286,29 @@ export class ScimUsersService {
       return value;
     }
 
+    // Handle string boolean values from Entra ID
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase();
+      if (lowerValue === 'true') return true;
+      if (lowerValue === 'false') return false;
+    }
+
     if (typeof value === 'object' && value !== null && 'active' in value) {
       const active = (value as { active: unknown }).active;
       if (typeof active === 'boolean') {
         return active;
       }
+      // Also handle string boolean in nested objects
+      if (typeof active === 'string') {
+        const lowerActive = active.toLowerCase();
+        if (lowerActive === 'true') return true;
+        if (lowerActive === 'false') return false;
+      }
     }
 
     throw createScimError({
       status: 400,
-      detail: 'Patch operation missing boolean value for active.'
+      detail: `Patch operation requires boolean value for active. Received: ${typeof value} "${value}"`
     });
   }
 
