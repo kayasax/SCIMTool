@@ -48,7 +48,7 @@ if ($ChangeSubscription -eq 'y' -or $ChangeSubscription -eq 'Y') {
     az account list --query "[].{Name:name, Id:id, IsDefault:isDefault}" --output table
     Write-Host ""
     $NewSubscriptionId = Read-Host -Prompt "Enter subscription ID or name"
-    
+
     if (-not [string]::IsNullOrWhiteSpace($NewSubscriptionId)) {
         az account set --subscription $NewSubscriptionId
         $account = az account show | ConvertFrom-Json
@@ -74,33 +74,33 @@ Write-Host ""
 # Helper function to suggest valid Container App name
 function Get-ValidContainerAppName {
     param([string]$inputName)
-    
+
     if ([string]::IsNullOrWhiteSpace($inputName)) {
         return "scimtool-prod"
     }
-    
+
     # Convert to lowercase
     $suggested = $inputName.ToLower()
-    
+
     # Replace invalid characters with hyphens
     $suggested = $suggested -replace '[^a-z0-9\-]', '-'
-    
+
     # Remove consecutive hyphens
     $suggested = $suggested -replace '--+', '-'
-    
+
     # Ensure starts with letter
     if ($suggested -match '^[^a-z]') {
         $suggested = "scim-$suggested"
     }
-    
+
     # Ensure ends with alphanumeric
     $suggested = $suggested -replace '-+$', ''
-    
+
     # Truncate if too long
     if ($suggested.Length -gt 32) {
         $suggested = $suggested.Substring(0, 32) -replace '-+$', ''
     }
-    
+
     return $suggested
 }
 
@@ -119,26 +119,26 @@ do {
     if ([string]::IsNullOrWhiteSpace($AppName)) {
         $AppName = "scimtool-prod"
     }
-    
+
     # Validate Container App naming requirements
     $isValidName = $true
     $validationErrors = @()
-    
+
     if ($AppName.Length -lt 2 -or $AppName.Length -gt 32) {
         $isValidName = $false
         $validationErrors += "Name must be 2-32 characters long (current: $($AppName.Length))"
     }
-    
+
     if ($AppName -notmatch '^[a-z][a-z0-9\-]*[a-z0-9]$' -and $AppName.Length -gt 1) {
         $isValidName = $false
         $validationErrors += "Must start with letter, contain only lowercase letters/numbers/hyphens, end with letter/number"
     }
-    
+
     if ($AppName -match '--') {
         $isValidName = $false
         $validationErrors += "Cannot contain consecutive hyphens (--)"
     }
-    
+
     if (-not $isValidName) {
         Write-Host ""
         Write-Host "⚠️  Invalid Container App name: '$AppName'" -ForegroundColor Red
@@ -155,7 +155,7 @@ do {
             Write-Host "   • $error" -ForegroundColor Red
         }
         Write-Host ""
-        
+
         # Suggest a valid name
         $suggestedName = Get-ValidContainerAppName -inputName $AppName
         Write-Host "💡 Suggested valid name: $suggestedName" -ForegroundColor Cyan
