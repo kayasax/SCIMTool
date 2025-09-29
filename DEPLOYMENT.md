@@ -31,7 +31,7 @@ For on-premises or custom cloud deployments:
 version: '3.8'
 services:
   scimtool:
-    image: scimtoolpublic.azurecr.io/scimtool:latest
+    image: ghcr.io/kayasax/scimtool:latest
     ports:
       - "3000:3000"
     environment:
@@ -54,7 +54,7 @@ Simple Docker deployment:
 docker run -d -p 3000:3000 \
   -e SCIM_SHARED_SECRET=your-secret \
   -v scim-data:/app/data \
-  scimtoolpublic.azurecr.io/scimtool:latest
+  ghcr.io/kayasax/scimtool:latest
 ```
 
 ---

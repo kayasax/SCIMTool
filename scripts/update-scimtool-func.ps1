@@ -8,7 +8,7 @@ function Update-SCIMTool {
         [string]$Version,
         [string]$ResourceGroup = "scimtool-rg",
         [string]$AppName = "scimtool-prod",
-        [string]$Registry = "scimtoolpublic.azurecr.io",
+        [string]$Registry = "ghcr.io/kayasax",
         [switch]$NoPrompt,
         [switch]$DryRun
     )

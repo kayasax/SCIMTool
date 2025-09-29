@@ -95,7 +95,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - ✅ **RESOLVED:** Groups display issue - both groups now showing correctly with proper alignment!
 - ✅ **FIXED:** Grid alignment in Groups tab for consistent row formatting and better readability
 - ✅ **RELEASED:** Version 0.4.4 deployed with enhanced Groups display and activity parser improvements
-- ✅ **DEPLOYED:** Container pushed to Azure Container Registry (scimtoolpublic.azurecr.io/scimtool:0.4.6)
+- ✅ **DEPLOYED:** Container pushed to GitHub Container Registry (ghcr.io/kayasax/scimtool:0.4.7)
 - ✅ **README REWRITE:** Completely redesigned - eye-catching, concise, removed duplicates and hallucinations
 - ✅ **DEPLOY SCRIPT FIXED:** Resolved BOM encoding issues, corrected branch reference (master), 404 download errors resolved
 ## 🏗️ Architecture
@@ -150,7 +150,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 | 2025-09-26 | 🧩 Added dynamic upgrade helper script (GitHub Releases based) |
 | 2025-09-26 | 🎨 Microsoft-inspired theming completed (dark/light parity, refined filters, log modal polish) |
 | 2025-09-26 | 🔍 Admin log noise hidden from UI; SCIM request list now focused on provisioning traffic |
-| 2025-12-26 | 📦 **PUBLIC ACR SETUP** - Created scimtoolpublic.azurecr.io with anonymous pull enabled |
+| 2025-12-29 | � **GITHUB REGISTRY MIGRATION** - Migrated from ACR to ghcr.io/kayasax/scimtool with automated builds |
 | 2025-12-26 | 🛠️ **UNIFIED DOCKERFILE** - Multi-stage build (web+API) with fixed SQLite permissions |
 | 2025-12-26 | 🚀 **CONTAINER DEPLOYMENT** - Production deployment working via public registry |
 | 2025-12-26 | 🔧 **SQLITE PERMISSIONS FIX** - Resolved readonly database errors with proper user ownership |
@@ -305,7 +305,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 **STATUS:** ✅ **ENTERPRISE-READY CONTAINERIZED SOLUTION**
 
 **New Achievements:**
-- 🏭 **Public Container Registry** - `scimtoolpublic.azurecr.io/scimtool` with anonymous pull
+- 🏭 **Public Container Registry** - `ghcr.io/kayasax/scimtool` with GitHub Actions automation
 - 🐳 **Unified Container** - Single image containing both SCIM API + monitoring web UI
 - 🔧 **Production Fixes** - SQLite permissions resolved, container stability confirmed
 - 🚀 **Automated Deployment** - PowerShell scripts for building, tagging, releasing, updating
