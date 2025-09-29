@@ -70,12 +70,12 @@ Write-Host "   Location: $Location" -ForegroundColor Gray
 Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor Gray
 Write-Host ""
 
-# Deploy using pre-built image to avoid Docker naming issues
+# Deploy using source build with proper image naming
 Write-Host "Running deployment command..." -ForegroundColor Gray
 Write-Host "This may take several minutes..." -ForegroundColor Yellow
 
-# Use pre-built image from public registry
-$ImageName = "scimtoolpublic.azurecr.io/scimtool:0.4.6"
+# Create a lowercase image name to avoid Docker registry naming issues
+$ImageName = $AppName.ToLower() -replace '[^a-z0-9\-]', '-'
 
 az containerapp up `
     --name $AppName `
@@ -84,7 +84,8 @@ az containerapp up `
     --image $ImageName `
     --env-vars "SCIM_SHARED_SECRET=$ScimSecret" "NODE_ENV=production" "PORT=80" `
     --ingress external `
-    --target-port 80
+    --target-port 80 `
+    --source "./api"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
