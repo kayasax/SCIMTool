@@ -2,15 +2,7 @@
 
 <#
 .SYNOPSIS
-    Deploy SCIMTool to Azure Co# De# De# Deploy using pre-built image from GitHub Container Registry
-Write-Host "🚀 Deploying Container App with pre-built image..." -ForegroundColor Yellow
-Write-Host "Using latest tested image: ghcr.io/kayasax/scimtool:latest" -ForegroundColor Gray
-
-$ImageName = "ghcr.io/kayasax/scimtool:latest"using pre-built image from GitHub Container Registry
-Write-Host "🚀 Deploying Container App with pre-built image..." -ForegroundColor Yellow
-Write-Host "Using latest tested image: ghcr.io/kayasax/scimtool:latest" -ForegroundColor Gray
-
-$ImageName = "ghcr.io/kayasax/scimtool:latest"using pre-built image from GitHub Container Registry
+    Deploy SCIMTool to Azure Co# Deploy using pre-built image from GitHub Container Registry
 Write-Host "🚀 Deploying Container App with pre-built image..." -ForegroundColor Yellow
 Write-Host "Using tested image: ghcr.io/kayasax/scimtool:latest" -ForegroundColor Gray
 
@@ -84,9 +76,9 @@ Write-Host ""
 
 # Deploy using pre-built image from GitHub Container Registry
 Write-Host "� Deploying Container App with pre-built image..." -ForegroundColor Yellow
-Write-Host "Using tested image: ghcr.io/kayasax/scimtool:0.4.6" -ForegroundColor Gray
+Write-Host "Using latest tested image: ghcr.io/kayasax/scimtool:latest" -ForegroundColor Gray
 
-$ImageName = "ghcr.io/kayasax/scimtool:0.4.6"
+$ImageName = "ghcr.io/kayasax/scimtool:latest"
 
 az containerapp up `
     --name $AppName `
