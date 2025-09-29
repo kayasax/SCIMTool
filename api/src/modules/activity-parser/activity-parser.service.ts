@@ -13,6 +13,12 @@ export interface ActivitySummary {
   groupIdentifier?: string;
 }
 
+interface ScimPatchOperation {
+  op: 'add' | 'remove' | 'replace';
+  path?: string;
+  value?: any; // Using any for SCIM values which can be complex objects
+}
+
 @Injectable()
 export class ActivityParserService {
   constructor(private prisma: PrismaService) {}
@@ -163,10 +169,10 @@ export class ActivityParserService {
 
       case 'PATCH': {
         const operations = requestData?.Operations || [];
-        const deactivateOp = operations.find((op: any) =>
+        const deactivateOp = operations.find((op: ScimPatchOperation) =>
           op.path === 'active' && (op.value === false || op.value === 'false' || op.value === 'False')
         );
-        const activateOp = operations.find((op: any) =>
+        const activateOp = operations.find((op: ScimPatchOperation) =>
           op.path === 'active' && (op.value === true || op.value === 'true' || op.value === 'True')
         );
 
@@ -191,12 +197,14 @@ export class ActivityParserService {
             userIdentifier,
           };
         } else {
+          // Parse specific changes for better details
+          const changeDetails = await this.parseUserChanges(operations);
           return {
             id,
             timestamp,
             icon: '✏️',
             message: `User modified${displayName ? `: ${displayName}` : ''}`,
-            details: `${operations.length} change${operations.length !== 1 ? 's' : ''}`,
+            details: changeDetails || `${operations.length} change${operations.length !== 1 ? 's' : ''}`,
             type: 'user',
             severity: 'info',
             userIdentifier,
@@ -307,15 +315,15 @@ export class ActivityParserService {
           groupIdentifier,
         };
 
-      case 'PATCH':
+      case 'PATCH': {
         const operations = requestData?.Operations || [];
-        const memberOps = operations.filter((op: any) =>
+        const memberOps = operations.filter((op: ScimPatchOperation) =>
           op.path === 'members' || op.path?.startsWith('members[')
         );
 
         if (memberOps.length > 0) {
-          const addOps = memberOps.filter((op: any) => op.op === 'add');
-          const removeOps = memberOps.filter((op: any) => op.op === 'remove');
+          const addOps = memberOps.filter((op: ScimPatchOperation) => op.op === 'add');
+          const removeOps = memberOps.filter((op: ScimPatchOperation) => op.op === 'remove');
 
           if (addOps.length > 0 && removeOps.length === 0) {
             // Extract user IDs and resolve names from database
@@ -385,6 +393,8 @@ export class ActivityParserService {
             groupIdentifier,
           };
         }
+        break;
+      }
 
       case 'DELETE':
         return {
@@ -610,5 +620,71 @@ export class ActivityParserService {
       // If lookup fails, return the original ID
     }
     return groupId;
+  }
+
+  /**
+   * Parse SCIM PATCH operations to show specific changes
+   */
+  private async parseUserChanges(operations: ScimPatchOperation[]): Promise<string | undefined> {
+    if (!operations || operations.length === 0) return undefined;
+
+    const changes: string[] = [];
+    
+    for (const op of operations) {
+      try {
+        switch (op.path) {
+          case 'manager':
+            if (op.op === 'replace' && op.value?.value) {
+              const managerName = await this.resolveUserName(op.value.value);
+              changes.push(`Manager changed to ${managerName}`);
+            } else if (op.op === 'remove') {
+              changes.push('Manager removed');
+            }
+            break;
+            
+          case 'displayName':
+            if (op.op === 'replace') {
+              changes.push(`Display name changed to "${op.value}"`);
+            }
+            break;
+            
+          case 'title':
+            if (op.op === 'replace') {
+              changes.push(`Title changed to "${op.value}"`);
+            }
+            break;
+            
+          case 'department':
+            if (op.op === 'replace') {
+              changes.push(`Department changed to "${op.value}"`);
+            }
+            break;
+            
+          case 'emails':
+            if (op.op === 'replace') {
+              const email = Array.isArray(op.value) ? op.value[0]?.value : op.value?.value;
+              if (email) {
+                changes.push(`Email changed to ${email}`);
+              }
+            }
+            break;
+            
+          default:
+            // Handle generic path changes
+            if (op.path && op.op === 'replace') {
+              changes.push(`${op.path} changed`);
+            }
+            break;
+        }
+      } catch (e) {
+        // Ignore parsing errors for individual operations
+      }
+    }
+
+    if (changes.length > 0) {
+      return changes.join(', ');
+    }
+
+    return `${operations.length} change${operations.length !== 1 ? 's' : ''}`;
   }
 }
