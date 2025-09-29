@@ -42,4 +42,4 @@ temp/
 .azure/
 
 # Docker
-Dockerfile.dockerignore
+Dockerfile.dockerignore# Version sync: Ensure image contains v0.4.8
