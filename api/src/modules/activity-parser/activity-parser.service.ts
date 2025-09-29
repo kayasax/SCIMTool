@@ -316,13 +316,24 @@ export class ActivityParserService {
           const removeOps = memberOps.filter((op: any) => op.op === 'remove');
 
           if (addOps.length > 0 && removeOps.length === 0) {
-            // Resolve user names for add operations
+            // Extract user names from SCIM payload (prefer display names)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const memberIds = addOps.map((op: any) => op.value?.value || op.value?.display || 'Unknown user');
+            const memberInfo = addOps.map((op: any) => ({
+              id: op.value?.value || 'Unknown',
+              display: op.value?.display || null
+            }));
+            
             const memberNames = await Promise.all(
-              memberIds.map(async (id: string) => {
-                if (id === 'Unknown user') return id;
-                return await this.resolveUserName(id);
+              memberInfo.map(async (member: { id: string; display: string | null }) => {
+                // Use display name from SCIM payload if available
+                if (member.display) return member.display;
+                // Try database lookup for known users
+                if (member.id !== 'Unknown') {
+                  const resolvedName = await this.resolveUserName(member.id);
+                  if (resolvedName !== member.id) return resolvedName;
+                }
+                // Fallback to shortened ID for better readability
+                return member.id.length > 8 ? `User ${member.id.substring(0, 8)}...` : member.id;
               })
             );
             const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
@@ -338,13 +349,24 @@ export class ActivityParserService {
               groupIdentifier,
             };
           } else if (removeOps.length > 0 && addOps.length === 0) {
-            // Resolve user names for remove operations
+            // Extract user names from SCIM payload (prefer display names)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const memberIds = removeOps.map((op: any) => op.value?.value || op.value?.display || 'Unknown user');
+            const memberInfo = removeOps.map((op: any) => ({
+              id: op.value?.value || 'Unknown',
+              display: op.value?.display || null
+            }));
+            
             const memberNames = await Promise.all(
-              memberIds.map(async (id: string) => {
-                if (id === 'Unknown user') return id;
-                return await this.resolveUserName(id);
+              memberInfo.map(async (member: { id: string; display: string | null }) => {
+                // Use display name from SCIM payload if available
+                if (member.display) return member.display;
+                // Try database lookup for known users
+                if (member.id !== 'Unknown') {
+                  const resolvedName = await this.resolveUserName(member.id);
+                  if (resolvedName !== member.id) return resolvedName;
+                }
+                // Fallback to shortened ID for better readability
+                return member.id.length > 8 ? `User ${member.id.substring(0, 8)}...` : member.id;
               })
             );
             const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
