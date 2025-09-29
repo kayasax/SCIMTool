@@ -95,8 +95,9 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - ✅ **RESOLVED:** Groups display issue - both groups now showing correctly with proper alignment!
 - ✅ **FIXED:** Grid alignment in Groups tab for consistent row formatting and better readability
 - ✅ **RELEASED:** Version 0.4.4 deployed with enhanced Groups display and activity parser improvements
-- ✅ **DEPLOYED:** Container pushed to Azure Container Registry (scimtoolpublic.azurecr.io/scimtool:0.4.4)
+- ✅ **DEPLOYED:** Container pushed to Azure Container Registry (scimtoolpublic.azurecr.io/scimtool:0.4.6)
 - ✅ **README REWRITE:** Completely redesigned - eye-catching, concise, removed duplicates and hallucinations
+- ✅ **DEPLOY SCRIPT FIXED:** Resolved BOM encoding issues, corrected branch reference (master), 404 download errors resolved
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**
