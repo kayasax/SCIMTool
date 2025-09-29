@@ -277,11 +277,12 @@ export class ActivityParserService {
 
     // Handle errors first
     if (status >= 400) {
+      const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'group';
       return {
         id,
         timestamp,
         icon: '❌',
-        message: `Failed to ${method.toLowerCase()} group${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+        message: `Failed to ${method.toLowerCase()} group: ${resolvedGroupName}`,
         details: `HTTP ${status}`,
         type: 'group',
         severity: 'error',
@@ -291,29 +292,33 @@ export class ActivityParserService {
 
     // Handle successful operations
     switch (method) {
-      case 'POST':
+      case 'POST': {
+        const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'New group';
         return {
           id,
           timestamp,
           icon: '🏢',
-          message: `Group created${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+          message: `Group created: ${resolvedGroupName}`,
           details: this.extractGroupDetails(requestData),
           type: 'group',
           severity: 'success',
           groupIdentifier,
         };
+      }
 
-      case 'PUT':
+      case 'PUT': {
+        const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
         return {
           id,
           timestamp,
           icon: '✏️',
-          message: `Group updated${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+          message: `Group updated: ${resolvedGroupName}`,
           details: this.extractGroupDetails(requestData),
           type: 'group',
           severity: 'info',
           groupIdentifier,
         };
+      }
 
       case 'PATCH': {
         const operations = requestData?.Operations || [];
@@ -370,11 +375,12 @@ export class ActivityParserService {
               groupIdentifier,
             };
           } else {
+            const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
             return {
               id,
               timestamp,
               icon: '👥',
-              message: `${groupIdentifier || 'Group'} membership updated`,
+              message: `${resolvedGroupName} membership updated`,
               details: `${memberOps.length} change${memberOps.length !== 1 ? 's' : ''}`,
               type: 'group',
               severity: 'info',
@@ -396,16 +402,18 @@ export class ActivityParserService {
         break;
       }
 
-      case 'DELETE':
+      case 'DELETE': {
+        const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
         return {
           id,
           timestamp,
           icon: '🗑️',
-          message: `Group deleted${groupIdentifier ? `: ${groupIdentifier}` : ''}`,
+          message: `Group deleted: ${resolvedGroupName}`,
           type: 'group',
           severity: 'warning',
           groupIdentifier,
         };
+      }
 
       case 'GET':
         if (isListOperation) {
