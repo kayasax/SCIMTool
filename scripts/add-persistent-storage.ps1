@@ -156,7 +156,13 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-$storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
+# Get storage account key (works whether storage is new or existing)
+$storageKeys = az storage account keys list `
+    --account-name $storageName `
+    --resource-group $ResourceGroup `
+    --output json | ConvertFrom-Json
+
+$storageAccountKey = $storageKeys[0].value
 
 if (-not $storageAccountKey) {
     Write-Host "   ❌ Failed to retrieve storage account key" -ForegroundColor Red
