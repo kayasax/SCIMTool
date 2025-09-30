@@ -180,10 +180,31 @@ try {
         # Check if environment has workload profiles
         if (-not $existingEnv.properties.workloadProfiles -or $existingEnv.properties.workloadProfiles.Count -eq 0) {
             Write-Host "   ⚠️  Existing environment doesn't support workload profiles" -ForegroundColor Yellow
-            Write-Host "   Deleting old environment to recreate with workload profiles..." -ForegroundColor Yellow
-            $null = az containerapp env delete --name $envName --resource-group $ResourceGroup --yes 2>&1 | Out-Null
-            Write-Host "   ✅ Old environment deleted" -ForegroundColor Green
-            Start-Sleep -Seconds 10
+            Write-Host "   Deleting old environment (this may take 5-10 minutes)..." -ForegroundColor Yellow
+            
+            az containerapp env delete --name $envName --resource-group $ResourceGroup --yes --output none 2>$null
+            
+            # Wait for deletion to complete (poll every 10 seconds, timeout after 10 minutes)
+            $deleteMaxWait = 600
+            $deleteElapsed = 0
+            while ($deleteElapsed -lt $deleteMaxWait) {
+                Start-Sleep -Seconds 10
+                $deleteElapsed += 10
+                
+                $checkEnv = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
+                if ($LASTEXITCODE -ne 0 -or -not $checkEnv) {
+                    Write-Host "   ✅ Old environment deleted" -ForegroundColor Green
+                    break
+                }
+                Write-Host "   ⏳ Still deleting... ($deleteElapsed seconds elapsed)" -ForegroundColor Gray
+            }
+            
+            if ($deleteElapsed -ge $deleteMaxWait) {
+                Write-Host "   ❌ Environment deletion timeout. Please delete manually in Azure Portal." -ForegroundColor Red
+                exit 1
+            }
+            
+            Start-Sleep -Seconds 5
         } else {
             Write-Host "   ✅ Environment already exists with workload profiles" -ForegroundColor Green
             $skipEnvDeployment = $true
