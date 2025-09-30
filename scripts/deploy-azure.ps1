@@ -67,11 +67,25 @@ try {
 }
 
 # Generate resource names
-$storageName = $AppName.Replace("-", "").Replace("_", "").ToLower() + "stor"
-# Storage account names must be 3-24 characters, lowercase alphanumeric
+# Storage account names must be globally unique (3-24 chars, lowercase alphanumeric)
+# Include resource group name to ensure uniqueness across deployments
+$rgSuffix = $ResourceGroup.Replace("-", "").Replace("_", "").ToLower()
+$appPrefix = $AppName.Replace("-", "").Replace("_", "").ToLower()
+$storageName = $appPrefix + $rgSuffix + "stor"
+
+# Truncate to 24 characters if too long
 if ($storageName.Length > 24) {
-    $storageName = $storageName.Substring(0, 24)
+    # Keep app prefix + truncated RG suffix + "stor"
+    $maxRgLength = 24 - $appPrefix.Length - 4  # 4 for "stor"
+    if ($maxRgLength -gt 0) {
+        $rgSuffix = $rgSuffix.Substring(0, [Math]::Min($rgSuffix.Length, $maxRgLength))
+        $storageName = $appPrefix + $rgSuffix + "stor"
+    } else {
+        # If app name alone is too long, just truncate everything
+        $storageName = $storageName.Substring(0, 24)
+    }
 }
+
 $envName = "$AppName-env"
 $lawName = "$AppName-logs"
 

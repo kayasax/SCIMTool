@@ -82,6 +82,28 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
       ]
     }
     template: {
+      // Init container to clean up stale SQLite journal files (Azure Files + SQLite locking issue)
+      initContainers: !empty(storageAccountName) ? [
+        {
+          name: 'cleanup-db-locks'
+          image: 'busybox:latest'
+          command: [
+            'sh'
+            '-c'
+            'echo "Checking for stale SQLite lock files..." && rm -f /app/data/*.db-journal /app/data/*.db-shm /app/data/*.db-wal && echo "Cleanup complete"'
+          ]
+          volumeMounts: [
+            {
+              volumeName: 'data-volume'
+              mountPath: '/app/data'
+            }
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+        }
+      ] : []
       containers: [
         {
           name: 'scimtool'
