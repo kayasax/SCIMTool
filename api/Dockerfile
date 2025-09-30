@@ -38,10 +38,15 @@ RUN adduser -S nestjs -u 1001
 
 # Change ownership of the app directory
 RUN chown -R nestjs:nodejs /app
+
+# Copy entrypoint script and make it executable
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 USER nestjs
 
 # Expose port 80 (as specified in environment variables)
 EXPOSE 80
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Start the application with migrations
+CMD ["/app/docker-entrypoint.sh"]
