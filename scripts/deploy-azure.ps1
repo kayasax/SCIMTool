@@ -126,9 +126,8 @@ if ($EnablePersistentStorage) {
     Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
     
     # Check if storage account already exists
-    $storageList = az storage account list --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
-    $storageExists = $storageList | Where-Object { $_.name -eq $storageName }
-    $storageExists = $null -ne $storageExists
+    $storageCheck = az storage account show --name $storageName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
+    $storageExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($storageCheck)
     
     if ($storageExists) {
         Write-Host "   ✅ Storage account already exists" -ForegroundColor Green
@@ -167,9 +166,8 @@ Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
 
 # Check if environment exists
 $skipEnvDeployment = $false
-$envList = az containerapp env list --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
-$envExists = $envList | Where-Object { $_.name -eq $envName }
-$envExists = $null -ne $envExists
+$envCheck = az containerapp env show --name $envName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
+$envExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($envCheck)
 
 if ($envExists) {
     Write-Host "   ✅ Environment already exists" -ForegroundColor Green
@@ -240,9 +238,8 @@ Write-Host ""
 Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
 
 # Check if container app already exists
-$appList = az containerapp list --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
-$appExists = $appList | Where-Object { $_.name -eq $AppName }
-$appExists = $null -ne $appExists
+$appCheck = az containerapp show --name $AppName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
+$appExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($appCheck)
 
 if ($appExists) {
     Write-Host "   ✅ Container App already exists - updating..." -ForegroundColor Green
