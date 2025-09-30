@@ -60,6 +60,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
   location: location
   properties: {
     environmentId: env.id
+    workloadProfileName: 'Consumption'
     configuration: {
       ingress: {
         external: true

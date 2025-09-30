@@ -26,11 +26,18 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
         customerId: law.properties.customerId
-  // Obtain shared key via resource function for dependency clarity
-  sharedKey: law.listKeys().primarySharedKey
+        // Obtain shared key via resource function for dependency clarity
+        sharedKey: law.listKeys().primarySharedKey
       }
     }
-  // Dapr instrumentation key intentionally omitted
+    // Workload profiles required for Container Apps (Consumption plan)
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
+    // Dapr instrumentation key intentionally omitted
   }
   tags: {
     project: 'scimtool'
