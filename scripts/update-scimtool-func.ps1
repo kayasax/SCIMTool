@@ -64,10 +64,10 @@ function Update-SCIMTool {
     # Discover SCIMTool resources if not specified
     if (-not $ResourceGroup -or -not $AppName) {
         Write-Host "🔍 Discovering SCIMTool resources..." -ForegroundColor Cyan
-        
+
         # Find container apps with 'scim' in the name
         $containerApps = az containerapp list --query "[?contains(name, 'scim')].{name:name, resourceGroup:resourceGroup}" --output json | ConvertFrom-Json
-        
+
         if ($containerApps.Count -eq 0) {
             Write-Host "❌ No SCIMTool container apps found. Please specify -ResourceGroup and -AppName manually." -ForegroundColor Red
             return
@@ -80,17 +80,17 @@ function Update-SCIMTool {
             for ($i = 0; $i -lt $containerApps.Count; $i++) {
                 Write-Host "   [$($i+1)] $($containerApps[$i].name) (RG: $($containerApps[$i].resourceGroup))" -ForegroundColor Gray
             }
-            
+
             if ($NoPrompt) {
                 Write-Host "❌ Multiple apps found but NoPrompt specified. Use -ResourceGroup and -AppName." -ForegroundColor Red
                 return
             }
-            
+
             do {
                 $selection = Read-Host -Prompt "Select app to update [1-$($containerApps.Count)]"
                 $index = [int]$selection - 1
             } while ($index -lt 0 -or $index -ge $containerApps.Count)
-            
+
             $ResourceGroup = $containerApps[$index].resourceGroup
             $AppName = $containerApps[$index].name
             Write-Host "✅ Selected: $AppName in $ResourceGroup" -ForegroundColor Green
@@ -108,7 +108,7 @@ function Update-SCIMTool {
     Write-Host "🔍 Checking storage configuration..." -ForegroundColor Cyan
     $appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
     $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
-    
+
     if ($hasVolumes) {
         Write-Host "✅ Persistent storage detected - data will be preserved" -ForegroundColor Green
         $volumeInfo = $appDetails.properties.template.volumes[0]

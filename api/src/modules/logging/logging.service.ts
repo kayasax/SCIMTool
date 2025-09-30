@@ -236,7 +236,7 @@ export class LoggingService {
     errorMessage: string | null;
   }, identifierMap?: Record<string, string | null>) {
     let identifier = identifierMap?.[r.id] || this.deriveIdentifierFromUrl(r.url);
-    
+
     // Resolve user display names for better readability
     if (identifier && r.url.includes('/Users') && !identifier.includes('@')) {
       // If this looks like a user ID or userName, try to resolve to display name
@@ -245,7 +245,7 @@ export class LoggingService {
         identifier = resolvedName;
       }
     }
-    
+
     return {
       id: r.id,
       method: r.method,

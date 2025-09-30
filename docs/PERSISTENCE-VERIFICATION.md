@@ -129,7 +129,7 @@ The hybrid persistent storage architecture is **production-ready** and successfu
 
 ---
 
-**Test Conducted By**: GitHub Copilot AI Assistant  
-**Test Date**: September 30, 2025  
-**SCIMTool Version**: v0.7.2  
+**Test Conducted By**: GitHub Copilot AI Assistant
+**Test Date**: September 30, 2025
+**SCIMTool Version**: v0.7.2
 **Container Revision**: scimtool-ms--0000016

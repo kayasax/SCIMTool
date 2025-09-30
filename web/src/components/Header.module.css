@@ -154,27 +154,27 @@
   .container {
     padding: var(--spacing-md) var(--spacing-lg);
   }
-  
+
   .brand {
     gap: var(--spacing-sm);
   }
-  
+
   .title {
     font-size: var(--font-size-500);
   }
-  
+
   .subtitle {
     display: none;
   }
-  
+
   .actions {
     gap: var(--spacing-sm);
   }
-  
+
   .backupText {
     display: none;
   }
-  
+
   .status {
     gap: var(--spacing-xs);
   }

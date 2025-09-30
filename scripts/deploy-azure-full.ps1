@@ -117,7 +117,7 @@ $storageAccountKey = ""
 if ($EnablePersistentStorage) {
     Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
     Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
-    
+
     $storageDeployment = az deployment group create `
         --resource-group $ResourceGroup `
         --template-file "$PSScriptRoot/../infra/storage.bicep" `
@@ -169,13 +169,13 @@ $checkInterval = 10
 while ($elapsed -lt $maxWaitSeconds) {
     Start-Sleep -Seconds $checkInterval
     $elapsed += $checkInterval
-    
+
     $status = az deployment group show `
         --resource-group $ResourceGroup `
         --name $envDeploymentName `
         --query "properties.provisioningState" `
         --output tsv 2>$null
-    
+
     if ($status -eq "Succeeded") {
         Write-Host "   ✅ Environment deployed successfully" -ForegroundColor Green
         break
@@ -255,13 +255,13 @@ $checkInterval = 10
 while ($elapsed -lt $maxWaitSeconds) {
     Start-Sleep -Seconds $checkInterval
     $elapsed += $checkInterval
-    
+
     $status = az deployment group show `
         --resource-group $ResourceGroup `
         --name $deploymentName `
         --query "properties.provisioningState" `
         --output tsv 2>$null
-    
+
     if ($status -eq "Succeeded") {
         Write-Host "   ✅ Container App deployed successfully" -ForegroundColor Green
         break

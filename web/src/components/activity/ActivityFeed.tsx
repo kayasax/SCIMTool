@@ -36,13 +36,13 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [newActivityCount, setNewActivityCount] = useState(0);
   const [lastActivityId, setLastActivityId] = useState<string>('');
-  
+
   // Store last activity ID in localStorage for persistence across component re-renders
   const storeLastActivityId = (id: string) => {
     setLastActivityId(id);
     localStorage.setItem('scimtool-last-activity-id', id);
   };
-  
+
   const getStoredLastActivityId = () => {
     const stored = localStorage.getItem('scimtool-last-activity-id');
     return stored || lastActivityId;
@@ -50,7 +50,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
 
   const updateTabTitle = (count: number) => {
     const baseTitle = 'SCIMTool - SCIM 2.0 Provisioning Monitor';
-    
+
     if (count > 0) {
       const newTitle = `(${count}) ${baseTitle}`;
       document.title = newTitle;
@@ -116,21 +116,21 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
 
       // Update or create favicon
       let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
-      
+
       if (favicon) {
         favicon.href = dataURL;
       } else {
         // Remove any existing favicon elements first
         const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
         existingFavicons.forEach(el => el.remove());
-        
+
         // Create new favicon link
         const newFavicon = document.createElement('link');
         newFavicon.rel = 'icon';
         newFavicon.type = 'image/png';
         newFavicon.href = dataURL;
         document.head.appendChild(newFavicon);
-        
+
         // Also add as shortcut icon for better browser compatibility
         const shortcutIcon = document.createElement('link');
         shortcutIcon.rel = 'shortcut icon';

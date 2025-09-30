@@ -15,10 +15,10 @@ export class BackupService implements OnModuleInit {
     this.logger.log('Backup service initialized');
     this.logger.log(`Local DB: ${this.localDbPath}`);
     this.logger.log(`Azure Files backup: ${this.azureFilesBackupPath}`);
-    
+
     // Perform initial backup after 30 seconds to allow app to initialize
     setTimeout(() => {
-      this.performBackup().catch(err => 
+      this.performBackup().catch(err =>
         this.logger.error('Initial backup failed:', err)
       );
     }, 30000);
@@ -50,10 +50,10 @@ export class BackupService implements OnModuleInit {
       const fileSizeKB = (stats.size / 1024).toFixed(2);
 
       this.logger.log(`Starting backup #${this.backupCount + 1}...`);
-      
+
       // Perform the copy
       await copyFile(this.localDbPath, this.azureFilesBackupPath);
-      
+
       // Update counters
       this.backupCount++;
       this.lastBackupTime = new Date();
@@ -65,7 +65,7 @@ export class BackupService implements OnModuleInit {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Backup failed:', errorMessage);
-      
+
       // Don't throw - we want the app to continue even if backup fails
       // This is important because Azure Files might be temporarily unavailable
     }

@@ -709,18 +709,18 @@ export class ActivityParserService {
     if (!operations || operations.length === 0) return undefined;
 
     const changes: string[] = [];
-    
+
     for (const op of operations) {
       try {
         let path = op.path?.toLowerCase() || '';
-        
+
         // Extract field name from URN format
         // e.g., "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager" → "manager"
         if (path.includes(':')) {
           const parts = path.split(':');
           path = parts[parts.length - 1];
         }
-        
+
         // Handle manager changes
         if (path === 'manager' || path.includes('manager')) {
           if ((op.op === 'replace' || op.op === 'add') && op.value) {
@@ -735,7 +735,7 @@ export class ActivityParserService {
           }
           continue;
         }
-        
+
         // Handle displayName changes
         if (path === 'displayname' || path.includes('displayname')) {
           if (op.op === 'replace' || op.op === 'add') {
@@ -743,7 +743,7 @@ export class ActivityParserService {
           }
           continue;
         }
-        
+
         // Handle title changes
         if (path === 'title') {
           if (op.op === 'replace' || op.op === 'add') {
@@ -751,7 +751,7 @@ export class ActivityParserService {
           }
           continue;
         }
-        
+
         // Handle department changes
         if (path === 'department') {
           if (op.op === 'replace' || op.op === 'add') {
@@ -759,7 +759,7 @@ export class ActivityParserService {
           }
           continue;
         }
-        
+
         // Handle email changes
         if (path === 'emails' || path.includes('email')) {
           if (op.op === 'replace' || op.op === 'add') {
@@ -770,7 +770,7 @@ export class ActivityParserService {
           }
           continue;
         }
-        
+
         // Handle active/enabled status changes
         if (path === 'active' || path.includes('active')) {
           if (op.op === 'replace' || op.op === 'add') {
@@ -778,7 +778,7 @@ export class ActivityParserService {
           }
           continue;
         }
-        
+
         // Handle other common attributes
         if (path && (op.op === 'replace' || op.op === 'add') && op.value !== undefined) {
           // Make path more readable

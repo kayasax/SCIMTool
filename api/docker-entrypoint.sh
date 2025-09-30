@@ -17,14 +17,14 @@ echo "╚═══════════════════════�
 if [ -f "$AZURE_FILES_BACKUP" ]; then
     BACKUP_SIZE=$(stat -f%z "$AZURE_FILES_BACKUP" 2>/dev/null || stat -c%s "$AZURE_FILES_BACKUP" 2>/dev/null || echo "unknown")
     BACKUP_DATE=$(stat -f%Sm "$AZURE_FILES_BACKUP" 2>/dev/null || stat -c%y "$AZURE_FILES_BACKUP" 2>/dev/null || echo "unknown")
-    
+
     echo "✓ Found backup on Azure Files"
     echo "  └─ Size: $BACKUP_SIZE bytes"
     echo "  └─ Date: $BACKUP_DATE"
     echo "→ Restoring database from backup to local storage..."
-    
+
     cp "$AZURE_FILES_BACKUP" "$LOCAL_DB"
-    
+
     if [ $? -eq 0 ]; then
         echo "✓ Database restored successfully"
     else
