@@ -291,23 +291,68 @@ if (-not $skipAppDeployment) {
     Write-Host "   Deploying container (this may take 2-3 minutes)..." -ForegroundColor Gray
     $deploymentName = "containerapp-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
-    # Deploy and WAIT for completion (no --no-wait) so we see any errors immediately
+    # Use --no-wait and then poll with timeout to avoid hanging
     Write-Host "   Starting deployment: $deploymentName" -ForegroundColor Gray
+    Write-Host "   (This runs asynchronously - polling for completion...)" -ForegroundColor Gray
+    
     $deployOutput = az deployment group create `
         --resource-group $ResourceGroup `
         --name $deploymentName `
         --template-file "$PSScriptRoot/../infra/containerapp.bicep" `
         --parameters $paramsString `
+        --no-wait `
         --output json
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Container app deployment failed" -ForegroundColor Red
+        Write-Host "   ❌ Failed to start container app deployment" -ForegroundColor Red
         Write-Host "   Error output:" -ForegroundColor Red
         Write-Host $deployOutput -ForegroundColor Red
         exit 1
     }
-    
-    Write-Host "   ✅ Container App deployed successfully" -ForegroundColor Green
+
+    # Poll deployment status with timeout
+    Write-Host "   Waiting for deployment to complete (timeout: 5 minutes)..." -ForegroundColor Gray
+    $maxWaitSeconds = 300
+    $elapsed = 0
+    $checkInterval = 10
+
+    while ($elapsed -lt $maxWaitSeconds) {
+        Start-Sleep -Seconds $checkInterval
+        $elapsed += $checkInterval
+
+        $status = az deployment group show `
+            --resource-group $ResourceGroup `
+            --name $deploymentName `
+            --query "properties.provisioningState" `
+            --output tsv 2>$null
+
+        if ($status -eq "Succeeded") {
+            Write-Host "   ✅ Container App deployed successfully" -ForegroundColor Green
+            break
+        } elseif ($status -eq "Failed") {
+            Write-Host "   ❌ Container App deployment failed" -ForegroundColor Red
+            Write-Host "   Getting error details..." -ForegroundColor Yellow
+            $errorDetails = az deployment group show `
+                --resource-group $ResourceGroup `
+                --name $deploymentName `
+                --query "properties.error" `
+                --output json
+            Write-Host "   Error details:" -ForegroundColor Red
+            Write-Host $errorDetails -ForegroundColor Red
+            exit 1
+        } elseif ($status -in @("Running", "Accepted", "")) {
+            Write-Host "   ⏳ Still deploying... ($elapsed seconds elapsed)" -ForegroundColor Gray
+        } else {
+            Write-Host "   ⚠️  Unknown status: $status" -ForegroundColor Yellow
+        }
+    }
+
+    if ($elapsed -ge $maxWaitSeconds) {
+        Write-Host "   ⚠️  Deployment timeout after $maxWaitSeconds seconds" -ForegroundColor Yellow
+        Write-Host "   The deployment may still be running. Check Azure Portal:" -ForegroundColor Yellow
+        Write-Host "   https://portal.azure.com/#@/resource/subscriptions/$((az account show --query id -o tsv))/resourceGroups/$ResourceGroup/deployments" -ForegroundColor Cyan
+        exit 1
+    }
 }
 Write-Host ""
 
