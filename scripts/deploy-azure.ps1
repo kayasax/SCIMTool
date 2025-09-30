@@ -132,7 +132,7 @@ if ($EnablePersistentStorage) {
     if ($storageExists) {
         Write-Host "   ✅ Storage account already exists" -ForegroundColor Green
         # Get the existing storage key
-        $keys = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --output json | ConvertFrom-Json
+        $keys = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
         $storageAccountKey = $keys[0].value
         Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
         Write-Host "      File Share: scimtool-data" -ForegroundColor Gray
