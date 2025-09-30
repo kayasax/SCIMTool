@@ -2,7 +2,7 @@ import { Controller, Post, Get, UseGuards } from '@nestjs/common';
 import { BackupService } from './backup.service';
 import { SharedSecretGuard } from '../auth/shared-secret.guard';
 
-@Controller('scim/admin/backup')
+@Controller('admin/backup')
 @UseGuards(SharedSecretGuard)
 export class BackupController {
   constructor(private readonly backupService: BackupService) {}
