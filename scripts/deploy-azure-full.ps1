@@ -251,14 +251,14 @@ Write-Host ""
 
 Write-Host "💰 Estimated Monthly Cost:" -ForegroundColor Cyan
 if ($EnablePersistentStorage) {
-    Write-Host "   Container App: ~`$5-15 (scales to zero when idle)" -ForegroundColor White
-    Write-Host "   Storage Account: ~`$0.30 (5 GiB file share)" -ForegroundColor White
-    Write-Host "   Log Analytics: ~`$0-5 (depends on log volume)" -ForegroundColor White
-    Write-Host "   Total: ~`$5.30-20/month" -ForegroundColor Yellow
+    Write-Host '   Container App: ~$5-15 (scales to zero when idle)' -ForegroundColor White
+    Write-Host '   Storage Account: ~$0.30 (5 GiB file share)' -ForegroundColor White
+    Write-Host '   Log Analytics: ~$0-5 (depends on log volume)' -ForegroundColor White
+    Write-Host '   Total: ~$5.30-20/month' -ForegroundColor Yellow
 } else {
-    Write-Host "   Container App: ~`$5-15 (scales to zero when idle)" -ForegroundColor White
-    Write-Host "   Log Analytics: ~`$0-5 (depends on log volume)" -ForegroundColor White
-    Write-Host "   Total: ~`$5-20/month" -ForegroundColor Yellow
+    Write-Host '   Container App: ~$5-15 (scales to zero when idle)' -ForegroundColor White
+    Write-Host '   Log Analytics: ~$0-5 (depends on log volume)' -ForegroundColor White
+    Write-Host '   Total: ~$5-20/month' -ForegroundColor Yellow
 }
 Write-Host ""
 

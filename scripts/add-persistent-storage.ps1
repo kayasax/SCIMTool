@@ -86,26 +86,26 @@ if ($hasStorage) {
 if ($BackupCurrentData) {
     Write-Host "💾 Step 2/6: Backing Up Current Data" -ForegroundColor Cyan
     Write-Host "   ⚠️  Note: This may fail if database is locked or in use" -ForegroundColor Yellow
-    
+
     try {
         # Create backup directory
         $backupDir = "$PSScriptRoot/../backups"
         if (-not (Test-Path $backupDir)) {
             New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
         }
-        
+
         $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
         $backupFile = "$backupDir/scim-backup-$timestamp.db"
-        
+
         Write-Host "   Attempting to backup database..." -ForegroundColor Yellow
         Write-Host "   Note: This uses 'az containerapp exec' which may not work on all deployments" -ForegroundColor Gray
-        
+
         # Try to copy database from running container
         az containerapp exec `
             --name $AppName `
             --resource-group $ResourceGroup `
             --command "cat /app/data.db" > $backupFile 2>$null
-        
+
         if ($LASTEXITCODE -eq 0 -and (Test-Path $backupFile) -and (Get-Item $backupFile).Length -gt 0) {
             Write-Host "   ✅ Backup created: $backupFile" -ForegroundColor Green
         } else {
@@ -267,9 +267,9 @@ if ($BackupCurrentData -and (Test-Path "$backupDir/scim-backup-$timestamp.db")) 
 }
 
 Write-Host "💰 Additional Monthly Cost:" -ForegroundColor Cyan
-Write-Host "   Storage Account: ~`$0.05/month" -ForegroundColor White
-Write-Host "   File Share (5 GiB): ~`$0.30/month" -ForegroundColor White
-Write-Host "   Total: ~`$0.35/month additional" -ForegroundColor Yellow
+Write-Host '   Storage Account: ~$0.05/month' -ForegroundColor White
+Write-Host '   File Share (5 GiB): ~$0.30/month' -ForegroundColor White
+Write-Host '   Total: ~$0.35/month additional' -ForegroundColor Yellow
 Write-Host ""
 
 Write-Host "🏁 Migration complete! Your data will now persist." -ForegroundColor Green
