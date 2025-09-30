@@ -25,7 +25,10 @@ Write-Host ""
 Write-Host "📋 Checking prerequisites..." -ForegroundColor Cyan
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Azure CLI not found. Please install: https://aka.ms/InstallAzureCLI" -ForegroundColor Red
-    exit 1
+    Write-Host ""
+    Write-Host "Press any key to close..." -ForegroundColor Yellow
+    try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch { Start-Sleep -Seconds 5 }
+    return
 }
 
 # Login check
@@ -226,7 +229,10 @@ try {
         }
     } else {
         Write-Host "❌ Deployment failed. Error details above." -ForegroundColor Red
-        exit 1
+        Write-Host ""
+        Write-Host "Press any key to close..." -ForegroundColor Yellow
+        try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch { Start-Sleep -Seconds 5 }
+        return
     }
 
 } finally {
