@@ -85,12 +85,12 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
       // Init container to clean up stale SQLite journal files (Azure Files + SQLite locking issue)
       initContainers: !empty(storageAccountName) ? [
         {
-          name: 'cleanup-db-locks'
+          name: 'restore-and-cleanup'
           image: 'busybox:latest'
           command: [
             'sh'
             '-c'
-            'echo "Checking for stale SQLite lock files..." && rm -f /app/data/*.db-journal /app/data/*.db-shm /app/data/*.db-wal && echo "Cleanup complete"'
+            'mkdir -p /app/local-data && echo "Local data directory created" && if [ -f /app/data/scim.db ]; then echo "Restoring database from Azure Files backup..." && cp /app/data/scim.db /app/local-data/scim.db && echo "Database restored"; else echo "No backup found, starting fresh"; fi && echo "Cleaning up Azure Files lock files..." && rm -f /app/data/*.db-journal /app/data/*.db-shm /app/data/*.db-wal && echo "Init complete"'
           ]
           volumeMounts: [
             {
@@ -112,7 +112,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
           { name: 'SCIM_SHARED_SECRET', secretRef: 'scim-shared-secret' }
           { name: 'NODE_ENV', value: 'production' }
           { name: 'PORT', value: string(targetPort) }
-          { name: 'DATABASE_URL', value: !empty(storageAccountName) ? 'file:/app/data/scim.db' : 'file:./data.db' }
+          // ALWAYS use local storage for fast database access (backup service handles Azure Files)
+          { name: 'DATABASE_URL', value: 'file:/app/local-data/scim.db' }
           ]
           resources: {
             // Map allowed cpuCores string to numeric
