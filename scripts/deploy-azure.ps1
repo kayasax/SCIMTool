@@ -102,13 +102,16 @@ if (-not $EnablePersistentStorage) {
 
 # Step 1: Create or verify resource group
 Write-Host "📦 Step 1/5: Resource Group" -ForegroundColor Cyan
-$rgJson = az group show --name $ResourceGroup --output json 2>&1 | Where-Object { $_ -notmatch 'UserWarning' -and $_ -notmatch 'WARNING' -and $_ -notmatch 'ERROR' }
-if ($LASTEXITCODE -ne 0 -or -not $rgJson) {
+$ErrorActionPreference = 'SilentlyContinue'
+$rgJson = az group show --name $ResourceGroup --output json 2>$null
+$rgExitCode = $LASTEXITCODE
+$ErrorActionPreference = 'Continue'
+
+if ($rgExitCode -ne 0 -or -not $rgJson) {
     Write-Host "   Creating resource group '$ResourceGroup'..." -ForegroundColor Yellow
-    $createResult = az group create --name $ResourceGroup --location $Location --output none 2>&1 | Where-Object { $_ -notmatch 'UserWarning' -and $_ -notmatch 'WARNING' }
+    az group create --name $ResourceGroup --location $Location --output none 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Failed to create resource group" -ForegroundColor Red
-        Write-Host "   $createResult" -ForegroundColor Red
         exit 1
     }
     Write-Host "   ✅ Resource group created" -ForegroundColor Green
@@ -147,20 +150,24 @@ Write-Host ""
 # Step 3: Deploy Container App Environment
 Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
 
-# Check if environment exists (suppress all stderr including warnings)
+# Check if environment exists (suppress stderr warnings)
 $skipEnvDeployment = $false
 $envJson = $null
+$ErrorActionPreference = 'SilentlyContinue'
 try {
-    $envJson = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>&1 | Where-Object { $_ -notmatch 'UserWarning' -and $_ -notmatch 'WARNING' -and $_ -notmatch 'ERROR' }
-    if ($LASTEXITCODE -eq 0 -and $envJson) {
+    $envJson = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = 'Continue'
+    
+    if ($exitCode -eq 0 -and $envJson) {
         $existingEnv = $envJson | ConvertFrom-Json
         # Check if environment has workload profiles
         if (-not $existingEnv.properties.workloadProfiles -or $existingEnv.properties.workloadProfiles.Count -eq 0) {
             Write-Host "   ⚠️  Existing environment doesn't support workload profiles" -ForegroundColor Yellow
             Write-Host "   Deleting old environment to recreate with workload profiles..." -ForegroundColor Yellow
-            $null = az containerapp env delete --name $envName --resource-group $ResourceGroup --yes --output none 2>&1
+            $null = az containerapp env delete --name $envName --resource-group $ResourceGroup --yes 2>&1 | Out-Null
             Write-Host "   ✅ Old environment deleted" -ForegroundColor Green
-            Start-Sleep -Seconds 5
+            Start-Sleep -Seconds 10
         } else {
             Write-Host "   ✅ Environment already exists with workload profiles" -ForegroundColor Green
             $skipEnvDeployment = $true
@@ -168,11 +175,11 @@ try {
     }
 } catch {
     # If any error, treat as if environment doesn't exist
+    $ErrorActionPreference = 'Continue'
 }
 
 if (-not $skipEnvDeployment) {
     Write-Host "   Deploying environment with Log Analytics (this may take 1-2 minutes)..." -ForegroundColor Yellow
-    
     $envDeploymentName = "containerapp-env-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
     $envDeployOutput = az deployment group create `
