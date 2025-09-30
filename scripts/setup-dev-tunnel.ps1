@@ -63,7 +63,7 @@ $existing = $null
 if ($TunnelName -and $tunnelList) { $existing = $tunnelList | Where-Object { $_.name -eq $TunnelName } | Select-Object -First 1 }
 
 if (-not $existing) {
-  $anon = $AllowAnonymous.IsPresent ? "--allow-anonymous" : ""
+  $anon = if($AllowAnonymous.IsPresent){"--allow-anonymous"}else{""}
   if ($TunnelName) {
     Write-Info "Creating tunnel with requested name '$TunnelName'..."
     try { devtunnel create $TunnelName $anon | Out-Null }
@@ -95,7 +95,7 @@ Write-Info "Using tunnel id: $tunnelId"
 
 # Create port mapping (idempotent)
 Write-Info "Configuring port $Port (HTTPS=$($Https.IsPresent))"
-$proto = $Https.IsPresent ? "https" : "http"
+$proto = if($Https.IsPresent){"https"}else{"http"}
 try {
   if ($TunnelName) { devtunnel port create $TunnelName --port $Port --protocol $proto | Out-Null }
   else { devtunnel port create --tunnel-id $tunnelId --port $Port --protocol $proto | Out-Null }

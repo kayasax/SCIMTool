@@ -84,7 +84,9 @@ Write-Host "   Environment: $envName" -ForegroundColor White
 Write-Host "   Storage Account: $storageName" -ForegroundColor White
 Write-Host "   Log Analytics: $lawName" -ForegroundColor White
 Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
-Write-Host "   Persistent Storage: $($EnablePersistentStorage ? 'Enabled ✅' : 'Disabled ⚠️')" -ForegroundColor $(if($EnablePersistentStorage){'Green'}else{'Yellow'})
+$storageStatus = if($EnablePersistentStorage){'Enabled ✅'}else{'Disabled ⚠️'}
+$storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
+Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
 Write-Host ""
 
 if (-not $EnablePersistentStorage) {
@@ -222,7 +224,9 @@ Write-Host "📋 Deployment Summary:" -ForegroundColor Cyan
 Write-Host "   App URL: $url" -ForegroundColor Yellow
 Write-Host "   SCIM Endpoint: $url/scim/v2" -ForegroundColor Yellow
 Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
-Write-Host "   Persistent Storage: $($EnablePersistentStorage ? 'Enabled ✅' : 'Disabled ⚠️')" -ForegroundColor $(if($EnablePersistentStorage){'Green'}else{'Yellow'})
+$storageStatus = if($EnablePersistentStorage){'Enabled ✅'}else{'Disabled ⚠️'}
+$storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
+Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
 Write-Host ""
 
 if ($EnablePersistentStorage) {
