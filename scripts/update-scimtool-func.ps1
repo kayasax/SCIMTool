@@ -104,6 +104,21 @@ function Update-SCIMTool {
     Write-Host "   New Image: $imageRef" -ForegroundColor Gray
     Write-Host ""
 
+    # Check for persistent storage
+    Write-Host "🔍 Checking storage configuration..." -ForegroundColor Cyan
+    $appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
+    $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
+    
+    if ($hasVolumes) {
+        Write-Host "✅ Persistent storage detected - data will be preserved" -ForegroundColor Green
+        $volumeInfo = $appDetails.properties.template.volumes[0]
+        Write-Host "   Volume: $($volumeInfo.name)" -ForegroundColor Gray
+        Write-Host "   Storage: $($volumeInfo.storageName)" -ForegroundColor Gray
+    } else {
+        Write-Host "⚠️  No persistent storage - data is ephemeral" -ForegroundColor Yellow
+    }
+    Write-Host ""
+
     # Build the Azure CLI command
     $updateCommand = "az containerapp update -n '$AppName' -g '$ResourceGroup' --image '$imageRef'"
 
@@ -111,12 +126,14 @@ function Update-SCIMTool {
     Write-Host "  $updateCommand" -ForegroundColor Yellow
     Write-Host ""
 
-    # ⚠️ DATA WARNING
-    Write-Host "⚠️  WARNING: EXISTING DATA WILL BE DELETED" -ForegroundColor Red -BackgroundColor Yellow
-    Write-Host "   This update will replace the container with a new version." -ForegroundColor Red
-    Write-Host "   All existing activity logs, users, and groups will be lost." -ForegroundColor Red
-    Write-Host "   Make sure to backup any important data before proceeding." -ForegroundColor Red
-    Write-Host ""
+    # ⚠️ DATA WARNING (conditional based on storage)
+    if (-not $hasVolumes) {
+        Write-Host "⚠️  WARNING: EXISTING DATA WILL BE DELETED" -ForegroundColor Red -BackgroundColor Yellow
+        Write-Host "   This update will replace the container with a new version." -ForegroundColor Red
+        Write-Host "   All existing activity logs, users, and groups will be lost." -ForegroundColor Red
+        Write-Host "   Consider adding persistent storage with add-persistent-storage.ps1" -ForegroundColor Yellow
+        Write-Host ""
+    }
 
     if ($DryRun) {
         Write-Host "🔍 Dry run mode - command would execute but no changes made" -ForegroundColor Yellow
@@ -124,14 +141,22 @@ function Update-SCIMTool {
     }
 
     if (-not $NoPrompt) {
-        Write-Host "Please confirm you understand the data loss warning above." -ForegroundColor Yellow
-        do {
-            $response = Read-Host "Proceed with container app update and data deletion? [y/N]"
-            if ([string]::IsNullOrWhiteSpace($response) -or $response -in @('n','N','no','No')) {
+        if (-not $hasVolumes) {
+            Write-Host "Please confirm you understand the data loss warning above." -ForegroundColor Yellow
+            do {
+                $response = Read-Host "Proceed with container app update and data deletion? [y/N]"
+                if ([string]::IsNullOrWhiteSpace($response) -or $response -in @('n','N','no','No')) {
+                    Write-Host "❌ Update cancelled by user" -ForegroundColor Yellow
+                    return
+                }
+            } while ($response -notin @('y','Y','yes','Yes'))
+        } else {
+            $response = Read-Host "Proceed with container app update? [Y/n]"
+            if ($response -in @('n','N','no','No')) {
                 Write-Host "❌ Update cancelled by user" -ForegroundColor Yellow
                 return
             }
-        } while ($response -notin @('y','Y','yes','Yes'))
+        }
     }
 
     Write-Host "🔄 Updating container app..." -ForegroundColor Cyan
