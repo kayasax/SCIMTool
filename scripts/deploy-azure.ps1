@@ -241,94 +241,73 @@ Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
 $appCheck = az containerapp show --name $AppName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
 $appExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($appCheck)
 
+$skipAppDeployment = $false
+
 if ($appExists) {
-    Write-Host "   ✅ Container App already exists - updating..." -ForegroundColor Green
+    Write-Host "   ✅ Container App already exists" -ForegroundColor Green
+    
+    # Check current image version
+    $currentImage = az containerapp show --name $AppName --resource-group $ResourceGroup --query "properties.template.containers[0].image" --output tsv 2>$null
+    $desiredImage = "ghcr.io/kayasax/scimtool:$ImageTag"
+    
+    Write-Host "      Current image: $currentImage" -ForegroundColor Gray
+    Write-Host "      Desired image: $desiredImage" -ForegroundColor Gray
+    
+    if ($currentImage -eq $desiredImage) {
+        Write-Host "   ✅ Already configured with the same image tag - skipping deployment" -ForegroundColor Green
+        $skipAppDeployment = $true
+    } else {
+        Write-Host "   🔄 Updating to new version..." -ForegroundColor Yellow
+    }
 } else {
     Write-Host "   Deploying SCIMTool container..." -ForegroundColor Yellow
 }
 
-$containerParams = @{
-    appName = $AppName
-    environmentName = $envName
-    location = $Location
-    acrLoginServer = "ghcr.io"
-    image = "kayasax/scimtool:$ImageTag"
-    scimSharedSecret = $ScimSecret
-}
-
-if ($EnablePersistentStorage) {
-    $containerParams.storageAccountName = $storageName
-    $containerParams.storageAccountKey = $storageAccountKey
-    $containerParams.fileShareName = "scimtool-data"
-}
-
-# Build parameters string
-$paramsString = ($containerParams.GetEnumerator() | ForEach-Object {
-    if ($_.Key -eq 'scimSharedSecret' -or $_.Key -eq 'storageAccountKey') {
-        "$($_.Key)=$($_.Value)"
-    } else {
-        "$($_.Key)=$($_.Value)"
+if (-not $skipAppDeployment) {
+    $containerParams = @{
+        appName = $AppName
+        environmentName = $envName
+        location = $Location
+        acrLoginServer = "ghcr.io"
+        image = "kayasax/scimtool:$ImageTag"
+        scimSharedSecret = $ScimSecret
     }
-}) -join ' '
 
-Write-Host "   Deploying container (this may take 2-3 minutes)..." -ForegroundColor Gray
-$deploymentName = "containerapp-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    if ($EnablePersistentStorage) {
+        $containerParams.storageAccountName = $storageName
+        $containerParams.storageAccountKey = $storageAccountKey
+        $containerParams.fileShareName = "scimtool-data"
+    }
 
-# Start deployment with no-wait to get better control
-$deployOutput = az deployment group create `
-    --resource-group $ResourceGroup `
-    --name $deploymentName `
-    --template-file "$PSScriptRoot/../infra/containerapp.bicep" `
-    --parameters $paramsString `
-    --no-wait `
-    --output json 2>&1
+    # Build parameters string
+    $paramsString = ($containerParams.GetEnumerator() | ForEach-Object {
+        if ($_.Key -eq 'scimSharedSecret' -or $_.Key -eq 'storageAccountKey') {
+            "$($_.Key)=$($_.Value)"
+        } else {
+            "$($_.Key)=$($_.Value)"
+        }
+    }) -join ' '
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "   ❌ Failed to start container app deployment" -ForegroundColor Red
-    Write-Host $deployOutput -ForegroundColor Red
-    exit 1
-}
+    Write-Host "   Deploying container (this may take 2-3 minutes)..." -ForegroundColor Gray
+    $deploymentName = "containerapp-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
-# Poll deployment status with timeout
-Write-Host "   Waiting for deployment to complete (timeout: 10 minutes)..." -ForegroundColor Gray
-$maxWaitSeconds = 600
-$elapsed = 0
-$checkInterval = 10
-
-while ($elapsed -lt $maxWaitSeconds) {
-    Start-Sleep -Seconds $checkInterval
-    $elapsed += $checkInterval
-
-    $status = az deployment group show `
+    # Deploy and WAIT for completion (no --no-wait) so we see any errors immediately
+    Write-Host "   Starting deployment: $deploymentName" -ForegroundColor Gray
+    $deployOutput = az deployment group create `
         --resource-group $ResourceGroup `
         --name $deploymentName `
-        --query "properties.provisioningState" `
-        --output tsv 2>$null
+        --template-file "$PSScriptRoot/../infra/containerapp.bicep" `
+        --parameters $paramsString `
+        --output json
 
-    if ($status -eq "Succeeded") {
-        Write-Host "   ✅ Container App deployed successfully" -ForegroundColor Green
-        break
-    } elseif ($status -eq "Failed") {
-        Write-Host "   ❌ Container App deployment failed" -ForegroundColor Red
-        $errorDetails = az deployment group show `
-            --resource-group $ResourceGroup `
-            --name $deploymentName `
-            --query "properties.error" `
-            --output json 2>$null
-        Write-Host "   Error details: $errorDetails" -ForegroundColor Red
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ❌ Container app deployment failed" -ForegroundColor Red
+        Write-Host "   Error output:" -ForegroundColor Red
+        Write-Host $deployOutput -ForegroundColor Red
         exit 1
-    } elseif ($status -in @("Running", "Accepted", "")) {
-        Write-Host "   ⏳ Still deploying... ($elapsed seconds elapsed)" -ForegroundColor Gray
-    } else {
-        Write-Host "   ⚠️  Unknown status: $status" -ForegroundColor Yellow
     }
-}
-
-if ($elapsed -ge $maxWaitSeconds) {
-    Write-Host "   ⚠️  Deployment timeout after $maxWaitSeconds seconds" -ForegroundColor Yellow
-    Write-Host "   The deployment may still be running. Check Azure Portal for status." -ForegroundColor Yellow
-    Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor Cyan
-    Write-Host "   Deployment Name: $deploymentName" -ForegroundColor Cyan
+    
+    Write-Host "   ✅ Container App deployed successfully" -ForegroundColor Green
 }
 Write-Host ""
 
