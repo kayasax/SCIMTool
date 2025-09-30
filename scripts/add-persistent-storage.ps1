@@ -136,17 +136,10 @@ Write-Host "   File Share: $fileShareName" -ForegroundColor White
 Write-Host "   Location: $location" -ForegroundColor White
 Write-Host ""
 
-# Check if storage account already exists (suppress all errors)
-$existingStorage = $null
-$tempErrorFile = [System.IO.Path]::GetTempFileName()
-try {
-    $output = az storage account show --name $storageName --resource-group $ResourceGroup --output json 2>$tempErrorFile
-    if ($LASTEXITCODE -eq 0) {
-        $existingStorage = $output | ConvertFrom-Json
-        Write-Host "   ℹ️  Storage account '$storageName' already exists, will reuse it" -ForegroundColor Yellow
-    }
-} finally {
-    Remove-Item $tempErrorFile -Force -ErrorAction SilentlyContinue
+# Check if storage account already exists
+$existingStorage = az storage account list --resource-group $ResourceGroup --query "[?name=='$storageName']" --output json | ConvertFrom-Json
+if ($existingStorage -and $existingStorage.Count -gt 0) {
+    Write-Host "   ℹ️  Storage account '$storageName' already exists, will reuse it" -ForegroundColor Yellow
 }
 
 # Step 4: Deploy storage resources
