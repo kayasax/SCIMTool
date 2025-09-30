@@ -30,13 +30,7 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
         sharedKey: law.listKeys().primarySharedKey
       }
     }
-    // Workload profiles required for Container Apps (Consumption plan)
-    workloadProfiles: [
-      {
-        name: 'Consumption'
-        workloadProfileType: 'Consumption'
-      }
-    ]
+    // Workload profiles omitted - environment uses default consumption model
     // Dapr instrumentation key intentionally omitted
   }
   tags: {
