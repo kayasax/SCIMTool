@@ -1,7 +1,7 @@
 # 🎯 SCIMTool
 **A clean, fast SCIM 2.0 activity monitor for Microsoft Entra ID**
 
-[![v0.6.0](https://img.shields.io/badge/Version-0.6.0-2ea043?style=flat-square)](https://github.com/kayasax/SCIMTool/releases/tag/v0.6.0) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
+[![Latest Release](https://img.shields.io/github/v/release/kayasax/SCIMTool?style=flat-square&color=2ea043)](https://github.com/kayasax/SCIMTool/releases/latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
 
 Stop parsing raw JSON provisioning logs. Get instant, human‑readable events, real‑time browser tab badges, and a searchable view of users & groups.
 
@@ -15,142 +15,94 @@ Stop parsing raw JSON provisioning logs. Get instant, human‑readable events, r
 - 🗄️ Built‑in user & group browser (relationships & memberships)
 - 🌓 Adaptive light/dark theme & mobile friendly UI
 - 🚀 2‑minute zero-maintenance Azure deployment (auto scale-to-zero)
-- � **Persistent storage** - Data survives container restarts and scale-to-zero
+- 💾 **Persistent storage** - Data survives container restarts and scale-to-zero
 - 📊 **Enhanced activity feed** - See detailed changes with resolved user/group names
-- �🔐 Shared-secret SCIM authentication
+- 🔐 Shared-secret SCIM authentication
 
 ---
 
-## 🚀 Quick Deploy (Azure Container Apps)
+## 🚀 Quick Start
+
+**One command to deploy everything:**
 
 ```powershell
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+.\setup.ps1
 ```
 
-Creates:
-- Azure Container App with persistent storage (Azure Files)
-- Public HTTPS endpoint
-- Auto-scaling (0 → demand)
-- SQLite database on persistent volume
-- Typical cost: ~$5‑15/month (scales to zero when idle)
+This interactive script:
+- ✅ Checks prerequisites (Azure CLI, PowerShell)
+- ✅ Deploys Azure Container App with persistent storage
+- ✅ Creates public HTTPS endpoint
+- ✅ Configures auto-scaling (scales to zero when idle)
+- ✅ Provides your SCIM endpoint URL and secret
+- ✅ **Typical cost: ~$5‑15/month** (mostly idle time = nearly free!)
 
-**New in v0.6.0:** Full Bicep-based deployment with persistent storage by default:
+**Want local dev/testing first?**
 
 ```powershell
-# Full deployment with all infrastructure
-./scripts/deploy-azure-full.ps1 `
-    -ResourceGroup "scim-rg" `
-    -AppName "scimtool" `
-    -Location "eastus" `
-    -ScimSecret "your-secure-secret"
+.\setup.ps1 -TestLocal
 ```
 
-**Upgrading existing deployment?** Add persistent storage to existing Container Apps:
-
-```powershell
-# Migrate existing deployment to persistent storage
-./scripts/add-persistent-storage.ps1 `
-    -ResourceGroup "your-rg" `
-    -AppName "your-app"
-```
-
-See [MIGRATION-GUIDE.md](./docs/MIGRATION-GUIDE.md) for detailed upgrade instructions.
-
-Other options (Docker Compose, hosted demo, local dev): see [DEPLOYMENT.md](./DEPLOYMENT.md).
+That's it! The script handles everything else.
 
 ---
 
 ## 🔧 Configure Microsoft Entra ID
 
+After running `setup.ps1`, you'll get your SCIM endpoint URL and secret. Then:
+
 1. Entra ID → Enterprise Applications → your app
 2. Provisioning → Set up automatic provisioning
-3. Tenant URL: `https://YOUR-APP.azurecontainerapps.io/scim/v2`
-4. Secret Token: value used at deploy (default `changeme` — change it!)
+3. Tenant URL: `https://YOUR-APP.azurecontainerapps.io/scim/v2` (from setup output)
+4. Secret Token: (from setup output)
 5. Test Connection → expect ✅ success
 6. Turn provisioning On & assign test users
 
-Open the web root (same host) to watch new events; badge increments while tab is backgrounded.
+Open the web root (same host, no `/scim`) to watch new events in real-time!
 
 ---
 
-## 🛠 Environment Variables
+## � Updating
 
-| Name | Purpose | Default |
-|------|---------|---------|
-| `SCIM_SHARED_SECRET` | Auth token for SCIM requests | `changeme` |
-| `DATABASE_URL` | SQLite/Prisma connection string | `file:/app/data/scim.db` |
-| `LOG_LEVEL` | Logging verbosity | `info` |
-| `CORS_ORIGINS` | Allowed web origins | `*` |
-
-**Storage Modes:**
-- **Persistent (v0.6.0+)**: `DATABASE_URL=file:/app/data/scim.db` (Azure Files mount)
-- **Ephemeral (legacy)**: `DATABASE_URL=file:./data.db` (container filesystem)
-
-Customization examples:
+The setup script automatically detects existing deployments and updates them:
 
 ```powershell
-# Custom secret
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1') -SecretToken "your-strong-secret"
-
-# Custom resource names
-./scripts/deploy-azure.ps1 -ResourceGroup my-scim-rg -AppName my-scimtool -ScimSecret my-secret
+.\setup.ps1
 ```
+
+Your data is preserved thanks to persistent storage. See what's new in the [Releases](https://github.com/kayasax/SCIMTool/releases)!
 
 ---
 
-## 🔄 Updating
-
-Redeploy with the same one‑liner; persistent storage preserves all data:
+## 🧪 Local Development
 
 ```powershell
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
+.\setup.ps1 -TestLocal
 ```
 
-**Upgrading from v0.5.0 or earlier?** Your deployment uses ephemeral storage. Add persistent storage:
+This starts:
+- Backend API: http://localhost:3000
+- Web UI: http://localhost:5173
 
-```powershell
-./scripts/add-persistent-storage.ps1 -ResourceGroup "your-rg" -AppName "your-app"
-```
-
-Release notes: [GitHub Releases](https://github.com/kayasax/SCIMTool/releases)
-
-Current highlights:
-- ✅ **v0.6.0**: Persistent storage with Azure Files
-- ✅ **v0.5.0**: Enhanced activity feed with detailed changes
-- ✅ Tab favicon + title badge
-- ✅ Polished production interface
-
----
-
-## 🧪 Local Development (Quick Glance)
-
-```powershell
-git clone https://github.com/kayasax/SCIMTool.git
-cd SCIMTool
-./setup.ps1 -TestLocal
-```
-
-Manual:
+**Manual setup:**
 ```powershell
 cd api; npm install; npm run start:dev
 cd ../web; npm install; npm run dev
 ```
-Backend: http://localhost:3000  |  Web UI: http://localhost:5173
 
 ---
 
-## 🩺 Troubleshooting (Quick Reference)
+## 🩺 Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| Connection test fails | URL ends with `/scim/v2`; secret matches; container running |
-| No activity events | Provisioning On; users assigned; trigger a create/update |
-| Favicon badge missing | Generate activity with tab in background; clear cache; check console |
-| Deploy script fails | `az login`; verify CLI installed & permissions |
-| Local dev CORS errors | Set `CORS_ORIGINS=http://localhost:5173` |
-| Data lost after restart | Upgrade to v0.6.0 with persistent storage (see Migration Guide) |
+| Connection test fails | Check URL ends with `/scim/v2`; verify secret matches; ensure container is running |
+| No activity events | Turn provisioning On; assign users; trigger a create/update in Entra |
+| Favicon badge missing | Generate activity with tab in background; clear browser cache |
+| Deploy fails | Run `az login`; verify Azure CLI is installed and you have permissions |
+| Local CORS errors | Backend auto-allows localhost:5173 in dev mode |
 
-More: [DEPLOYMENT.md](./DEPLOYMENT.md) • [MIGRATION-GUIDE.md](./docs/MIGRATION-GUIDE.md)
+For advanced scenarios, see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ---
 
@@ -158,7 +110,7 @@ More: [DEPLOYMENT.md](./DEPLOYMENT.md) • [MIGRATION-GUIDE.md](./docs/MIGRATION
 
 - 🐛 Bugs / 💡 Features: [Issues](https://github.com/kayasax/SCIMTool/issues)
 - 💬 Questions: [Discussions](https://github.com/kayasax/SCIMTool/discussions)
-- ⭐ Star the repo if it helps you
+- ⭐ Star the repo if it helps you!
 
 ---
 
@@ -168,5 +120,5 @@ MIT • Built with ❤️ for the Microsoft / Entra community.
 
 ---
 
-Need screenshots, deployment comparisons, hosted demo, or scaling notes? See: [DEPLOYMENT.md](./DEPLOYMENT.md)
+**Advanced deployment options, architecture details, and screenshots:** See [DEPLOYMENT.md](./DEPLOYMENT.md)
 
