@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Add persistent storage to existing SCIMTool Container App deployment
 
