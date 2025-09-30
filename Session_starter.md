@@ -1,6 +1,7 @@
 | Date | Achievement |
 |------|-------------|
-| 2025-09-30 | 📝 **README Simplified** - Dynamic version badge, removed admin complexity, focus on setup.ps1 only! |
+| 2025-09-30 | � **Deployment Script Consolidated** - Replaced deploy-azure.ps1 with full version (persistent storage by default), updated all docs! |
+| 2025-09-30 | �📝 **README Simplified** - Dynamic version badge, removed admin complexity, focus on setup.ps1 only! |
 | 2025-09-30 | 🔧 **Version Sync Fixed** - Updated package.json files to 0.7.2, update banner now correctly hidden! |
 | 2025-09-30 | 🎉 **v0.7.2 GitHub Release Published** - Comprehensive release notes documenting persistent storage architecture and verification! |
 | 2025-09-30 | ✅ **PERSISTENCE VERIFIED** - Container restart test passed! Data successfully restored from Azure Files backup (3064 KB preserved)! |
