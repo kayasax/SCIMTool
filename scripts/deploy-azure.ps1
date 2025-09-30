@@ -126,15 +126,13 @@ if ($EnablePersistentStorage) {
     Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
     
     # Check if storage account already exists
-    $ErrorActionPreference = 'SilentlyContinue'
-    $existingStorage = az storage account show --name $storageName --resource-group $ResourceGroup --output json 2>$null
-    $storageExists = $LASTEXITCODE -eq 0
-    $ErrorActionPreference = 'Continue'
+    $storageList = az storage account list --resource-group $ResourceGroup --query "[?name=='$storageName'].name" --output tsv
+    $storageExists = -not [string]::IsNullOrEmpty($storageList)
     
     if ($storageExists) {
         Write-Host "   ✅ Storage account already exists" -ForegroundColor Green
         # Get the existing storage key
-        $keys = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
+        $keys = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --output json | ConvertFrom-Json
         $storageAccountKey = $keys[0].value
         Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
         Write-Host "      File Share: scimtool-data" -ForegroundColor Gray
@@ -168,10 +166,8 @@ Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
 
 # Check if environment exists
 $skipEnvDeployment = $false
-$ErrorActionPreference = 'SilentlyContinue'
-$existingEnv = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
-$envExists = $LASTEXITCODE -eq 0
-$ErrorActionPreference = 'Continue'
+$envList = az containerapp env list --resource-group $ResourceGroup --query "[?name=='$envName'].name" --output tsv
+$envExists = -not [string]::IsNullOrEmpty($envList)
 
 if ($envExists) {
     Write-Host "   ✅ Environment already exists" -ForegroundColor Green
@@ -242,10 +238,8 @@ Write-Host ""
 Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
 
 # Check if container app already exists
-$ErrorActionPreference = 'SilentlyContinue'
-$existingApp = az containerapp show --name $AppName --resource-group $ResourceGroup --output json 2>$null
-$appExists = $LASTEXITCODE -eq 0
-$ErrorActionPreference = 'Continue'
+$appList = az containerapp list --resource-group $ResourceGroup --query "[?name=='$AppName'].name" --output tsv
+$appExists = -not [string]::IsNullOrEmpty($appList)
 
 if ($appExists) {
     Write-Host "   ✅ Container App already exists - updating..." -ForegroundColor Green
