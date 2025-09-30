@@ -66,12 +66,13 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: targetPort
         transport: 'auto'
       }
-      registries: [
+      // Only configure registry authentication for private registries (not ghcr.io which is public)
+      registries: acrLoginServer != 'ghcr.io' ? [
         {
           server: acrLoginServer
           identity: 'system'
         }
-      ]
+      ] : []
       secrets: [
         {
           name: 'scim-shared-secret'
