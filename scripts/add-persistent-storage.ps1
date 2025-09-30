@@ -209,6 +209,11 @@ if (-not $currentScimSecret) {
     $scimSecret = Read-Host "Please enter your SCIM shared secret (same as before)"
 }
 
+# Parse image: "ghcr.io/kayasax/scimtool:0.5.0" -> registry="ghcr.io", image="kayasax/scimtool:0.5.0"
+$imageParts = $currentImage -split '/', 2
+$registry = $imageParts[0]
+$imageWithTag = $imageParts[1]
+
 # Deploy updated container app configuration
 az deployment group create `
     --resource-group $ResourceGroup `
@@ -217,8 +222,8 @@ az deployment group create `
         appName=$AppName `
         environmentName=$envName `
         location=$location `
-        acrLoginServer="ghcr.io" `
-        image=$currentImage.Replace("ghcr.io/", "") `
+        acrLoginServer=$registry `
+        image=$imageWithTag `
         scimSharedSecret=$scimSecret `
         storageAccountName=$storageName `
         storageAccountKey=$storageAccountKey `
