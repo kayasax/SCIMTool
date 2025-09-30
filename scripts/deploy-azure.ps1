@@ -141,62 +141,83 @@ Write-Host ""
 
 # Step 3: Deploy Container App Environment
 Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
-Write-Host "   Deploying environment with Log Analytics (this may take 1-2 minutes)..." -ForegroundColor Yellow
 
-$envDeploymentName = "containerapp-env-$(Get-Date -Format 'yyyyMMddHHmmss')"
-
-$envDeployOutput = az deployment group create `
-    --resource-group $ResourceGroup `
-    --name $envDeploymentName `
-    --template-file "$PSScriptRoot/../infra/containerapp-env.bicep" `
-    --parameters caeName=$envName `
-                 lawName=$lawName `
-                 location=$Location `
-    --no-wait `
-    --output json 2>&1
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "   ❌ Failed to start environment deployment" -ForegroundColor Red
-    Write-Host $envDeployOutput -ForegroundColor Red
-    exit 1
-}
-
-# Poll environment deployment
-$maxWaitSeconds = 300
-$elapsed = 0
-$checkInterval = 10
-
-while ($elapsed -lt $maxWaitSeconds) {
-    Start-Sleep -Seconds $checkInterval
-    $elapsed += $checkInterval
-
-    $status = az deployment group show `
-        --resource-group $ResourceGroup `
-        --name $envDeploymentName `
-        --query "properties.provisioningState" `
-        --output tsv 2>$null
-
-    if ($status -eq "Succeeded") {
-        Write-Host "   ✅ Environment deployed successfully" -ForegroundColor Green
-        break
-    } elseif ($status -eq "Failed") {
-        Write-Host "   ❌ Environment deployment failed" -ForegroundColor Red
-        $errorDetails = az deployment group show `
-            --resource-group $ResourceGroup `
-            --name $envDeploymentName `
-            --query "properties.error" `
-            --output json 2>$null
-        Write-Host "   Error details: $errorDetails" -ForegroundColor Red
-        exit 1
-    } elseif ($status -in @("Running", "Accepted", "")) {
-        Write-Host "   ⏳ Still deploying... ($elapsed seconds elapsed)" -ForegroundColor Gray
+# Check if environment exists
+$skipEnvDeployment = $false
+$existingEnv = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
+if ($existingEnv) {
+    $existingEnv = $existingEnv | ConvertFrom-Json
+    # Check if environment has workload profiles
+    if (-not $existingEnv.properties.workloadProfiles -or $existingEnv.properties.workloadProfiles.Count -eq 0) {
+        Write-Host "   ⚠️  Existing environment doesn't support workload profiles" -ForegroundColor Yellow
+        Write-Host "   Deleting old environment to recreate with workload profiles..." -ForegroundColor Yellow
+        az containerapp env delete --name $envName --resource-group $ResourceGroup --yes --output none 2>$null
+        Write-Host "   ✅ Old environment deleted" -ForegroundColor Green
+        Start-Sleep -Seconds 5
+    } else {
+        Write-Host "   ✅ Environment already exists with workload profiles" -ForegroundColor Green
+        $skipEnvDeployment = $true
     }
 }
 
-if ($elapsed -ge $maxWaitSeconds) {
-    Write-Host "   ⚠️  Environment deployment timeout" -ForegroundColor Yellow
-    Write-Host "   Check Azure Portal for status: $ResourceGroup" -ForegroundColor Yellow
-    exit 1
+if (-not $skipEnvDeployment) {
+    Write-Host "   Deploying environment with Log Analytics (this may take 1-2 minutes)..." -ForegroundColor Yellow
+    
+    $envDeploymentName = "containerapp-env-$(Get-Date -Format 'yyyyMMddHHmmss')"
+
+    $envDeployOutput = az deployment group create `
+        --resource-group $ResourceGroup `
+        --name $envDeploymentName `
+        --template-file "$PSScriptRoot/../infra/containerapp-env.bicep" `
+        --parameters caeName=$envName `
+                     lawName=$lawName `
+                     location=$Location `
+        --no-wait `
+        --output json 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ❌ Failed to start environment deployment" -ForegroundColor Red
+        Write-Host $envDeployOutput -ForegroundColor Red
+        exit 1
+    }
+
+    # Poll environment deployment
+    $maxWaitSeconds = 300
+    $elapsed = 0
+    $checkInterval = 10
+
+    while ($elapsed -lt $maxWaitSeconds) {
+        Start-Sleep -Seconds $checkInterval
+        $elapsed += $checkInterval
+
+        $status = az deployment group show `
+            --resource-group $ResourceGroup `
+            --name $envDeploymentName `
+            --query "properties.provisioningState" `
+            --output tsv 2>$null
+
+        if ($status -eq "Succeeded") {
+            Write-Host "   ✅ Environment deployed successfully" -ForegroundColor Green
+            break
+        } elseif ($status -eq "Failed") {
+            Write-Host "   ❌ Environment deployment failed" -ForegroundColor Red
+            $errorDetails = az deployment group show `
+                --resource-group $ResourceGroup `
+                --name $envDeploymentName `
+                --query "properties.error" `
+                --output json 2>$null
+            Write-Host "   Error details: $errorDetails" -ForegroundColor Red
+            exit 1
+        } elseif ($status -in @("Running", "Accepted", "")) {
+            Write-Host "   ⏳ Still deploying... ($elapsed seconds elapsed)" -ForegroundColor Gray
+        }
+    }
+
+    if ($elapsed -ge $maxWaitSeconds) {
+        Write-Host "   ⚠️  Environment deployment timeout" -ForegroundColor Yellow
+        Write-Host "   Check Azure Portal for status: $ResourceGroup" -ForegroundColor Yellow
+        exit 1
+    }
 }
 Write-Host ""
 
