@@ -1,5 +1,6 @@
 | Date | Achievement |
 |------|-------------|
+| 2025-09-30 | 🎉 **v0.7.2 GitHub Release Published** - Comprehensive release notes documenting persistent storage architecture and verification! |
 | 2025-09-30 | ✅ **PERSISTENCE VERIFIED** - Container restart test passed! Data successfully restored from Azure Files backup (3064 KB preserved)! |
 | 2025-09-30 | 🎉 **v0.7.2 Released** - Fixed BackupController route (removed double /scim prefix) - Backup status indicator now working! |
 | 2025-09-30 | 💾 **Hybrid Storage Complete** - Local ephemeral DB + Azure Files backup system fully operational with UI status indicator! |
