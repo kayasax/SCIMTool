@@ -6,7 +6,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/main.js",
+    "start": "npx prisma migrate deploy && node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "lint": "eslint ./src --ext .ts",
     "format": "prettier --check \"src/**/*.ts\"",
