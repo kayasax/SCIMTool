@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Deploy SCIMTool to Azure Container Apps with persistent storage
 
