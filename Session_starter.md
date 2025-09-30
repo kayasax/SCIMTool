@@ -1,6 +1,10 @@
 | Date | Achievement |
 |------|-------------|
-| 2025-09-30 | 🔧 **Environment Compatibility Fix** - Auto-detect and recreate Container App Environments without workload profiles! |
+| 2025-09-30 | � **CRITICAL FIX: Hybrid Storage Architecture** - SQLite on LOCAL container storage (fast) + Azure Files for backups only (solves locking/performance issues)! |
+| 2025-09-30 | 🧹 **Azure Resource Cleanup** - Identified obsolete resources (ACR, duplicate LAW, orphaned job) - documented cleanup saving $7-12/month! |
+| 2025-09-30 | ⚠️ **Production Crisis Resolved** - Discovered DATABASE_URL pointing to Azure Files caused timeout errors, manual journal file cleanup restored app! |
+| 2025-09-30 | 🔧 **Init Container Enhanced** - Auto-restore from backup on startup + clean lock files (solves SQLite + Azure Files incompatibility)! |
+| 2025-09-30 | �🔧 **Environment Compatibility Fix** - Auto-detect and recreate Container App Environments without workload profiles! |
 | 2025-09-30 | ⏱️ **Deployment Timeout Fix** - Added 10-minute timeout and progress polling to prevent deployments hanging indefinitely! |
 | 2025-09-30 | 🔧 **Container Apps Workload Profile Fix** - Added required workload profile to Bicep templates for new Azure API requirement! |
 | 2025-09-30 | 🪟 **Window Closure Fix** - Replaced exit with return+pause in deploy.ps1 to prevent PowerShell window from closing on errors! |
