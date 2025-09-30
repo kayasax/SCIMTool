@@ -1,0 +1,265 @@
+<#
+.SYNOPSIS
+    Deploy SCIMTool to Azure Container Apps with persistent storage
+
+.DESCRIPTION
+    Comprehensive deployment script that creates all required Azure resources:
+    - Resource Group
+    - Storage Account + File Share (persistent SQLite database)
+    - Container App Environment (with Log Analytics)
+    - Container App (with volume mount)
+
+.PARAMETER ResourceGroup
+    Azure resource group name
+
+.PARAMETER AppName
+    Container app name (also used as prefix for other resources)
+
+.PARAMETER Location
+    Azure region
+
+.PARAMETER ScimSecret
+    Production SCIM shared secret
+
+.PARAMETER ImageTag
+    Container image tag to deploy (default: latest)
+
+.PARAMETER EnablePersistentStorage
+    Enable persistent storage (recommended for production)
+
+.EXAMPLE
+    .\deploy-azure-full.ps1 -ResourceGroup "scim-rg" -AppName "scimtool" -Location "eastus" -ScimSecret "your-secret"
+#>
+
+param(
+    [Parameter(Mandatory)]
+    [string]$ResourceGroup,
+
+    [Parameter(Mandatory)]
+    [string]$AppName,
+
+    [string]$Location = "eastus",
+
+    [Parameter(Mandatory)]
+    [string]$ScimSecret,
+
+    [string]$ImageTag = "latest",
+
+    [switch]$EnablePersistentStorage = $true
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "🚀 SCIMTool Full Deployment to Azure Container Apps" -ForegroundColor Green
+Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host ""
+
+# Check Azure CLI
+try {
+    $account = az account show --output json 2>$null | ConvertFrom-Json
+    if (-not $account) { throw "Not authenticated" }
+    Write-Host "✅ Azure CLI authenticated as: $($account.user.name)" -ForegroundColor Green
+    Write-Host "   Subscription: $($account.name)" -ForegroundColor Gray
+} catch {
+    Write-Host "❌ Azure CLI not authenticated" -ForegroundColor Red
+    Write-Host "   Run: az login" -ForegroundColor Yellow
+    exit 1
+}
+
+# Generate resource names
+$storageName = $AppName.Replace("-", "").Replace("_", "").ToLower() + "stor"
+# Storage account names must be 3-24 characters, lowercase alphanumeric
+if ($storageName.Length > 24) {
+    $storageName = $storageName.Substring(0, 24)
+}
+$envName = "$AppName-env"
+$lawName = "$AppName-logs"
+
+Write-Host ""
+Write-Host "📋 Deployment Configuration:" -ForegroundColor Cyan
+Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
+Write-Host "   Location: $Location" -ForegroundColor White
+Write-Host "   Container App: $AppName" -ForegroundColor White
+Write-Host "   Environment: $envName" -ForegroundColor White
+Write-Host "   Storage Account: $storageName" -ForegroundColor White
+Write-Host "   Log Analytics: $lawName" -ForegroundColor White
+Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
+Write-Host "   Persistent Storage: $($EnablePersistentStorage ? 'Enabled ✅' : 'Disabled ⚠️')" -ForegroundColor $(if($EnablePersistentStorage){'Green'}else{'Yellow'})
+Write-Host ""
+
+if (-not $EnablePersistentStorage) {
+    Write-Host "⚠️  WARNING: Persistent storage is disabled!" -ForegroundColor Yellow
+    Write-Host "   Data will be lost when the container restarts or scales to zero." -ForegroundColor Yellow
+    Write-Host ""
+    $confirm = Read-Host "Continue without persistent storage? (y/N)"
+    if ($confirm -ne 'y') {
+        Write-Host "Deployment cancelled." -ForegroundColor Yellow
+        exit 0
+    }
+}
+
+# Step 1: Create or verify resource group
+Write-Host "📦 Step 1/5: Resource Group" -ForegroundColor Cyan
+$rg = az group show --name $ResourceGroup --output json 2>$null | ConvertFrom-Json
+if (-not $rg) {
+    Write-Host "   Creating resource group '$ResourceGroup'..." -ForegroundColor Yellow
+    az group create --name $ResourceGroup --location $Location --output none
+    Write-Host "   ✅ Resource group created" -ForegroundColor Green
+} else {
+    Write-Host "   ✅ Resource group exists" -ForegroundColor Green
+}
+Write-Host ""
+
+# Step 2: Deploy storage (if enabled)
+$storageAccountKey = ""
+if ($EnablePersistentStorage) {
+    Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
+    Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
+    
+    $storageDeployment = az deployment group create `
+        --resource-group $ResourceGroup `
+        --template-file "$PSScriptRoot/../infra/storage.bicep" `
+        --parameters storageAccountName=$storageName `
+                     location=$Location `
+        --output json | ConvertFrom-Json
+
+    if ($LASTEXITCODE -eq 0) {
+        $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
+        Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
+        Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
+        Write-Host "      File Share: scimtool-data (5 GiB)" -ForegroundColor Gray
+    } else {
+        Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "⚠️  Step 2/5: Persistent Storage (Skipped)" -ForegroundColor Yellow
+}
+Write-Host ""
+
+# Step 3: Deploy Container App Environment
+Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
+Write-Host "   Deploying environment with Log Analytics..." -ForegroundColor Yellow
+
+az deployment group create `
+    --resource-group $ResourceGroup `
+    --template-file "$PSScriptRoot/../infra/containerapp-env.bicep" `
+    --parameters caeName=$envName `
+                 lawName=$lawName `
+                 location=$Location `
+    --output none
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "   ✅ Environment deployed successfully" -ForegroundColor Green
+} else {
+    Write-Host "   ❌ Environment deployment failed" -ForegroundColor Red
+    exit 1
+}
+Write-Host ""
+
+# Step 4: Deploy Container App
+Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
+Write-Host "   Deploying SCIMTool container..." -ForegroundColor Yellow
+
+$containerParams = @{
+    appName = $AppName
+    environmentName = $envName
+    location = $Location
+    acrLoginServer = "ghcr.io"
+    image = "kayasax/scimtool:$ImageTag"
+    scimSharedSecret = $ScimSecret
+}
+
+if ($EnablePersistentStorage) {
+    $containerParams.storageAccountName = $storageName
+    $containerParams.storageAccountKey = $storageAccountKey
+    $containerParams.fileShareName = "scimtool-data"
+}
+
+# Build parameters string
+$paramsString = ($containerParams.GetEnumerator() | ForEach-Object {
+    if ($_.Key -eq 'scimSharedSecret' -or $_.Key -eq 'storageAccountKey') {
+        "$($_.Key)=$($_.Value)"
+    } else {
+        "$($_.Key)=$($_.Value)"
+    }
+}) -join ' '
+
+az deployment group create `
+    --resource-group $ResourceGroup `
+    --template-file "$PSScriptRoot/../infra/containerapp.bicep" `
+    --parameters $paramsString `
+    --output none
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "   ✅ Container App deployed successfully" -ForegroundColor Green
+} else {
+    Write-Host "   ❌ Container App deployment failed" -ForegroundColor Red
+    exit 1
+}
+Write-Host ""
+
+# Step 5: Get deployment details
+Write-Host "📊 Step 5/5: Finalizing" -ForegroundColor Cyan
+Write-Host "   Retrieving deployment details..." -ForegroundColor Yellow
+
+$appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
+
+if ($appDetails -and $appDetails.properties.configuration.ingress.fqdn) {
+    $url = "https://$($appDetails.properties.configuration.ingress.fqdn)"
+    Write-Host "   ✅ Deployment complete!" -ForegroundColor Green
+} else {
+    Write-Host "   ⚠️  Could not retrieve app URL" -ForegroundColor Yellow
+    $url = "Unable to retrieve URL"
+}
+
+Write-Host ""
+Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "🎉 Deployment Successful!" -ForegroundColor Green
+Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host ""
+Write-Host "📋 Deployment Summary:" -ForegroundColor Cyan
+Write-Host "   App URL: $url" -ForegroundColor Yellow
+Write-Host "   SCIM Endpoint: $url/scim/v2" -ForegroundColor Yellow
+Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
+Write-Host "   Persistent Storage: $($EnablePersistentStorage ? 'Enabled ✅' : 'Disabled ⚠️')" -ForegroundColor $(if($EnablePersistentStorage){'Green'}else{'Yellow'})
+Write-Host ""
+
+if ($EnablePersistentStorage) {
+    Write-Host "💾 Storage Information:" -ForegroundColor Cyan
+    Write-Host "   Storage Account: $storageName" -ForegroundColor White
+    Write-Host "   File Share: scimtool-data" -ForegroundColor White
+    Write-Host "   Mount Path: /app/data" -ForegroundColor White
+    Write-Host "   Database: /app/data/scim.db" -ForegroundColor White
+    Write-Host "   Note: Data persists across container restarts and scale-to-zero" -ForegroundColor Gray
+    Write-Host ""
+}
+
+Write-Host "📝 Next Steps:" -ForegroundColor Cyan
+Write-Host "1. Configure Microsoft Entra ID provisioning:" -ForegroundColor White
+Write-Host "   • Tenant URL: $url/scim/v2" -ForegroundColor Yellow
+Write-Host "   • Secret Token: [your configured secret]" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "2. Test the SCIM endpoint:" -ForegroundColor White
+Write-Host "   curl -H 'Authorization: Bearer YOUR_SECRET' $url/scim/v2/ServiceProviderConfig" -ForegroundColor Gray
+Write-Host ""
+Write-Host "3. Monitor your deployment:" -ForegroundColor White
+Write-Host "   • Azure Portal: https://portal.azure.com" -ForegroundColor Gray
+Write-Host "   • Resource: $ResourceGroup > $AppName" -ForegroundColor Gray
+Write-Host "   • Logs: $ResourceGroup > $lawName" -ForegroundColor Gray
+Write-Host ""
+
+Write-Host "💰 Estimated Monthly Cost:" -ForegroundColor Cyan
+if ($EnablePersistentStorage) {
+    Write-Host "   Container App: ~$5-15 (scales to zero when idle)" -ForegroundColor White
+    Write-Host "   Storage Account: ~$0.30 (5 GiB file share)" -ForegroundColor White
+    Write-Host "   Log Analytics: ~$0-5 (depends on log volume)" -ForegroundColor White
+    Write-Host "   Total: ~$5.30-20/month" -ForegroundColor Yellow
+} else {
+    Write-Host "   Container App: ~$5-15 (scales to zero when idle)" -ForegroundColor White
+    Write-Host "   Log Analytics: ~$0-5 (depends on log volume)" -ForegroundColor White
+    Write-Host "   Total: ~$5-20/month" -ForegroundColor Yellow
+}
+Write-Host ""
+
+Write-Host "🏁 Deployment complete!" -ForegroundColor Green

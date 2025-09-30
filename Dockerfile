@@ -72,6 +72,9 @@ ENV NODE_ENV=production \
     DATABASE_URL="file:./data.db" \
     NODE_OPTIONS="--max_old_space_size=384"
 
+# Create data directory for volume mount (will be overridden if volume is mounted)
+RUN mkdir -p /app/data && chown scim:nodejs /app/data
+
 # Copy production artifacts
 COPY --from=api-build --chown=scim:nodejs /app/node_modules ./node_modules
 COPY --from=api-build --chown=scim:nodejs /app/dist ./dist
