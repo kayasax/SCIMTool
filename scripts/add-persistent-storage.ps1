@@ -52,7 +52,7 @@ try {
 
 # Step 1: Verify existing deployment
 Write-Host "🔍 Step 1/6: Verifying Existing Deployment" -ForegroundColor Cyan
-$app = az containerapp show --name $AppName --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
+$app = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
 
 if (-not $app) {
     Write-Host "   ❌ Container App '$AppName' not found in resource group '$ResourceGroup'" -ForegroundColor Red
@@ -136,9 +136,11 @@ Write-Host "   File Share: $fileShareName" -ForegroundColor White
 Write-Host "   Location: $location" -ForegroundColor White
 Write-Host ""
 
-# Check if storage account already exists
-$existingStorage = az storage account show --name $storageName --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
-if ($existingStorage) {
+# Check if storage account already exists (suppress all errors)
+$existingStorage = $null
+$output = az storage account show --name $storageName --resource-group $ResourceGroup --output json 2>&1
+if ($LASTEXITCODE -eq 0) {
+    $existingStorage = $output | ConvertFrom-Json
     Write-Host "   ℹ️  Storage account '$storageName' already exists, will reuse it" -ForegroundColor Yellow
 }
 
