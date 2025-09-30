@@ -74,7 +74,7 @@ $appPrefix = $AppName.Replace("-", "").Replace("_", "").ToLower()
 $storageName = $appPrefix + $rgSuffix + "stor"
 
 # Truncate to 24 characters if too long
-if ($storageName.Length > 24) {
+if ($storageName.Length -gt 24) {
     # Keep app prefix + truncated RG suffix + "stor"
     $maxRgLength = 24 - $appPrefix.Length - 4  # 4 for "stor"
     if ($maxRgLength -gt 0) {
@@ -84,6 +84,13 @@ if ($storageName.Length > 24) {
         # If app name alone is too long, just truncate everything
         $storageName = $storageName.Substring(0, 24)
     }
+}
+
+# Final validation
+if ($storageName.Length -gt 24) {
+    Write-Host "   ⚠️  Storage name too long after truncation: $storageName ($($storageName.Length) chars)" -ForegroundColor Yellow
+    $storageName = $storageName.Substring(0, 24)
+    Write-Host "   ✅ Truncated to: $storageName" -ForegroundColor Green
 }
 
 $envName = "$AppName-env"

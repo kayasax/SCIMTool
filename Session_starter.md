@@ -62,7 +62,7 @@
 
 ## SCIMTool - Session Context
 
-**Status:** ✅ **PRODUCTION READY v0.4.4** - Full SCIM 2.0 compliance with enhanced UX
+**Status:** ✅ **PRODUCTION READY v0.7.3** - Critical hybrid storage performance fix (150x faster!)
 
 ## � Quick Commands
 ```powershell
