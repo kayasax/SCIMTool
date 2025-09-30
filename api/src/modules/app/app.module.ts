@@ -1,8 +1,10 @@
 ﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { ActivityParserModule } from '../activity-parser/activity-parser.module';
 import { AuthModule } from '../auth/auth.module';
+import { BackupModule } from '../backup/backup.module';
 import { DatabaseModule } from '../database/database.module';
 import { LoggingModule } from '../logging/logging.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -13,8 +15,10 @@ import { OAuthModule } from '../../oauth/oauth.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     ActivityParserModule,
     AuthModule,
+    BackupModule,
     DatabaseModule,
     PrismaModule,
     LoggingModule,
