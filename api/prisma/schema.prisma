@@ -7,6 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// SQLite connection pool and timeout configuration
+// Applied via Prisma Client initialization in the code
+
 model ScimUser {
   id          String   @id @default(cuid())
   scimId      String   @unique
