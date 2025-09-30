@@ -1,5 +1,9 @@
 | Date | Achievement |
 |------|-------------|
+| 2025-09-30 | ✅ **PERSISTENCE VERIFIED** - Container restart test passed! Data successfully restored from Azure Files backup (3064 KB preserved)! |
+| 2025-09-30 | 🎉 **v0.7.2 Released** - Fixed BackupController route (removed double /scim prefix) - Backup status indicator now working! |
+| 2025-09-30 | 💾 **Hybrid Storage Complete** - Local ephemeral DB + Azure Files backup system fully operational with UI status indicator! |
+| 2025-09-30 | 🔧 **Persistent Storage Architecture** - Implemented hybrid solution: SQLite local primary + 5-min Azure Files backups with auto-restore! |
 | 2025-09-28 | 🚀 **v0.4.6 Released & Tagged** - Complete favicon badge notifications with git tag, published to ACR! |
 | 2025-09-28 | ✨ **Production Ready v0.4.5** - Clean favicon badge system: automatic SCIM detection + numbers on favicon, no debug logs! |
 | 2025-09-28 | 🎯 **Favicon Badge FULLY Fixed** - Activity detection + favicon numbers working perfectly with localStorage persistence! |
@@ -324,6 +328,9 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 
 ## 📋 TODO / Next Steps
 
+- [x] ✅ **Hybrid Persistent Storage Complete** - Local ephemeral DB + Azure Files backup with auto-restore on container start
+- [x] ✅ **Backup Status UI** - Header component shows backup time and file size with auto-refresh
+- [x] ✅ **BackupController Route Fixed** - Removed double /scim prefix (v0.7.2) - backup stats endpoint working!
 - [x] ✅ **Docker Image Optimization Attempted** - Current image ~1.1GB despite aggressive optimization (NestJS ecosystem + dependencies inherently large)
 - [x] ✅ **GitHub Release Created** - v0.3.0 release published with comprehensive changelog and upgrade instructions
 - [ ] **Consider Lighter Architecture** - Evaluate Express.js or Fastify instead of NestJS for smaller image size
