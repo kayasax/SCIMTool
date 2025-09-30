@@ -86,7 +86,7 @@ Container App + Azure Files
 az containerapp delete --name scimtool-ms --resource-group RG-FR-SCIMTOOL --yes
 
 # Deploy fresh with storage
-.\scripts\deploy-azure-full.ps1 `
+.\scripts\deploy-azure.ps1 `
     -ResourceGroup "RG-FR-SCIMTOOL" `
     -AppName "scimtool-ms" `
     -Location "francecentral" `

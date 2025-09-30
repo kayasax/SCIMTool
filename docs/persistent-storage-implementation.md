@@ -22,7 +22,7 @@
    - Supports both ephemeral and persistent modes
 
 ### Deployment Scripts
-1. **`scripts/deploy-azure-full.ps1`** - New comprehensive deployment
+1. **`scripts/deploy-azure.ps1`** - Comprehensive deployment with persistent storage
    - Full Bicep-based deployment
    - Automatic storage provisioning
    - Progress reporting for each step
@@ -40,7 +40,7 @@
 
 ### New Deployments (Recommended)
 ```powershell
-.\scripts\deploy-azure-full.ps1 `
+.\scripts\deploy-azure.ps1 `
     -ResourceGroup "scim-rg" `
     -AppName "scimtool" `
     -Location "eastus" `
@@ -56,7 +56,7 @@ This automatically creates:
 
 ### Without Persistent Storage (Not Recommended)
 ```powershell
-.\scripts\deploy-azure-full.ps1 `
+.\scripts\deploy-azure.ps1 `
     -ResourceGroup "scim-rg" `
     -AppName "scimtool" `
     -Location "eastus" `
@@ -99,7 +99,7 @@ This automatically creates:
 az containerapp delete --name old-app --resource-group old-rg
 
 # Deploy new version with storage
-.\scripts\deploy-azure-full.ps1 -ResourceGroup "scim-rg" -AppName "scimtool" -Location "eastus" -ScimSecret "secret"
+.\scripts\deploy-azure.ps1 -ResourceGroup "scim-rg" -AppName "scimtool" -Location "eastus" -ScimSecret "secret"
 ```
 
 ### Option 2: Data Preservation (Manual Steps)
@@ -111,7 +111,7 @@ az containerapp delete --name old-app --resource-group old-rg
 
 2. **Deploy new infrastructure**
    ```powershell
-   .\scripts\deploy-azure-full.ps1 -ResourceGroup "scim-rg" -AppName "scimtool" -Location "eastus" -ScimSecret "secret"
+   .\scripts\deploy-azure.ps1 -ResourceGroup "scim-rg" -AppName "scimtool" -Location "eastus" -ScimSecret "secret"
    ```
 
 3. **Restore data** (if needed)
@@ -130,7 +130,7 @@ az containerapp delete --name old-app --resource-group old-rg
 ### Test Commands
 ```powershell
 # Deploy with storage
-.\scripts\deploy-azure-full.ps1 -ResourceGroup "test-rg" -AppName "test-scim" -Location "eastus" -ScimSecret "test123"
+.\scripts\deploy-azure.ps1 -ResourceGroup "test-rg" -AppName "test-scim" -Location "eastus" -ScimSecret "test123"
 
 # Verify storage mount
 az containerapp show --name test-scim --resource-group test-rg --query "properties.template.volumes"
