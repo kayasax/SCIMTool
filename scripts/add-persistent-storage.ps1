@@ -157,6 +157,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
+
+if (-not $storageAccountKey) {
+    Write-Host "   ❌ Failed to retrieve storage account key" -ForegroundColor Red
+    exit 1
+}
+
 Write-Host "   ✅ Storage resources created" -ForegroundColor Green
 Write-Host ""
 
@@ -168,7 +174,7 @@ az containerapp env storage set `
     --resource-group $ResourceGroup `
     --storage-name "scimtool-storage" `
     --azure-file-account-name $storageName `
-    --azure-file-account-key $storageAccountKey `
+    --azure-file-account-key "$storageAccountKey" `
     --azure-file-share-name $fileShareName `
     --access-mode ReadWrite `
     --output none
