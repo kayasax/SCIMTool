@@ -82,6 +82,10 @@ COPY --from=api-build --chown=scim:nodejs /app/public ./public
 COPY --from=api-build --chown=scim:nodejs /app/prisma ./prisma
 COPY --from=api-build --chown=scim:nodejs /app/package.json ./package.json
 
+# Copy entrypoint script
+COPY --chown=scim:nodejs api/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Clean up unnecessary files to reduce size
 RUN find ./node_modules -name "*.md" -delete && \
     find ./node_modules -name "test*" -type d -exec rm -rf {} + 2>/dev/null || true && \
@@ -94,7 +98,7 @@ EXPOSE 80
 HEALTHCHECK --interval=60s --timeout=3s --start-period=10s --retries=2 \
     CMD node -e "require('http').get('http://127.0.0.1:80/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
 
-CMD ["node", "dist/main.js"]
+CMD ["/app/docker-entrypoint.sh"]
 
 #############################
 # Build args (optional):
