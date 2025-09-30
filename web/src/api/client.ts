@@ -112,3 +112,17 @@ function authHeader(): Record<string, string> {
   const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
   return { Authorization: `Bearer ${token}` };
 }
+
+// Backup status
+export interface BackupStats {
+  backupCount: number;
+  lastBackupTime: string | null;
+  localDbPath: string;
+  azureFilesBackupPath: string;
+}
+
+export async function fetchBackupStats(): Promise<BackupStats> {
+  const res = await fetch(`${base}/scim/admin/backup/stats`, { headers: authHeader() });
+  if (!res.ok) throw new Error(`Failed to fetch backup stats: ${res.status}`);
+  return res.json();
+}

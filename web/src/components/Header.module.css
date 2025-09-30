@@ -89,6 +89,34 @@
   color: var(--current-success);
 }
 
+.backupIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--current-surface-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--current-border);
+  cursor: help;
+  transition: all var(--transition-fast);
+}
+
+.backupIndicator:hover {
+  background: var(--current-surface-tertiary);
+  border-color: var(--current-border-strong);
+}
+
+.backupIcon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.backupText {
+  font-size: var(--font-size-100);
+  color: var(--current-foreground-secondary);
+  white-space: nowrap;
+}
+
 .themeToggle {
   display: flex;
   align-items: center;
@@ -141,5 +169,13 @@
   
   .actions {
     gap: var(--spacing-sm);
+  }
+  
+  .backupText {
+    display: none;
+  }
+  
+  .status {
+    gap: var(--spacing-xs);
   }
 }
