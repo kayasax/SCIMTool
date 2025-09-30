@@ -166,53 +166,16 @@ Write-Host ""
 # Step 3: Deploy Container App Environment
 Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
 
-# Check if environment exists (suppress stderr warnings)
+# Check if environment exists
 $skipEnvDeployment = $false
-$envJson = $null
 $ErrorActionPreference = 'SilentlyContinue'
-try {
-    $envJson = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
-    $exitCode = $LASTEXITCODE
-    $ErrorActionPreference = 'Continue'
-    
-    if ($exitCode -eq 0 -and $envJson) {
-        $existingEnv = $envJson | ConvertFrom-Json
-        # Check if environment has workload profiles
-        if (-not $existingEnv.properties.workloadProfiles -or $existingEnv.properties.workloadProfiles.Count -eq 0) {
-            Write-Host "   ⚠️  Existing environment doesn't support workload profiles" -ForegroundColor Yellow
-            Write-Host "   Deleting old environment (this may take 5-10 minutes)..." -ForegroundColor Yellow
-            
-            az containerapp env delete --name $envName --resource-group $ResourceGroup --yes --output none 2>$null
-            
-            # Wait for deletion to complete (poll every 10 seconds, timeout after 10 minutes)
-            $deleteMaxWait = 600
-            $deleteElapsed = 0
-            while ($deleteElapsed -lt $deleteMaxWait) {
-                Start-Sleep -Seconds 10
-                $deleteElapsed += 10
-                
-                $checkEnv = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
-                if ($LASTEXITCODE -ne 0 -or -not $checkEnv) {
-                    Write-Host "   ✅ Old environment deleted" -ForegroundColor Green
-                    break
-                }
-                Write-Host "   ⏳ Still deleting... ($deleteElapsed seconds elapsed)" -ForegroundColor Gray
-            }
-            
-            if ($deleteElapsed -ge $deleteMaxWait) {
-                Write-Host "   ❌ Environment deletion timeout. Please delete manually in Azure Portal." -ForegroundColor Red
-                exit 1
-            }
-            
-            Start-Sleep -Seconds 5
-        } else {
-            Write-Host "   ✅ Environment already exists with workload profiles" -ForegroundColor Green
-            $skipEnvDeployment = $true
-        }
-    }
-} catch {
-    # If any error, treat as if environment doesn't exist
-    $ErrorActionPreference = 'Continue'
+$existingEnv = az containerapp env show --name $envName --resource-group $ResourceGroup --output json 2>$null
+$envExists = $LASTEXITCODE -eq 0
+$ErrorActionPreference = 'Continue'
+
+if ($envExists) {
+    Write-Host "   ✅ Environment already exists" -ForegroundColor Green
+    $skipEnvDeployment = $true
 }
 
 if (-not $skipEnvDeployment) {
@@ -277,7 +240,18 @@ Write-Host ""
 
 # Step 4: Deploy Container App
 Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
-Write-Host "   Deploying SCIMTool container..." -ForegroundColor Yellow
+
+# Check if container app already exists
+$ErrorActionPreference = 'SilentlyContinue'
+$existingApp = az containerapp show --name $AppName --resource-group $ResourceGroup --output json 2>$null
+$appExists = $LASTEXITCODE -eq 0
+$ErrorActionPreference = 'Continue'
+
+if ($appExists) {
+    Write-Host "   ✅ Container App already exists - updating..." -ForegroundColor Green
+} else {
+    Write-Host "   Deploying SCIMTool container..." -ForegroundColor Yellow
+}
 
 $containerParams = @{
     appName = $AppName
