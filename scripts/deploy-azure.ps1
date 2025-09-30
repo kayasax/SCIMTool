@@ -126,7 +126,7 @@ if ($EnablePersistentStorage) {
     Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
     
     # Check if storage account already exists
-    $storageList = az storage account list --resource-group $ResourceGroup --query "[?name=='$storageName'].name" --output tsv
+    $storageList = az storage account list --resource-group $ResourceGroup --query "[?name=='$storageName'].name" --output tsv 2>$null
     $storageExists = -not [string]::IsNullOrEmpty($storageList)
     
     if ($storageExists) {
@@ -166,7 +166,7 @@ Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
 
 # Check if environment exists
 $skipEnvDeployment = $false
-$envList = az containerapp env list --resource-group $ResourceGroup --query "[?name=='$envName'].name" --output tsv
+$envList = az containerapp env list --resource-group $ResourceGroup --query "[?name=='$envName'].name" --output tsv 2>$null
 $envExists = -not [string]::IsNullOrEmpty($envList)
 
 if ($envExists) {
@@ -238,7 +238,7 @@ Write-Host ""
 Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
 
 # Check if container app already exists
-$appList = az containerapp list --resource-group $ResourceGroup --query "[?name=='$AppName'].name" --output tsv
+$appList = az containerapp list --resource-group $ResourceGroup --query "[?name=='$AppName'].name" --output tsv 2>$null
 $appExists = -not [string]::IsNullOrEmpty($appList)
 
 if ($appExists) {
