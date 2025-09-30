@@ -267,9 +267,9 @@ if ($BackupCurrentData -and (Test-Path "$backupDir/scim-backup-$timestamp.db")) 
 }
 
 Write-Host "💰 Additional Monthly Cost:" -ForegroundColor Cyan
-Write-Host "   Storage Account: ~$0.05/month" -ForegroundColor White
-Write-Host "   File Share (5 GiB): ~$0.30/month" -ForegroundColor White
-Write-Host "   Total: ~$0.35/month additional" -ForegroundColor Yellow
+Write-Host "   Storage Account: ~`$0.05/month" -ForegroundColor White
+Write-Host "   File Share (5 GiB): ~`$0.30/month" -ForegroundColor White
+Write-Host "   Total: ~`$0.35/month additional" -ForegroundColor Yellow
 Write-Host ""
 
 Write-Host "🏁 Migration complete! Your data will now persist." -ForegroundColor Green
