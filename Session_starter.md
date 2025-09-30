@@ -1,5 +1,6 @@
 | Date | Achievement |
 |------|-------------|
+| 2025-09-30 | 🔧 **Container Apps Workload Profile Fix** - Added required workload profile to Bicep templates for new Azure API requirement! |
 | 2025-09-30 | 🪟 **Window Closure Fix** - Replaced exit with return+pause in deploy.ps1 to prevent PowerShell window from closing on errors! |
 | 2025-09-30 | 🔧 **PowerShell 5 Compatibility Fixed** - Replaced ternary operators with if-else statements for Windows PowerShell support! |
 | 2025-09-30 | 🔄 **Deployment Script Consolidated** - Replaced deploy-azure.ps1 with full version (persistent storage by default), updated all docs! |ate | Achievement |
