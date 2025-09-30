@@ -279,15 +279,21 @@ if (-not $skipAppDeployment) {
         $containerParams.fileShareName = "scimtool-data"
     }
 
-    # Build parameters string
-    $paramsString = ($containerParams.GetEnumerator() | ForEach-Object {
-        if ($_.Key -eq 'scimSharedSecret' -or $_.Key -eq 'storageAccountKey') {
-            "$($_.Key)=$($_.Value)"
-        } else {
-            "$($_.Key)=$($_.Value)"
-        }
-    }) -join ' '
-
+    # Create a temporary parameters file to avoid escaping issues with special characters
+    $paramsFile = "$env:TEMP\scimtool-params-$(Get-Date -Format 'yyyyMMddHHmmss').json"
+    $paramsJson = @{
+        '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+        contentVersion = '1.0.0.0'
+        parameters = @{}
+    }
+    
+    foreach ($key in $containerParams.Keys) {
+        $paramsJson.parameters[$key] = @{ value = $containerParams[$key] }
+    }
+    
+    $paramsJson | ConvertTo-Json -Depth 10 | Out-File -FilePath $paramsFile -Encoding utf8
+    Write-Host "   Created parameter file: $paramsFile" -ForegroundColor Gray
+    
     Write-Host "   Deploying container (this may take 2-3 minutes)..." -ForegroundColor Gray
     $deploymentName = "containerapp-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
@@ -299,9 +305,12 @@ if (-not $skipAppDeployment) {
         --resource-group $ResourceGroup `
         --name $deploymentName `
         --template-file "$PSScriptRoot/../infra/containerapp.bicep" `
-        --parameters $paramsString `
+        --parameters $paramsFile `
         --no-wait `
         --output json
+
+    # Clean up temp file
+    Remove-Item $paramsFile -ErrorAction SilentlyContinue
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   ❌ Failed to start container app deployment" -ForegroundColor Red
