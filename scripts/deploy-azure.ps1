@@ -124,23 +124,39 @@ Write-Host ""
 $storageAccountKey = ""
 if ($EnablePersistentStorage) {
     Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
-    Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
-
-    $storageDeployment = az deployment group create `
-        --resource-group $ResourceGroup `
-        --template-file "$PSScriptRoot/../infra/storage.bicep" `
-        --parameters storageAccountName=$storageName `
-                     location=$Location `
-        --output json | ConvertFrom-Json
-
-    if ($LASTEXITCODE -eq 0) {
-        $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
-        Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
+    
+    # Check if storage account already exists
+    $ErrorActionPreference = 'SilentlyContinue'
+    $existingStorage = az storage account show --name $storageName --resource-group $ResourceGroup --output json 2>$null
+    $storageExists = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = 'Continue'
+    
+    if ($storageExists) {
+        Write-Host "   ✅ Storage account already exists" -ForegroundColor Green
+        # Get the existing storage key
+        $keys = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
+        $storageAccountKey = $keys[0].value
         Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
-        Write-Host "      File Share: scimtool-data (5 GiB)" -ForegroundColor Gray
+        Write-Host "      File Share: scimtool-data" -ForegroundColor Gray
     } else {
-        Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
-        exit 1
+        Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
+        
+        $storageDeployment = az deployment group create `
+            --resource-group $ResourceGroup `
+            --template-file "$PSScriptRoot/../infra/storage.bicep" `
+            --parameters storageAccountName=$storageName `
+                         location=$Location `
+            --output json 2>$null | ConvertFrom-Json
+
+        if ($LASTEXITCODE -eq 0) {
+            $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
+            Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
+            Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
+            Write-Host "      File Share: scimtool-data (5 GiB)" -ForegroundColor Gray
+        } else {
+            Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
+            exit 1
+        }
     }
 } else {
     Write-Host "⚠️  Step 2/5: Persistent Storage (Skipped)" -ForegroundColor Yellow
