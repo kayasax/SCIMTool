@@ -63,7 +63,8 @@ export class BackupService implements OnModuleInit {
         `(${fileSizeKB} KB) at ${this.lastBackupTime.toISOString()}`
       );
     } catch (error) {
-      this.logger.error('Backup failed:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Backup failed:', errorMessage);
       
       // Don't throw - we want the app to continue even if backup fails
       // This is important because Azure Files might be temporarily unavailable
