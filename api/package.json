@@ -1,6 +1,6 @@
 {
   "name": "scimtool-api",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "SCIMTool backend service providing SCIM 2.0 endpoints and logging for troubleshooting.",
   "license": "MIT",
   "main": "dist/main.js",
