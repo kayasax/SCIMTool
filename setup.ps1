@@ -115,11 +115,16 @@ if (Get-Command pwsh -ErrorAction SilentlyContinue) {
 }
 if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (exit $LASTEXITCODE)" -ForegroundColor Red; exit $LASTEXITCODE }
 
-# Try to retrieve FQDN (best effort) and echo final secret so user doesn't scroll
-$fqdn = $null
-try {
-	$fqdn = az containerapp show --name $AppName --resource-group $ResourceGroup --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
-} catch {}
+# Try to retrieve FQDN (poll up to 90s) and echo final secret so user doesn't scroll
+$fqdn = $null; $attempts = 0; $maxAttempts = 18 # 18 * 5s = 90s
+while (-not $fqdn -and $attempts -lt $maxAttempts) {
+	try {
+		$fqdn = az containerapp show --name $AppName --resource-group $ResourceGroup --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
+		if (-not [string]::IsNullOrWhiteSpace($fqdn)) { break }
+	} catch {}
+	Start-Sleep -Seconds 5
+	$attempts++
+}
 if ($fqdn) {
 	Write-Host "FINAL URL: https://$fqdn" -ForegroundColor Green
 	Write-Host "SCIM Endpoint: https://$fqdn/scim/v2" -ForegroundColor Green

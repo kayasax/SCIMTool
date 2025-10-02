@@ -53,7 +53,7 @@ Start-Sleep -Milliseconds 300
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "SCIMTool Full Deployment to Azure Container Apps" -ForegroundColor Green
+Write-Host "SCIMTool Full Deployment to Azure Container Apps (deploy-azure.ps1 v1.1)" -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 
