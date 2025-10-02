@@ -37,6 +37,12 @@ else
 fi
 
 echo ""
+echo "Configuring primary database environment..."
+
+# Always point Prisma (runtime app) at the fast local ephemeral DB.
+export DATABASE_URL="file:./local-data/scim.db"
+echo "Using DATABASE_URL=$DATABASE_URL"
+
 echo "Running database migrations on local storage..."
 npx prisma migrate deploy
 
@@ -45,6 +51,16 @@ if [ $? -eq 0 ]; then
 else
     echo "✗ Migrations failed"
     exit 1
+fi
+
+# If we started without a backup but now have a local DB, create an initial backup copy.
+if [ ! -f "$AZURE_FILES_BACKUP" ] && [ -f "$LOCAL_DB" ]; then
+    echo "Creating initial Azure Files backup..."
+    if cp "$LOCAL_DB" "$AZURE_FILES_BACKUP" 2>/dev/null; then
+        echo "✓ Initial backup created"
+    else
+        echo "⚠ Failed to create initial backup (will retry on scheduled backup)"
+    fi
 fi
 
 echo ""
