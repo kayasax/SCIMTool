@@ -164,21 +164,26 @@ if ($EnablePersistentStorage) {
     } else {
         Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
 
-        $storageDeployment = az deployment group create `
+        $rawStorageJson = az deployment group create `
             --resource-group $ResourceGroup `
             --template-file "$PSScriptRoot/../infra/storage.bicep" `
             --parameters storageAccountName=$storageName `
                          fileShareName=$fileShareName `
                          location=$Location `
-            --output json 2>$null | ConvertFrom-Json
-
-        if ($LASTEXITCODE -eq 0) {
+            --output json 2>&1
+        $storageExit = $LASTEXITCODE
+        $storageDeployment = $null
+        if ($storageExit -eq 0) {
+            try { $storageDeployment = $rawStorageJson | ConvertFrom-Json } catch { }
+        }
+        if ($storageExit -eq 0 -and $storageDeployment -and $storageDeployment.properties.provisioningState -eq 'Succeeded') {
             $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
             Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
             Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
             Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
         } else {
             Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
+            if ($rawStorageJson) { Write-Host $rawStorageJson -ForegroundColor Red }
             exit 1
         }
     }
