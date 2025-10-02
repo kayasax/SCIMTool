@@ -1,4 +1,4 @@
-﻿<#!
+﻿<#
 SYNOPSIS
     Simplified deployment bootstrap for SCIMTool (PowerShell 5.1+ compatible)
 
@@ -25,16 +25,24 @@ PARAMETERS
 NOTES
     Persistent storage mounts Azure Files at /app/data (backup copy) while runtime DB lives in /tmp/local-data.
     Rotating the secret: re-run with a new -ScimSecret and (optionally) new -ImageTag.
-!>
+#>
 
 param(
-    [string]$ResourceGroup,
-    [string]$AppName,
-    [string]$Location = 'eastus',
-    [string]$ScimSecret,
-    [string]$ImageTag = 'latest',
-    [switch]$EnablePersistentStorage = $true
+  [string]$ResourceGroup,
+  [string]$AppName,
+  [string]$Location = 'eastus',
+  [string]$ScimSecret,
+  [string]$ImageTag = 'latest',
+  [switch]$EnablePersistentStorage
 )
+
+# Default to persistent storage enabled unless explicitly disabled via -EnablePersistentStorage:$false pattern
+if ($PSBoundParameters.ContainsKey('EnablePersistentStorage')) {
+  # If explicitly passed as $false (EnablePersistentStorage:$false) treat as disabled, otherwise enabled
+  $persistentEnabled = [bool]$EnablePersistentStorage
+} else {
+  $persistentEnabled = $true
+}
 # Dynamic secret generation for security
 function New-RandomScimSecret { "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format 'yyyyMMdd')" }
 
@@ -54,20 +62,20 @@ Write-Host "  Resource Group : $ResourceGroup" -ForegroundColor White
 Write-Host "  App Name       : $AppName" -ForegroundColor White
 Write-Host "  Location       : $Location" -ForegroundColor White
 Write-Host "  Image Tag      : $ImageTag" -ForegroundColor White
-Write-Host "  Persistent     : $($EnablePersistentStorage.IsPresent)" -ForegroundColor White
+Write-Host "  Persistent     : $persistentEnabled" -ForegroundColor White
 Write-Host "  SCIM Secret    : $ScimSecret" -ForegroundColor Yellow
 Write-Host ''
 Write-Host 'Starting Azure deployment...' -ForegroundColor Cyan
 
 if (Test-Path "$PSScriptRoot\scripts\deploy-azure.ps1") {
-  & "$PSScriptRoot\scripts\deploy-azure.ps1" -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$EnablePersistentStorage
+  & "$PSScriptRoot\scripts\deploy-azure.ps1" -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
 } else {
   Write-Host 'deploy-azure.ps1 not found locally. Attempting remote fetch...' -ForegroundColor Yellow
   $remote = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1'
   try {
     $temp = Join-Path $env:TEMP "deploy-azure.ps1"
     Invoke-WebRequest -Uri $remote -OutFile $temp -UseBasicParsing
-    & $temp -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$EnablePersistentStorage
+  & $temp -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
   } catch {
     Write-Host 'Failed to fetch remote deploy script.' -ForegroundColor Red
     exit 1
