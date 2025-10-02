@@ -1,4 +1,5 @@
-; noop to avoid first-token parse under iex
+
+# SCIMTool setup script (safe header, no BOM)
 $ErrorActionPreference = 'Stop'
 
 # Optional deterministic overrides via environment variables:
@@ -86,7 +87,12 @@ if (-not (Get-Command az -ErrorAction SilentlyContinue)) { Write-Host 'Azure CLI
 try { az account show -o none 2>$null } catch { Write-Host 'Not logged in. Run: az login  then re-run the one-liner.' -ForegroundColor Red; exit 1 }
 
 Write-Host 'Starting deployment...' -ForegroundColor Cyan
-& pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
+# Prefer pwsh if available, otherwise fall back to current powershell
+if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+	& pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
+} else {
+	& powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
+}
 if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (exit $LASTEXITCODE)" -ForegroundColor Red; exit $LASTEXITCODE }
 
 # Try to retrieve FQDN (best effort) and echo final secret so user doesn't scroll
