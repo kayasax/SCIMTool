@@ -102,14 +102,30 @@ jobs:
           docker logs scimtool-test --tail 50 || true
           docker rm -f scimtool-test
 
-      - name: Azure Login (optional)
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.AZURE_CREDENTIALS != '' && secrets.AZ_RESOURCE_GROUP != '' && secrets.AZ_CONTAINER_APP != '' && secrets.AZ_SUBSCRIPTION_ID != '' }}
+      - name: Prepare deploy (check tag & secrets)
+        id: deploy_check
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZ_RESOURCE_GROUP: ${{ secrets.AZ_RESOURCE_GROUP }}
+          AZ_CONTAINER_APP: ${{ secrets.AZ_CONTAINER_APP }}
+          AZ_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* && -n "$AZURE_CREDENTIALS" && -n "$AZ_RESOURCE_GROUP" && -n "$AZ_CONTAINER_APP" && -n "$AZ_SUBSCRIPTION_ID" ]]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "Will deploy to Azure after build.";
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "Skipping Azure deploy (missing tag or secrets).";
+          fi
+
+      - name: Azure Login
+        if: steps.deploy_check.outputs.deploy == 'true'
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to Azure Container App (tagged release)
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.AZURE_CREDENTIALS != '' && secrets.AZ_RESOURCE_GROUP != '' && secrets.AZ_CONTAINER_APP != '' && secrets.AZ_SUBSCRIPTION_ID != '' }}
+      - name: Deploy to Azure Container App
+        if: steps.deploy_check.outputs.deploy == 'true'
         env:
           APP_VERSION: ${{ steps.meta.outputs.version }}
           AZ_RESOURCE_GROUP: ${{ secrets.AZ_RESOURCE_GROUP }}
@@ -118,7 +134,7 @@ jobs:
         run: |
           set -e
           echo "🔐 Setting subscription"
-          az account set --subscription "$AZ_SUBSCRIPTION_ID"
+            az account set --subscription "$AZ_SUBSCRIPTION_ID"
           IMAGE_TAG="${APP_VERSION}"
           IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
           echo "🚀 Updating Container App $AZ_CONTAINER_APP in $AZ_RESOURCE_GROUP to image $IMAGE_REF"
