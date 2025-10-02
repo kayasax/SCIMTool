@@ -1,44 +1,15 @@
-﻿<#
-.SYNOPSIS
-    Deploy SCIMTool to Azure Container Apps with persistent storage
-
-.DESCRIPTION
-    Comprehensive deployment script that creates all required Azure resources:
-    - Resource Group
-    - Storage Account + File Share (persistent SQLite database)
-    - Container App Environment (with Log Analytics)
-    - Container App (with volume mount)
-
-.PARAMETER ResourceGroup
-    Azure resource group name
-
-.PARAMETER AppName
-    Container app name (also used as prefix for other resources)
-
-.PARAMETER Location
-    Azure region
-
-.PARAMETER ScimSecret
-    Production SCIM shared secret
-
-.PARAMETER ImageTag
-    Container image tag to deploy (default: latest)
-
-.PARAMETER EnablePersistentStorage
-    Enable persistent storage (recommended for production)
-
-.EXAMPLE
-    .\deploy-azure-full.ps1 -ResourceGroup "scim-rg" -AppName "scimtool" -Location "eastus" -ScimSecret "your-secret"
-#>
-
-param(
+﻿param(
     [string]$ResourceGroup,
     [string]$AppName,
-    [string]$Location = "eastus",
+    [string]$Location,
     [string]$ScimSecret,
-    [string]$ImageTag = "latest",
-    [switch]$EnablePersistentStorage = $true
+    [string]$ImageTag,
+    [switch]$EnablePersistentStorage
 )
+
+if (-not $Location -or $Location -eq '') { $Location = 'eastus' }
+if (-not $ImageTag -or $ImageTag -eq '') { $ImageTag = 'latest' }
+if (-not $PSBoundParameters.ContainsKey('EnablePersistentStorage')) { $EnablePersistentStorage = $true }
 
 # --- Interactive Fallback ----------------------------------------------------
 # Allow zero‑parameter one‑liner usage via: iex (irm <raw-url>/deploy-azure.ps1)
@@ -46,9 +17,7 @@ param(
 # [Parameter(Mandatory)] which blocks interactive prompting when invoked via
 # the raw GitHub one-liner.
 
-function New-RandomScimSecret {
-    return "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format 'yyyyMMdd')"
-}
+function New-RandomScimSecret { "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format 'yyyyMMdd')" }
 
 if (-not $ResourceGroup) {
     $ResourceGroup = Read-Host "Enter Resource Group name (will be created if missing)"
@@ -64,7 +33,7 @@ if (-not $ScimSecret) {
     $inputSecret = Read-Host "Enter SCIM shared secret (press Enter to auto-generate)"
     if ([string]::IsNullOrWhiteSpace($inputSecret)) {
         $ScimSecret = New-RandomScimSecret
-        Write-Host "🔐 Generated secret: $ScimSecret" -ForegroundColor Yellow
+    Write-Host "Generated secret: $ScimSecret" -ForegroundColor Yellow
     } else {
         $ScimSecret = $inputSecret
     }
@@ -84,18 +53,18 @@ Start-Sleep -Milliseconds 300
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🚀 SCIMTool Full Deployment to Azure Container Apps" -ForegroundColor Green
-Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "SCIMTool Full Deployment to Azure Container Apps" -ForegroundColor Green
+Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 
 # Check Azure CLI
 try {
     $account = az account show --output json 2>$null | ConvertFrom-Json
     if (-not $account) { throw "Not authenticated" }
-    Write-Host "✅ Azure CLI authenticated as: $($account.user.name)" -ForegroundColor Green
+    Write-Host "Azure CLI authenticated as: $($account.user.name)" -ForegroundColor Green
     Write-Host "   Subscription: $($account.name)" -ForegroundColor Gray
 } catch {
-    Write-Host "❌ Azure CLI not authenticated" -ForegroundColor Red
+    Write-Host "Azure CLI not authenticated" -ForegroundColor Red
     Write-Host "   Run: az login" -ForegroundColor Yellow
     exit 1
 }
@@ -122,16 +91,16 @@ if ($storageName.Length -gt 24) {
 
 # Final validation
 if ($storageName.Length -gt 24) {
-    Write-Host "   ⚠️  Storage name too long after truncation: $storageName ($($storageName.Length) chars)" -ForegroundColor Yellow
+    Write-Host "   WARNING: Storage name too long after truncation: $storageName ($($storageName.Length) chars)" -ForegroundColor Yellow
     $storageName = $storageName.Substring(0, 24)
-    Write-Host "   ✅ Truncated to: $storageName" -ForegroundColor Green
+    Write-Host "   Truncated to: $storageName" -ForegroundColor Green
 }
 
 $envName = "$AppName-env"
 $lawName = "$AppName-logs"
 
 Write-Host ""
-Write-Host "📋 Deployment Configuration:" -ForegroundColor Cyan
+Write-Host "Deployment Configuration:" -ForegroundColor Cyan
 Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
 Write-Host "   Location: $Location" -ForegroundColor White
 Write-Host "   Container App: $AppName" -ForegroundColor White
@@ -139,13 +108,13 @@ Write-Host "   Environment: $envName" -ForegroundColor White
 Write-Host "   Storage Account: $storageName" -ForegroundColor White
 Write-Host "   Log Analytics: $lawName" -ForegroundColor White
 Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
-$storageStatus = if($EnablePersistentStorage){'Enabled ✅'}else{'Disabled ⚠️'}
+$storageStatus = if($EnablePersistentStorage){'Enabled'}else{'Disabled'}
 $storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
 Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
 Write-Host ""
 
 if (-not $EnablePersistentStorage) {
-    Write-Host "⚠️  WARNING: Persistent storage is disabled!" -ForegroundColor Yellow
+    Write-Host "WARNING: Persistent storage is disabled!" -ForegroundColor Yellow
     Write-Host "   Data will be lost when the container restarts or scales to zero." -ForegroundColor Yellow
     Write-Host ""
     $confirm = Read-Host "Continue without persistent storage? (y/N)"
