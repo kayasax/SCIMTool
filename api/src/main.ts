@@ -1,5 +1,6 @@
 ﻿import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import type { Request, Response, NextFunction } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { json } from 'express';
 import * as dotenv from 'dotenv';
@@ -15,6 +16,23 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true
   });
 
+  // TEMP/Compatibility: Support both /scim/* (legacy) and /scim/v2/* (spec-aligned) paths.
+  // Current controllers are mounted under the global prefix (default 'scim').
+  // We rewrite any incoming /scim/v2/* request to /scim/* so that the setup script's
+  // printed SCIM Endpoint (which uses /scim/v2) works without changing all controllers yet.
+  // Later we can flip the global prefix to 'scim/v2' and optionally redirect the old path.
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    // Normalize double slashes just in case
+    if (req.url.startsWith('//')) {
+      req.url = req.url.replace(/\/\/+/, '/');
+    }
+    if (req.url.startsWith('/scim/v2')) {
+      // Remove the /v2 segment
+      req.url = req.url.replace('/scim/v2', '/scim');
+    }
+    next();
+  });
+
   // Enable CORS for web client access
   app.enableCors({
     origin: true,  // Allow all origins for now - web client is served from same container
@@ -28,7 +46,7 @@ async function bootstrap(): Promise<void> {
     index: false, // Don't serve index.html automatically
   });
 
-  const globalPrefix = process.env.API_PREFIX ?? 'scim';
+  const globalPrefix = process.env.API_PREFIX ?? 'scim'; // still mounting at /scim internally
   app.setGlobalPrefix(globalPrefix, {
     exclude: ['/'] // Exclude root path from API prefix to serve web app
   });
