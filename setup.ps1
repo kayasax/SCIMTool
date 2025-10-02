@@ -1,4 +1,4 @@
-﻿﻿# SCIMTool one-line setup (auto mode)
+﻿# SCIMTool one-line setup (auto mode)
 $ErrorActionPreference = 'Stop'
 
 # Auto values (no prompts to avoid hanging under iex)
@@ -6,7 +6,13 @@ $Location = 'eastus'
 $ImageTag = 'latest'
 $persistentEnabled = $true
 
-function New-ScimSecret { $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); $s=[Convert]::ToBase64String($b); ($s -replace '\+','-' -replace '/','_' -replace '=','').Substring(0,48) }
+function New-ScimSecret {
+	$b = New-Object byte[] 32
+	[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+	$s = [Convert]::ToBase64String($b)
+	$s = $s -replace '\+','-' -replace '/','_' -replace '='''
+	if ($s.Length -gt 48) { return $s.Substring(0,48) } else { return $s }
+}
 function New-Suffix { (Get-Random -Minimum 1000 -Maximum 9999) }
 
 $ResourceGroup = "scimtool-rg-$(New-Suffix)"
