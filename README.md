@@ -62,6 +62,18 @@ Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using `setup.ps1`.
 
 ---
 
+## 🩺 Troubleshooting (Fast Fixes)
+| Issue | Try |
+|-------|-----|
+| Test Connection fails | Ensure URL ends with /scim/v2 & secret matches Entra config |
+| No events appear | Turn provisioning ON and assign a user/group; wait initial sync |
+| Deploy script exits | Run `az login`; confirm Azure CLI installed & subscription access |
+| Data lost after update | Add persistent storage (default is enabled unless you disabled) |
+| Favicon badge missing | Trigger an event in background tab; clear cache if stale |
+
+More: see `DEPLOYMENT.md` for deeper architecture / options.
+
+---
 ## 🧪 Local Development
 Automated:
 ```powershell
@@ -75,20 +87,6 @@ cd ../web; npm install; npm run dev
 Backend: http://localhost:3000  |  Web UI: http://localhost:5173
 
 ---
-
-## 🩺 Troubleshooting (Fast Fixes)
-| Issue | Try |
-|-------|-----|
-| Test Connection fails | Ensure URL ends with /scim/v2 & secret matches Entra config |
-| No events appear | Turn provisioning ON and assign a user/group; wait initial sync |
-| Deploy script exits | Run `az login`; confirm Azure CLI installed & subscription access |
-| Data lost after update | Add persistent storage (default is enabled unless you disabled) |
-| Favicon badge missing | Trigger an event in background tab; clear cache if stale |
-
-More: see `DEPLOYMENT.md` for deeper architecture / options.
-
----
-
 ## 🤝 Contribute / Support
 * Issues & ideas: [GitHub Issues](https://github.com/kayasax/SCIMTool/issues)
 * Q&A / discussion: [Discussions](https://github.com/kayasax/SCIMTool/discussions)
