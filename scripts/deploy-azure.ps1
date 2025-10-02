@@ -164,56 +164,28 @@ if ($EnablePersistentStorage) {
     } else {
         Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
 
-        $rawStorageJson = az deployment group create `
+        az deployment group create `
             --resource-group $ResourceGroup `
             --template-file "$PSScriptRoot/../infra/storage.bicep" `
             --parameters storageAccountName=$storageName `
                          fileShareName=$fileShareName `
                          location=$Location `
-            --output json 2>&1
+            --output none 2>$null
         $storageExit = $LASTEXITCODE
-        $storageDeployment = $null
-        if ($storageExit -eq 0) {
-            # Remove any leading warning lines before JSON (e.g., bicep upgrade notice)
-            $jsonCandidate = $rawStorageJson
-            $firstBrace = $jsonCandidate.IndexOf('{')
-            if ($firstBrace -ge 0) {
-                $jsonCandidate = $jsonCandidate.Substring($firstBrace)
-                $lastBrace = $jsonCandidate.LastIndexOf('}')
-                if ($lastBrace -ge 0 -and $lastBrace + 1 -le $jsonCandidate.Length) {
-                    $jsonCandidate = $jsonCandidate.Substring(0, $lastBrace + 1)
-                }
-                try { $storageDeployment = $jsonCandidate | ConvertFrom-Json } catch { $storageDeployment = $null }
-            }
-        }
-        $provisioningSucceeded = $false
-        if ($storageDeployment -and $storageDeployment.properties.provisioningState -eq 'Succeeded') { $provisioningSucceeded = $true }
-        elseif ($rawStorageJson -match '"provisioningState"\s*:\s*"Succeeded"') { $provisioningSucceeded = $true }
-
-        if ($provisioningSucceeded) {
-            # Retrieve key explicitly (secure output not echoed in CLI response)
-            $keyValue = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --query "[0].value" -o tsv 2>$null
-            if (-not $keyValue) {
-                Write-Host "   WARNING: Unable to retrieve storage key" -ForegroundColor Yellow
-            } else {
-                $storageAccountKey = $keyValue
-            }
-            Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
-            Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
-            Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
-        } else {
-            # Fallback: verify if storage account actually exists despite ambiguous deployment output
+        if ($storageExit -ne 0) {
+            # Check if it actually succeeded despite non-zero exit (sometimes warnings interfere)
             $acctCheck = az storage account show --name $storageName --resource-group $ResourceGroup --query "name" -o tsv 2>$null
-            if ($LASTEXITCODE -eq 0 -and $acctCheck) {
-                Write-Host "   ✅ Storage account detected after ambiguous deployment output" -ForegroundColor Green
-                $keyValue = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --query "[0].value" -o tsv 2>$null
-                if ($keyValue) { $storageAccountKey = $keyValue }
-            } else {
+            if ($LASTEXITCODE -ne 0 -or -not $acctCheck) {
                 Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
-                if ($rawStorageJson) { Write-Host $rawStorageJson -ForegroundColor Red }
                 exit 1
             }
         }
+        # Retrieve key explicitly
+        $keyValue = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --query "[0].value" -o tsv 2>$null
+        if ($keyValue) { $storageAccountKey = $keyValue } else { Write-Host "   WARNING: Could not fetch storage key" -ForegroundColor Yellow }
+        Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
+        Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
+        Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
     }
 } else {
     Write-Host "⚠️  Step 2/5: Persistent Storage (Skipped)" -ForegroundColor Yellow
