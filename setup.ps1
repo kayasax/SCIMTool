@@ -1,4 +1,5 @@
-﻿$ErrorActionPreference = 'Stop'
+; noop to avoid first-token parse under iex
+$ErrorActionPreference = 'Stop'
 
 # Optional deterministic overrides via environment variables:
 #   SCIMTOOL_RG, SCIMTOOL_APP, SCIMTOOL_SECRET, SCIMTOOL_LOCATION, SCIMTOOL_IMAGETAG
