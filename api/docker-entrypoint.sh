@@ -6,8 +6,18 @@ AZURE_FILES_BACKUP="/app/data/scim.db"
 LOCAL_DB="/app/local-data/scim.db"
 LOCAL_DIR="/app/local-data"
 
-# Create local data directory if it doesn't exist
-mkdir -p "$LOCAL_DIR"
+# Create local data directory with fallback if creation fails (avoid hard crash due to set -e)
+if ! mkdir -p "$LOCAL_DIR" 2>/dev/null; then
+    echo "⚠ Unable to create $LOCAL_DIR (permission denied). Falling back to /tmp/local-data"
+    LOCAL_DIR="/tmp/local-data"
+    LOCAL_DB="$LOCAL_DIR/scim.db"
+    if mkdir -p "$LOCAL_DIR" 2>/dev/null; then
+        echo "✓ Created fallback directory: $LOCAL_DIR"
+    else
+        echo "✗ Failed to create fallback directory. Exiting."
+        exit 1
+    fi
+fi
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  SCIMTool - Hybrid Storage Initialization                 ║"
@@ -40,7 +50,12 @@ echo ""
 echo "Configuring primary database environment..."
 
 # Always point Prisma (runtime app) at the fast local ephemeral DB.
-export DATABASE_URL="file:./local-data/scim.db"
+if [ "$LOCAL_DIR" = "/tmp/local-data" ]; then
+    # Use absolute path when falling back to /tmp to avoid relative path confusion
+    export DATABASE_URL="file:/tmp/local-data/scim.db"
+else
+    export DATABASE_URL="file:./local-data/scim.db"
+fi
 echo "Using DATABASE_URL=$DATABASE_URL"
 
 echo "Running database migrations on local storage..."
