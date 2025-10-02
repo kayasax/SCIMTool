@@ -47,6 +47,36 @@ That's it! The script handles everything else.
 
 ---
 
+## ⚡ One-Line Production Deployment
+
+If you just want to deploy (or update) a production instance directly from PowerShell without cloning the repo first, run:
+
+```powershell
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-rg" -AppName "scimtool-prod" -ScimSecret "YOUR-SECRET" -ImageTag "0.7.11"
+```
+
+Parameters you must supply:
+- `-ResourceGroup`  New or existing Azure resource group (will be created if missing)
+- `-AppName`        Container App name (becomes part of the FQDN)
+- `-ScimSecret`     Shared secret token you will also configure in Entra provisioning
+- `-ImageTag`       (Optional) Image tag to deploy (defaults to `latest` if omitted)
+
+Disable persistent storage (NOT recommended for real usage):
+```powershell
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-test" -AppName "scimtool-ephemeral" -ScimSecret "TEMP-SECRET" -EnablePersistentStorage:$false
+```
+
+After the script completes it will print:
+- Public URL (open it to view Activity Feed UI)
+- SCIM API base: `https://<fqdn>/scim/v2`
+- Instructions to plug into Microsoft Entra provisioning
+
+Need to rotate the secret? Re-run the same command with a new `-ScimSecret` and (optionally) a new `-ImageTag` if you want to force a redeploy.
+
+---
+
+---
+
 ## 🔧 Configure Microsoft Entra ID
 
 After running `setup.ps1`, you'll get your SCIM endpoint URL and secret. Then:

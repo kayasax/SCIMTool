@@ -18,14 +18,14 @@ Write-Host "→ Updating DATABASE_URL to use local ephemeral storage..." -Foregr
 az containerapp update `
     --name $ContainerAppName `
     --resource-group $ResourceGroup `
-    --set-env-vars "DATABASE_URL=file:/app/local-data/scim.db" `
+    --set-env-vars "DATABASE_URL=file:/tmp/local-data/scim.db" `
     --output none
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✓ Container app updated successfully" -ForegroundColor Green
     Write-Host ""
     Write-Host "Storage Configuration:" -ForegroundColor Cyan
-    Write-Host "  • Primary DB: /app/local-data/scim.db (ephemeral, fast, no locks)" -ForegroundColor White
+    Write-Host "  • Primary DB: /tmp/local-data/scim.db (ephemeral, fast, no locks)" -ForegroundColor White
     Write-Host "  • Backup:     /app/data/scim.db (Azure Files, persistent)" -ForegroundColor White
     Write-Host "  • Strategy:   Local writes + periodic backup every 5 minutes" -ForegroundColor White
     Write-Host ""

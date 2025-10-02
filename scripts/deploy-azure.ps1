@@ -145,11 +145,11 @@ Write-Host ""
 $storageAccountKey = ""
 if ($EnablePersistentStorage) {
     Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
-    
+
     # Check if storage account already exists
     $storageCheck = az storage account show --name $storageName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
     $storageExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($storageCheck)
-    
+
     if ($storageExists) {
         Write-Host "   ✅ Storage account already exists" -ForegroundColor Green
         # Get the existing storage key
@@ -159,7 +159,7 @@ if ($EnablePersistentStorage) {
         Write-Host "      File Share: scimtool-data" -ForegroundColor Gray
     } else {
         Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
-        
+
         $storageDeployment = az deployment group create `
             --resource-group $ResourceGroup `
             --template-file "$PSScriptRoot/../infra/storage.bicep" `
@@ -266,14 +266,14 @@ $skipAppDeployment = $false
 
 if ($appExists) {
     Write-Host "   ✅ Container App already exists" -ForegroundColor Green
-    
+
     # Check current image version
     $currentImage = az containerapp show --name $AppName --resource-group $ResourceGroup --query "properties.template.containers[0].image" --output tsv 2>$null
     $desiredImage = "ghcr.io/kayasax/scimtool:$ImageTag"
-    
+
     Write-Host "      Current image: $currentImage" -ForegroundColor Gray
     Write-Host "      Desired image: $desiredImage" -ForegroundColor Gray
-    
+
     if ($currentImage -eq $desiredImage) {
         Write-Host "   ✅ Already configured with the same image tag - skipping deployment" -ForegroundColor Green
         $skipAppDeployment = $true
@@ -307,21 +307,21 @@ if (-not $skipAppDeployment) {
         contentVersion = '1.0.0.0'
         parameters = @{}
     }
-    
+
     foreach ($key in $containerParams.Keys) {
         $paramsJson.parameters[$key] = @{ value = $containerParams[$key] }
     }
-    
+
     $paramsJson | ConvertTo-Json -Depth 10 | Out-File -FilePath $paramsFile -Encoding utf8
     Write-Host "   Created parameter file: $paramsFile" -ForegroundColor Gray
-    
+
     Write-Host "   Deploying container (this may take 2-3 minutes)..." -ForegroundColor Gray
     $deploymentName = "containerapp-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
     # Use --no-wait and then poll with timeout to avoid hanging
     Write-Host "   Starting deployment: $deploymentName" -ForegroundColor Gray
     Write-Host "   (This runs asynchronously - polling for completion...)" -ForegroundColor Gray
-    
+
     $deployOutput = az deployment group create `
         --resource-group $ResourceGroup `
         --name $deploymentName `
@@ -419,7 +419,8 @@ if ($EnablePersistentStorage) {
     Write-Host "   Storage Account: $storageName" -ForegroundColor White
     Write-Host "   File Share: scimtool-data" -ForegroundColor White
     Write-Host "   Mount Path: /app/data" -ForegroundColor White
-    Write-Host "   Database: /app/data/scim.db" -ForegroundColor White
+    Write-Host "   Database (persistent copy): /app/data/scim.db" -ForegroundColor White
+    Write-Host "   Runtime primary DB: /tmp/local-data/scim.db (ephemeral)" -ForegroundColor White
     Write-Host "   Note: Data persists across container restarts and scale-to-zero" -ForegroundColor Gray
     Write-Host ""
 }

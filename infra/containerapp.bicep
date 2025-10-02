@@ -82,15 +82,15 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
       ]
     }
     template: {
-      // Init container to clean up stale SQLite journal files (Azure Files + SQLite locking issue)
+      // Init container only cleans Azure Files journal artifacts now; main container handles restore to /tmp
       initContainers: !empty(storageAccountName) ? [
         {
-          name: 'restore-and-cleanup'
+          name: 'cleanup-journals'
           image: 'busybox:latest'
           command: [
             'sh'
             '-c'
-            'mkdir -p /app/local-data && echo "Local data directory created" && if [ -f /app/data/scim.db ]; then echo "Restoring database from Azure Files backup..." && cp /app/data/scim.db /app/local-data/scim.db && echo "Database restored"; else echo "No backup found, starting fresh"; fi && echo "Cleaning up Azure Files lock files..." && rm -f /app/data/*.db-journal /app/data/*.db-shm /app/data/*.db-wal && echo "Init complete"'
+            'echo "Cleaning Azure Files journal files..." && rm -f /app/data/*.db-journal /app/data/*.db-shm /app/data/*.db-wal || true && echo "Init cleanup complete"'
           ]
           volumeMounts: [
             {
@@ -113,7 +113,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
           { name: 'NODE_ENV', value: 'production' }
           { name: 'PORT', value: string(targetPort) }
           // ALWAYS use local storage for fast database access (backup service handles Azure Files)
-          { name: 'DATABASE_URL', value: 'file:/app/local-data/scim.db' }
+          // Entrypoint sets DATABASE_URL to /tmp/local-data/scim.db; keeping explicit for clarity
+          { name: 'DATABASE_URL', value: 'file:/tmp/local-data/scim.db' }
           ]
           resources: {
             // Map allowed cpuCores string to numeric
