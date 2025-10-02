@@ -1,177 +1,120 @@
-# 🎯 SCIMTool
-**A clean, fast SCIM 2.0 activity monitor for Microsoft Entra ID**
+# ✨ SCIMTool
+**Provisioning visibility & SCIM 2.0 monitor for Microsoft Entra — deploy in minutes, understand events instantly.**
 
 [![Latest Release](https://img.shields.io/github/v/release/kayasax/SCIMTool?style=flat-square&color=2ea043)](https://github.com/kayasax/SCIMTool/releases/latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
 
-Stop parsing raw JSON provisioning logs. Get instant, human‑readable events, real‑time browser tab badges, and a searchable view of users & groups.
+Stop scrolling walls of JSON. SCIMTool turns raw provisioning calls into clean, human messages plus a fast searchable UI (users, groups, diffs, backup state).
 
 ---
 
-## ✨ Core Features
-
-- 🔔 Favicon + tab title badge for new provisioning events
-- 🧠 Human translation of SCIM operations ("Alice added to Finance Group")
-- ⏱️ 10s auto-refresh background polling (baseline persists across reloads)
-- 🗄️ Built‑in user & group browser (relationships & memberships)
-- 🌓 Adaptive light/dark theme & mobile friendly UI
-- 🚀 2‑minute zero-maintenance Azure deployment (auto scale-to-zero)
-- 💾 **Persistent storage** - Data survives container restarts and scale-to-zero
-- 📊 **Enhanced activity feed** - See detailed changes with resolved user/group names
-- 🔐 Shared-secret SCIM authentication
+## ✨ Key Features (Essentials)
+| | |
+|---|---|
+| 🧠 Human Event Translation | “Alice added to Finance Group” instead of opaque PATCH JSON |
+| 🔍 Searchable Activity Feed | Filter & inspect SCIM requests and responses quickly |
+| 👥 User & Group Browser | Memberships + derived identifiers |
+| 🔔 Visual Change Alerts | Favicon + tab badge for new provisioning activity |
+| 💾 Hybrid Persistence | Fast local SQLite + Azure Files timed backups |
+| 🔐 Shared Secret Auth | Simple secure SCIM integration for Entra |
+| 🌗 Dark / Light Theme | Clean responsive UI |
+| 🚀 Scale to Zero | Low idle cost on Azure Container Apps |
 
 ---
 
-## 🚀 Quick Start (Zero-Parameter One‑Liner)
-
-Just run this from any PowerShell 7+ session (Windows, macOS, or Linux). You'll be interactively prompted for the required values (Resource Group, App Name, Secret, etc.), then a full Azure Container Apps deployment (with persistent storage) will be created:
+## 🚀 60‑Second Cloud Deploy (Interactive One‑Liner)
+Run in PowerShell (Windows PowerShell 5.1 or PowerShell 7+; macOS/Linux require PowerShell 7+). Prompts for RG / App / Region / Secret (or auto‑generate), then provisions Azure Container Apps + persistent storage.
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1)
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
 ```
 
-What happens:
-- Prompts you for: Resource Group (created if missing), App Name, Region (defaults), Secret Token
-- Builds/Deploys: Resource Group, Log Analytics, Container App Environment, Storage (Azure Files), Container App
-- Outputs: Public URL, SCIM base URL (`/scim/v2`), reminder of your secret token
-- Persistence: SQLite backup stored on Azure Files; primary DB runs on fast ephemeral storage
+Outputs:
+* Public URL (web UI root)
+* SCIM Base URL: https://<fqdn>/scim/v2
+* Generated / provided shared secret (reprinted at end)
 
-Typical cost: **~$5–15/month** (scale-to-zero keeps idle cost low; storage + minimal logs).
+Cost: scale‑to‑zero + storage (low idle spend).
 
-### Non‑Interactive / CI Variant
-If you want a single copy/paste with no prompts (replace placeholder values):
-
+### Non‑Interactive / CI (Deterministic)
 ```powershell
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-rg" -AppName "scimtool-prod" -ScimSecret "REPLACE-ME-STRONG" -ImageTag "0.7.11"
+$env:SCIMTOOL_RG='scimtool-rg'
+$env:SCIMTOOL_APP='scimtool-prod'
+$env:SCIMTOOL_SECRET='REPLACE-ME-STRONG'
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
 ```
+Optional: `SCIMTOOL_LOCATION` (default eastus), `SCIMTOOL_IMAGETAG` (default latest), `SCIMTOOL_UNATTENDED=1`.
 
-Ephemeral (no persistence – NOT recommended for real usage):
+Disable persistence (NOT recommended):
 ```powershell
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-test" -AppName "scimtool-ephemeral" -ScimSecret "TEMP-ONLY" -EnablePersistentStorage:$false
-```
-
-### Local Development Instead?
-Clone the repo and run:
-
-```powershell
-.\setup.ps1 -TestLocal
-```
-
-Then:
-- API: http://localhost:3000
-- Web UI: http://localhost:5173
-
-Or manual:
-```powershell
-cd api; npm install; npm run start:dev
-cd ../web; npm install; npm run dev
+$env:SCIMTOOL_UNATTENDED=1; $env:SCIMTOOL_RG='scimtool-ephem'; $env:SCIMTOOL_APP='scimtool-ephemeral'; $env:SCIMTOOL_SECRET='TEMP-ONLY'
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
 ```
 
 ---
 
+## 🔧 Configure Microsoft Entra Provisioning (Right After Deploy)
+1. Entra Portal → Enterprise Applications → Your Enterprise App
+2. Provisioning → Set Provisioning Mode: Automatic
+3. Tenant URL: `https://<your-app>.azurecontainerapps.io/scim/v2`
+4. Secret Token: (printed by setup script)
+5. Test Connection → expect success
+6. Turn provisioning ON & assign users / groups
+
+Open the root URL (same host, no /scim) to watch events in near real-time.
+
 ---
 
-## ⚡ One-Line Production Deployment
-
-If you just want to deploy (or update) a production instance directly from PowerShell without cloning the repo first, run:
-
+## 🔄 Updating to a New Version
+Use the lightweight update function (auto-discovery if you omit names):
 ```powershell
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-rg" -AppName "scimtool-prod" -ScimSecret "YOUR-SECRET" -ImageTag "0.7.11"
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1); \
+	Update-SCIMTool -Version v0.7.6
 ```
-
-Parameters you must supply:
-- `-ResourceGroup`  New or existing Azure resource group (will be created if missing)
-- `-AppName`        Container App name (becomes part of the FQDN)
-- `-ScimSecret`     Shared secret token you will also configure in Entra provisioning
-- `-ImageTag`       (Optional) Image tag to deploy (defaults to `latest` if omitted)
-
-Disable persistent storage (NOT recommended for real usage):
+Specify RG/App explicitly if you have multiple deployments:
 ```powershell
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-test" -AppName "scimtool-ephemeral" -ScimSecret "TEMP-SECRET" -EnablePersistentStorage:$false
+Update-SCIMTool -Version v0.7.6 -ResourceGroup scimtool-rg -AppName scimtool-prod
 ```
-
-After the script completes it will print:
-- Public URL (open it to view Activity Feed UI)
-- SCIM API base: `https://<fqdn>/scim/v2`
-- Instructions to plug into Microsoft Entra provisioning
-
-Need to rotate the secret? Re-run the same command with a new `-ScimSecret` and (optionally) a new `-ImageTag` if you want to force a redeploy.
-
----
-
----
-
-## 🔧 Configure Microsoft Entra ID
-
-After running `setup.ps1`, you'll get your SCIM endpoint URL and secret. Then:
-
-1. Entra ID → Enterprise Applications → your app
-2. Provisioning → Set up automatic provisioning
-3. Tenant URL: `https://YOUR-APP.azurecontainerapps.io/scim/v2` (from setup output)
-4. Secret Token: (from setup output)
-5. Test Connection → expect ✅ success
-6. Turn provisioning On & assign test users
-
-Open the web root (same host, no `/scim`) to watch new events in real-time!
-
----
-
-## � Updating
-
-The setup script automatically detects existing deployments and updates them:
-
-```powershell
-.\setup.ps1
-```
-
-Your data is preserved thanks to persistent storage. See what's new in the [Releases](https://github.com/kayasax/SCIMTool/releases)!
+Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using `setup.ps1`.
 
 ---
 
 ## 🧪 Local Development
-
+Automated:
 ```powershell
-.\setup.ps1 -TestLocal
+./setup.ps1 -TestLocal
 ```
-
-This starts:
-- Backend API: http://localhost:3000
-- Web UI: http://localhost:5173
-
-**Manual setup:**
+Manual:
 ```powershell
 cd api; npm install; npm run start:dev
 cd ../web; npm install; npm run dev
 ```
+Backend: http://localhost:3000  |  Web UI: http://localhost:5173
 
 ---
 
-## 🩺 Troubleshooting
+## 🩺 Troubleshooting (Fast Fixes)
+| Issue | Try |
+|-------|-----|
+| Test Connection fails | Ensure URL ends with /scim/v2 & secret matches Entra config |
+| No events appear | Turn provisioning ON and assign a user/group; wait initial sync |
+| Deploy script exits | Run `az login`; confirm Azure CLI installed & subscription access |
+| Data lost after update | Add persistent storage (default is enabled unless you disabled) |
+| Favicon badge missing | Trigger an event in background tab; clear cache if stale |
 
-| Problem | Fix |
-|---------|-----|
-| Connection test fails | Check URL ends with `/scim/v2`; verify secret matches; ensure container is running |
-| No activity events | Turn provisioning On; assign users; trigger a create/update in Entra |
-| Favicon badge missing | Generate activity with tab in background; clear browser cache |
-| Deploy fails | Run `az login`; verify Azure CLI is installed and you have permissions |
-| Local CORS errors | Backend auto-allows localhost:5173 in dev mode |
-
-For advanced scenarios, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+More: see `DEPLOYMENT.md` for deeper architecture / options.
 
 ---
 
-## 🤝 Community & Support
-
-- 🐛 Bugs / 💡 Features: [Issues](https://github.com/kayasax/SCIMTool/issues)
-- 💬 Questions: [Discussions](https://github.com/kayasax/SCIMTool/discussions)
-- ⭐ Star the repo if it helps you!
+## 🤝 Contribute / Support
+* Issues & ideas: [GitHub Issues](https://github.com/kayasax/SCIMTool/issues)
+* Q&A / discussion: [Discussions](https://github.com/kayasax/SCIMTool/discussions)
+* ⭐ Star if this saved you time debugging provisioning!
 
 ---
 
 ## 📜 License
-
-MIT • Built with ❤️ for the Microsoft / Entra community.
+MIT — Built for the Microsoft Entra community.
 
 ---
-
-**Advanced deployment options, architecture details, and screenshots:** See [DEPLOYMENT.md](./DEPLOYMENT.md)
+**Need more detail?** Extended docs & deployment variants: [DEPLOYMENT.md](./DEPLOYMENT.md)
 

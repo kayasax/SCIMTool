@@ -1,83 +1,37 @@
+## SCIMTool – Condensed Session Memory
+
+This file intentionally trimmed for clarity. Full historic log kept in git history.
+
+### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
-| 2025-10-02 | �️ **Token Resilience** - Frontend now clears stored bearer on 401, shows modal with guidance, and skips env fallback outside dev builds. |
-| 2025-10-02 | �🔖 **Release Prep** - Bumped API/Web packages to v0.7.4 and created release tag trigger for GitHub Actions build. |
-| 2025-10-01 | 🔐 **Runtime Token Enforcement** - Activity Feed & Database Browser now consume bearer tokens from AuthProvider (no build-time secrets). |
-| 2025-10-02 | 🐳 **Unified Image Pipeline** - GitHub Actions now builds the root Dockerfile so web + API assets ship together automatically. |
-| 2025-09-30 | � **CRITICAL FIX: Hybrid Storage Architecture** - SQLite on LOCAL container storage (fast) + Azure Files for backups only (solves locking/performance issues)! |
-| 2025-09-30 | 🧹 **Azure Resource Cleanup** - Identified obsolete resources (ACR, duplicate LAW, orphaned job) - documented cleanup saving $7-12/month! |
-| 2025-09-30 | ⚠️ **Production Crisis Resolved** - Discovered DATABASE_URL pointing to Azure Files caused timeout errors, manual journal file cleanup restored app! |
-| 2025-09-30 | 🔧 **Init Container Enhanced** - Auto-restore from backup on startup + clean lock files (solves SQLite + Azure Files incompatibility)! |
-| 2025-09-30 | �🔧 **Environment Compatibility Fix** - Auto-detect and recreate Container App Environments without workload profiles! |
-| 2025-09-30 | ⏱️ **Deployment Timeout Fix** - Added 10-minute timeout and progress polling to prevent deployments hanging indefinitely! |
-| 2025-09-30 | 🔧 **Container Apps Workload Profile Fix** - Added required workload profile to Bicep templates for new Azure API requirement! |
-| 2025-09-30 | 🪟 **Window Closure Fix** - Replaced exit with return+pause in deploy.ps1 to prevent PowerShell window from closing on errors! |
-| 2025-09-30 | 🔧 **PowerShell 5 Compatibility Fixed** - Replaced ternary operators with if-else statements for Windows PowerShell support! |
-| 2025-09-30 | 🔄 **Deployment Script Consolidated** - Replaced deploy-azure.ps1 with full version (persistent storage by default), updated all docs! |ate | Achievement |
-|------|-------------|
-| 2025-09-30 | � **Deployment Script Consolidated** - Replaced deploy-azure.ps1 with full version (persistent storage by default), updated all docs! |
-| 2025-09-30 | �📝 **README Simplified** - Dynamic version badge, removed admin complexity, focus on setup.ps1 only! |
-| 2025-09-30 | 🔧 **Version Sync Fixed** - Updated package.json files to 0.7.2, update banner now correctly hidden! |
-| 2025-09-30 | 🎉 **v0.7.2 GitHub Release Published** - Comprehensive release notes documenting persistent storage architecture and verification! |
-| 2025-09-30 | ✅ **PERSISTENCE VERIFIED** - Container restart test passed! Data successfully restored from Azure Files backup (3064 KB preserved)! |
-| 2025-09-30 | 🎉 **v0.7.2 Released** - Fixed BackupController route (removed double /scim prefix) - Backup status indicator now working! |
-| 2025-09-30 | 💾 **Hybrid Storage Complete** - Local ephemeral DB + Azure Files backup system fully operational with UI status indicator! |
-| 2025-09-30 | 🔧 **Persistent Storage Architecture** - Implemented hybrid solution: SQLite local primary + 5-min Azure Files backups with auto-restore! |
-| 2025-09-28 | 🚀 **v0.4.6 Released & Tagged** - Complete favicon badge notifications with git tag, published to ACR! |
-| 2025-09-28 | ✨ **Production Ready v0.4.5** - Clean favicon badge system: automatic SCIM detection + numbers on favicon, no debug logs! |
-| 2025-09-28 | 🎯 **Favicon Badge FULLY Fixed** - Activity detection + favicon numbers working perfectly with localStorage persistence! |
-| 2025-01-18 | 🎯 **Badge Notifications Complete** - Tab title + dynamic favicon with red notification badge, tested with real SCIM events |
-| 2025-01-18 | 🔧 **Two Critical Fixes** - Added data loss warning to update script + debug logging for tab notifications |
-| 2025-01-18 | 📚 **README Crisis Resolved** - Fixed catastrophic duplicate content issue that made README unusable |
-| 2025-01-18 | 🚀 **v0.4.4 Released** - Groups display fixed, activity parser enhanced, container deployed |e | Achievement |
-|------|-------------|
-| 2025-01-18 | 🔧 **Two Critical Fixes** - Added data loss warning to update script + debug logging for tab notifications |
-| 2025-01-18 | � **README Crisis Resolved** - Fixed catastrophic duplicate content issue that made README unusable |
-| 2025-01-18 | � **v0.4.4 Released** - Groups display fixed, activity parser enhanced, container deployed |
-| 2025-09-28 | 🎨 **Enhanced Activity Parser** - Shows "John Doe was added to Marketing Team" instead of technical IDs - Beautiful UX! |
-| 2025-09-28 | 📦 **README Streamlined** - Focused on container deployment only, moved other options to DEPLOYMENT.md for cleaner user experience! |
-| 2025-09-28 | 🔄 **Auto Log Refresh** - Raw Logs tab now automatically refreshes when opened - no more empty screens! |
-| 2025-09-28 | 📚 **README.md Complete Rewrite** - Transformed from technical docs to beautiful user-focused marketing content with features highlights! |
-| 2025-09-28 | 📊 **v0.4.3 Activity Badges** - Browser tab notifications + visual badges for new activities - Perfect UX! |
-| 2025-09-28 | 🔧 **v0.4.2 Critical Fix** - SCIM PATCH 'Add' operations now supported - Microsoft Entra compatibility restored! |
-| 2025-09-28 | 🚀 **v0.4.1 Ready** - Complete UI polish: dropdown theme fixes, emoji icons, perfect theme consistency |
-| 2025-09-28 | 🎨 **Dark Theme Fixed** - Dropdown options now visible in dark theme with proper contrast |
-| 2025-09-28 | 🌙 **Theme Toggle Enhanced** - Replaced tiny SVG with clear emoji icons (☀️🌙) |
-| 2025-01-17 | 🎨 **Theme-Aware Filters** - Fixed Activity Feed filters to work properly with both light and dark themes |
-| 2025-01-17 | 📊 **Table Borders Fixed** - Added visible borders to user/group data tables for better readability |
-| 2025-01-17 | 🔧 **Enhanced Borders** - Made all tab borders more visible with proper contrast and thickness |
-| 2025-01-17 | 🎯 **Final Polish** - Corrected tab order, added borders to all tabs, fixed all navigation icons |
-| 2025-01-17 | 🎨 **Modal & Feed Polish** - Enhanced modal styling, auto-refresh Activity Feed, improved SCIM filtering |
-| 2025-01-17 | 🔧 **UX Polish** - Fixed Activity Feed icon, filtered non-SCIM requests, reordered navigation tabs |
-| 2025-01-17 | ✅ **Activity Translation Parser Complete** - Issue #5 fully implemented with human-readable SCIM activity feed |
-| 2025-01-17 | 📈 **Activity Feed Frontend** - Beautiful timeline showing "User created", "Group gained member", etc. |
-| 2025-01-17 | 🧠 **Smart Activity Parser** - Converts raw SCIM JSON to intuitive messages with icons and severity |
-| 2025-01-17 | 🎯 **Enhanced Navigation** - 3-tab interface: Activity Feed (default) → Database Browser → Raw Logs |
-| 2025-01-17 | 📊 **Activity Analytics** - Summary cards showing activity counts by timeframe and operation type |
-| 2025-01-17 | ✅ **Groups Tab Styling Fixed** - Proper table layout matching Users tab design |
-| 2025-01-17 | ✅ **Database Browser Complete** - Full frontend+backend implementation with tabbed interface |
-| 2025-01-17 | 📊 **Database Statistics** - Dashboard showing user/group counts, activity metrics, database status |
-| 2025-01-17 | 🔍 **User/Group Browser** - Searchable, filterable tables with pagination and relationship views |
-| 2025-01-17 | 🎨 **Navigation Integration** - Tabbed interface in main app: Activity Logs ↔ Database Browser |
-| 2025-01-17 | 🏗️ **Backend API Complete** - 5 endpoints: users, groups, statistics with search/filter/pagination |
-| 2025-09-27 | ✅ **v0.3.0 Released** - Full SCIM 2.0 compliance + enhanced UX |
-| 2025-09-27 | ✅ **Production Deployed** - Azure Container Apps updated with CORS fixes |
-| 2025-09-27 | ✅ **Customer Tools** - PowerShell update function tested and working |
+| 2025-10-02 | Unified image build (root Dockerfile ships API + Web) |
+| 2025-10-02 | Token resilience: frontend clears bearer on 401 + modal guidance |
+| 2025-10-01 | Runtime token enforcement (no build-time secrets) |
+| 2025-09-30 | Hybrid storage architecture: local SQLite + timed Azure Files backups |
+| 2025-09-30 | Environment / workload profile + timeout & PS5 compatibility fixes |
+| 2025-09-30 | Backup route & persistence verification (v0.7.2) |
+| 2025-09-28 | Favicon / activity badge system finalized |
+| 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
+| 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-## SCIMTool - Session Context
+Current Version: v0.7.6 (tag + packages aligned)
 
-**Status:** ✅ **PRODUCTION READY v0.7.4** - Critical hybrid storage performance fix (150x faster!)
+---
 
-## � Quick Commands
+## Status
+Production Ready (v0.7.6) – Hybrid storage + SCIM v2 path rewrite + update automation.
+
+## Quick Commands
 ```powershell
-# Admin: Publish new version to ACR
+# Publish latest image
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
-# Customer: Update Container App
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1'); Update-SCIMTool -Version v0.3.0
+# Customer update to latest (example)
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1'); Update-SCIMTool -Version v0.7.6
 ```
 
-## � Project Summary
+## Project Summary
 
 **Purpose:** SCIM 2.0 server with Microsoft Entra provisioning integration + real-time logging UI
 
@@ -88,7 +42,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - ✅ Dev tunnel integration for public HTTPS
 - ✅ Microsoft Entra provisioning compatible
 
-## 🔧 Single Entry Point
+## Single Entry Point
 
 **Main Script:** `setup.ps1`
 - Test local: `.\setup.ps1 -TestLocal`
@@ -102,25 +56,12 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - React + Vite frontend
 - Docker (local/dev) & Azure Container Apps (deployment target)
 
-**Available AI Capabilities:**
-- 🔧 MCP Servers: Microsoft docs MCP leveraged for Entra SCIM guidance
-- 📚 Documentation: Direct links to official Microsoft Learn SCIM articles
-- 🔍 Tools: (TBD) identify additional MCP tooling as the codebase evolves
+AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when needed.
 
 ---
 
-## 🎯 Current State
-**Build Status:** 🔄 In development (backend + log viewer UI functional)
-**Key Achievements (recent):**
-- ✅ Enhanced activity parser with human-readable names (John Doe was added to Marketing Team)
-- ✅ Auto log refresh functionality for Raw Logs tab
-- ✅ API endpoint testing confirmed: `/scim/admin/database/groups` returns 2 groups correctly
-- ✅ **RESOLVED:** Groups display issue - both groups now showing correctly with proper alignment!
-- ✅ **FIXED:** Grid alignment in Groups tab for consistent row formatting and better readability
-- ✅ **RELEASED:** Version 0.4.4 deployed with enhanced Groups display and activity parser improvements
-- ✅ **DEPLOYED:** Container pushed to GitHub Container Registry (ghcr.io/kayasax/scimtool:0.4.7)
-- ✅ **README REWRITE:** Completely redesigned - eye-catching, concise, removed duplicates and hallucinations
-- ✅ **DEPLOY SCRIPT FIXED:** Resolved BOM encoding issues, corrected branch reference (master), 404 download errors resolved
+## Current Focus
+Refine scripts (setup/update), maintain lightweight deploy & update path, monitor hybrid storage reliability.
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**
@@ -141,7 +82,7 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - Azure Container Apps for production hosting
 - PowerShell automation for customer updates
 
-## � Recent Progress
+## Architecture Snapshot
 | Date | Achievement |
 |------|-------------|
 | 2025-09-27 | ✅ **v0.3.0 Released** - Full SCIM 2.0 compliance + enhanced UX |
@@ -184,65 +125,27 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 
 ---
 
-## 📋 Active Priorities
-
-**Status:** ✅ **Enhanced UX Complete** - Issues #4 & #5 fully implemented
-
-### ✅ Completed (Activity Translation Parser - Issue #5):
-- [x] ✅ **ActivityParserService** - Smart parser converting SCIM operations to human messages
-- [x] ✅ **Activity Feed Frontend** - Timeline UI with icons, severity indicators, and filtering
-- [x] ✅ **Backend Integration** - ActivityController with /admin/activity endpoints
-- [x] ✅ **Message Intelligence** - Contextual parsing: "User created: john@company.com", "Group2 gained member"
-- [x] ✅ **Activity Analytics** - Summary metrics showing recent activity patterns
-- [x] ✅ **Three-Tab Navigation** - Activity Feed (default) → Database Browser → Raw Logs
-- [x] ✅ **User Experience** - Non-technical users can now understand SCIM provisioning activities
-
-### ✅ Completed (Database Browser - Issue #4):
-- [x] ✅ Database Browser backend API (DatabaseController, DatabaseService, DatabaseModule)
-- [x] ✅ Frontend components (UsersTab, GroupsTab, StatisticsTab) with proper styling
-- [x] ✅ Main DatabaseBrowser component with tabbed interface
-- [x] ✅ CSS styling (DatabaseBrowser.module.css) with responsive design
-- [x] ✅ SCIM field extraction showing ALL Entra custom mappings and attributes
-- [x] ✅ Authentication integration with proper bearer token headers
-
-### 🎯 Future Enhancements:
-- [ ] � **Mobile Optimization** - Enhanced responsive design for mobile devices
-- [ ] 🔔 **Real-time Updates** - WebSocket integration for live activity feed updates
-- [ ] 📊 **Advanced Analytics** - Trends, patterns, and anomaly detection in SCIM activities
-- [ ] 🎨 **Customizable Views** - User preferences for activity display and filtering
-- [ ] 🧪 Expand e2e tests (Groups, filtering edge cases, PATCH semantics, error paths)
-- [ ] 🏷️ Stabilize persisted `identifier` column (Prisma client / migration alignment + backfill script)
-- [ ] 📦 Docker + tunnel usage docs (ngrok / Dev Tunnels) & Azure Container Apps template
-
-### 🔧 Infrastructure & Polish:
-- [ ] 🧭 Design Azure Container Registry automation workflow and update-notification strategy (`feature/acr-automation`)
-	- [x] ✅ Phase 1: Local version endpoint + remote manifest polling (implemented)
-	- [x] ✅ Added CLI upgrade helper (GitHub releases → az containerapp update)
-	- [ ] Phase 2: (Deferred) self-update action / managed identity
-- [ ] �️ Optional redaction / masking strategy (configurable)
-- [ ] 🔍 Add shallow vs deep search mode + optional FTS plan
-- [ ] ⏱️ Cursor pagination (replace COUNT for large datasets)
-- [ ] 📚 Finalize external exposure & Entra provisioning guide in README
-- [ ] 🔧 Catalogue additional MCP/automation helpers (test data seeding)
-- [ ] 🧪 Add health endpoint & diagnostics (latency stats) for admin UI
+## Priorities (Condensed)
+Done: Activity parser, Database browser, Hybrid storage, Update automation.
+Near-Term:
+- WebSocket/live activity feed (optional)
+- Identifier column stabilization
+- Minimal health/diagnostics endpoint
+Deferred:
+- Advanced analytics + FTS
+- Mobile polish
 
 ---
 
-## 🔧 Development Environment
-**Common Commands:**
-- `npm install` / `npm run start:dev` (backend)
-- `npm test` (backend tests)
-- `npm run dev` (frontend, once created)
-- `docker compose up` (planned local container workflow)
-
-**Key Files:** `api/src/**` (backend), `README.md`, `prisma/schema.prisma` (DB), tests under `api/test`.
-**Setup Requirements:** Node.js 20+, npm 10+, Docker Desktop (optional), tunnel tool (Dev Tunnels/ngrok) for external callback tests.
-**AI Tools:** Microsoft docs MCP (SCIM reference); additional MCP integrations TBD.
+## Dev Quick Ref
+Backend: `cd api && npm run start:dev`
+Frontend: `cd web && npm run dev`
+Tests: `cd api && npm test`
 
 ---
 
 *This file serves as persistent project memory for enhanced AI assistant session continuity with MCP server integration.*
-## 🛠️ Key Features
+## Key Features (Snapshot)
 
 **SCIM 2.0 Compliance:**
 - Complete CRUD operations (POST, GET, PUT, PATCH, DELETE)
@@ -286,72 +189,12 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 
 ---
 
-## 🚀 Recent Achievements
-| Date | Achievement |
-|------|-------------|
-| 2025-09-25 | ✅ Project initialized with session continuity infrastructure |
-| 2025-09-25 | ✅ General Development Project development environment configured |
-| 2025-09-25 | ✅ MCP server awareness integrated for enhanced AI capabilities |
-## � Development Commands
-
-```powershell
-# Local development
-cd api && npm run start:dev        # Start SCIM server
-cd web && npm run dev              # Start log viewer UI
-
-# Production deployment
-pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
-
-# Customer updates
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1'); Update-SCIMTool -Version v0.3.0
-```
-
-## 💡 Project Insights
-
-**Microsoft Policy Reality:**
-- New non-gallery Enterprise Applications have provisioning limitations
-- Manual Azure Portal setup required for SCIM configuration
-- Technical implementation is complete, policy constraints are external
-
-**Technical Achievement:**
-- Full SCIM 2.0 server with monitoring capabilities
-- Production-ready containerized deployment
-- Customer-friendly update mechanisms
-- Enhanced UX with theme support and upgrade notifications
-3. Policy changes can render technical solutions obsolete overnight
-4. Always validate business assumptions alongside technical implementation
+## TODO (Lean)
+[-] Investigate lighter framework (Fastify) for image size (deferred)
+[ ] Health/diagnostics endpoint
+[ ] Optional WebSocket live updates
+[ ] Identifier persistence finalization/backfill
+[ ] Consider distroless base image
 
 ---
-
-## 🎯 DECEMBER 2025 UPDATE - CONTAINERIZATION & AUTOMATION SUCCESS
-
-**STATUS:** ✅ **ENTERPRISE-READY CONTAINERIZED SOLUTION**
-
-**New Achievements:**
-- 🏭 **Public Container Registry** - `ghcr.io/kayasax/scimtool` with GitHub Actions automation
-- 🐳 **Unified Container** - Single image containing both SCIM API + monitoring web UI
-- 🔧 **Production Fixes** - SQLite permissions resolved, container stability confirmed
-- 🚀 **Automated Deployment** - PowerShell scripts for building, tagging, releasing, updating
-- 🎨 **Upgrade UX** - Compact banner with modal release notes, one-click update commands
-- 📖 **Complete Documentation** - Admin guide with release workflow and user instructions
-
-**Current Container Capabilities:**
-- SCIM 2.0 server with OAuth 2.0 + Bearer token auth
-- Real-time monitoring web UI accessible without authentication
-- SQLite database with proper file permissions
-- Healthcheck endpoint for Container Apps monitoring
-- Version reporting for upgrade management
-- Request/response logging with search and filtering
-
-
-
-## 📋 TODO / Next Steps
-
-- [x] ✅ **Hybrid Persistent Storage Complete** - Local ephemeral DB + Azure Files backup with auto-restore on container start
-- [x] ✅ **Backup Status UI** - Header component shows backup time and file size with auto-refresh
-- [x] ✅ **BackupController Route Fixed** - Removed double /scim prefix (v0.7.2) - backup stats endpoint working!
-- [x] ✅ **Docker Image Optimization Attempted** - Current image ~1.1GB despite aggressive optimization (NestJS ecosystem + dependencies inherently large)
-- [x] ✅ **GitHub Release Created** - v0.3.0 release published with comprehensive changelog and upgrade instructions
-- [ ] **Consider Lighter Architecture** - Evaluate Express.js or Fastify instead of NestJS for smaller image size
-- [ ] Add front-end regression tests covering token prompt states (logged-out, token change, storage clearing)
-- [ ] **Distroless Runtime** - Test Google distroless Node.js images for production
+*Condensed: older verbose narrative & future-dated/hallucinated entries removed for clarity.*

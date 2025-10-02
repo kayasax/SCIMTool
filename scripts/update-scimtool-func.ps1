@@ -10,176 +10,109 @@ function Update-SCIMTool {
         [string]$AppName,
         [string]$Registry = "ghcr.io/kayasax",
         [switch]$NoPrompt,
-        [switch]$DryRun
+        [switch]$DryRun,
+        [switch]$Quiet
     )
 
     $ErrorActionPreference = 'Stop'
 
-    # Normalize version (remove v prefix)
+    function Write-Log {
+        param([string]$Msg,[string]$Type='INFO',[ConsoleColor]$Color=[ConsoleColor]::Gray)
+        if ($Quiet) { return }
+        Write-Host "[$Type] $Msg" -ForegroundColor $Color
+    }
+
     $cleanVersion = $Version.Trim().TrimStart('v','V')
     $imageRef = "$Registry/scimtool:$cleanVersion"
 
-    Write-Host "SCIMTool Container App Updater" -ForegroundColor Cyan
-    Write-Host "  Version : $cleanVersion" -ForegroundColor Gray
-    Write-Host "  Image   : $imageRef" -ForegroundColor Gray
-    Write-Host ""
+    if (-not $Quiet) {
+        Write-Host "SCIMTool Update" -ForegroundColor Cyan
+        Write-Host "Version: $cleanVersion" -ForegroundColor Gray
+        Write-Host "Image  : $imageRef" -ForegroundColor Gray
+    }
 
-    # Check Azure CLI authentication
     try {
-    Write-Host "[INFO] Checking Azure CLI authentication..." -ForegroundColor Cyan
+        Write-Log "Checking Azure CLI auth" 'INFO' Cyan
         $account = az account show --output json 2>$null | ConvertFrom-Json
-        if (-not $account) {
-            throw "Not authenticated"
-        }
-    Write-Host "[OK] Authenticated as $($account.user.name)" -ForegroundColor Green
-    Write-Host "      Subscription: $($account.name)" -ForegroundColor Gray
-        Write-Host ""
+        if (-not $account) { throw 'Not authenticated' }
+        Write-Log "Authenticated: $($account.user.name) / $($account.name)" 'OK' Green
     } catch {
-    Write-Host "[ERROR] Azure CLI authentication required" -ForegroundColor Red
-        Write-Host "   Please run: az login" -ForegroundColor Yellow
+        Write-Log "Azure CLI authentication required (run az login)" 'ERROR' Red
         return
     }
 
-    # Subscription selection (unless NoPrompt)
     if (-not $NoPrompt) {
-    Write-Host "Azure Subscription" -ForegroundColor Yellow
-    Write-Host "Current subscription: $($account.name) ($($account.id))" -ForegroundColor Cyan
+        Write-Log "Subscription: $($account.name) ($($account.id))" 'SUB' Cyan
         $ChangeSubscription = Read-Host -Prompt "Change subscription? (y/N)"
-
-        if ($ChangeSubscription -eq 'y' -or $ChangeSubscription -eq 'Y') {
-            Write-Host "Available subscriptions:" -ForegroundColor Cyan
-            az account list --query "[].{Name:name, Id:id, IsDefault:isDefault}" --output table
-            Write-Host ""
+        if ($ChangeSubscription -match '^[Yy]$') {
+            az account list --query "[].{Name:name,Id:id,Default:isDefault}" -o table
             $NewSubscriptionId = Read-Host -Prompt "Enter subscription ID or name"
-
-            if (-not [string]::IsNullOrWhiteSpace($NewSubscriptionId)) {
-                az account set --subscription $NewSubscriptionId
+            if ($NewSubscriptionId) {
+                az account set --subscription $NewSubscriptionId | Out-Null
                 $account = az account show | ConvertFrom-Json
-                Write-Host "[OK] Switched to: $($account.name)" -ForegroundColor Green
+                Write-Log "Switched to: $($account.name)" 'OK' Green
             }
         }
-        Write-Host ""
     }
 
-    # Discover SCIMTool resources if not specified
     if (-not $ResourceGroup -or -not $AppName) {
-    Write-Host "[INFO] Discovering SCIMTool resources..." -ForegroundColor Cyan
-
-        # Find container apps with 'scim' in the name
-        $containerApps = az containerapp list --query "[?contains(name, 'scim')].{name:name, resourceGroup:resourceGroup}" --output json | ConvertFrom-Json
-
-        if ($containerApps.Count -eq 0) {
-            Write-Host "[ERROR] No SCIMTool container apps found. Please specify -ResourceGroup and -AppName manually." -ForegroundColor Red
-            return
-        } elseif ($containerApps.Count -eq 1) {
-            $ResourceGroup = $containerApps[0].resourceGroup
-            $AppName = $containerApps[0].name
-            Write-Host "[OK] Found SCIMTool: $AppName in $ResourceGroup" -ForegroundColor Green
+        Write-Log "Discovering SCIMTool container apps" 'INFO' Cyan
+        $containerApps = az containerapp list --query "[?contains(name,'scim')].{name:name,rg:resourceGroup}" -o json | ConvertFrom-Json
+        if (-not $containerApps -or $containerApps.Count -eq 0) { Write-Log "No apps found. Specify -ResourceGroup and -AppName." 'ERROR' Red; return }
+        if ($containerApps.Count -eq 1) {
+            $ResourceGroup = $containerApps[0].rg; $AppName = $containerApps[0].name
+            Write-Log "Using $AppName ($ResourceGroup)" 'OK' Green
         } else {
-            Write-Host "Multiple SCIMTool apps found:" -ForegroundColor Yellow
-            for ($i = 0; $i -lt $containerApps.Count; $i++) {
-                Write-Host "   [$($i+1)] $($containerApps[$i].name) (RG: $($containerApps[$i].resourceGroup))" -ForegroundColor Gray
-            }
-
-            if ($NoPrompt) {
-                Write-Host "[ERROR] Multiple apps found but NoPrompt specified. Use -ResourceGroup and -AppName." -ForegroundColor Red
-                return
-            }
-
-            do {
-                $selection = Read-Host -Prompt "Select app to update [1-$($containerApps.Count)]"
-                $index = [int]$selection - 1
-            } while ($index -lt 0 -or $index -ge $containerApps.Count)
-
-            $ResourceGroup = $containerApps[$index].resourceGroup
-            $AppName = $containerApps[$index].name
-            Write-Host "[OK] Selected: $AppName in $ResourceGroup" -ForegroundColor Green
+            if ($NoPrompt) { Write-Log "Multiple apps found; supply -ResourceGroup/-AppName" 'ERROR' Red; return }
+            for ($i=0;$i -lt $containerApps.Count;$i++){ if (-not $Quiet) { Write-Host "[$($i+1)] $($containerApps[$i].name) (RG: $($containerApps[$i].rg))" -ForegroundColor Gray } }
+            do { $sel = Read-Host -Prompt "Select [1-$($containerApps.Count)]"; $idx = [int]$sel - 1 } while ($idx -lt 0 -or $idx -ge $containerApps.Count)
+            $ResourceGroup = $containerApps[$idx].rg; $AppName = $containerApps[$idx].name
+            Write-Log "Selected $AppName ($ResourceGroup)" 'OK' Green
         }
-        Write-Host ""
     }
 
-    Write-Host "Update Details:" -ForegroundColor Yellow
-    Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor Gray
-    Write-Host "   App Name: $AppName" -ForegroundColor Gray
-    Write-Host "   New Image: $imageRef" -ForegroundColor Gray
-    Write-Host ""
+    Write-Log "RG=$ResourceGroup App=$AppName NewImage=$imageRef" 'INFO' Cyan
 
-    # Check for persistent storage
-    Write-Host "[INFO] Checking storage configuration..." -ForegroundColor Cyan
-    $appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
+    $appDetails = az containerapp show -n $AppName -g $ResourceGroup -o json | ConvertFrom-Json
     $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
-
     if ($hasVolumes) {
-    Write-Host "[OK] Persistent storage detected - data will be preserved" -ForegroundColor Green
-        $volumeInfo = $appDetails.properties.template.volumes[0]
-        Write-Host "   Volume: $($volumeInfo.name)" -ForegroundColor Gray
-        Write-Host "   Storage: $($volumeInfo.storageName)" -ForegroundColor Gray
+        Write-Log "Persistent storage detected" 'OK' Green
     } else {
-    Write-Host "[WARN] No persistent storage - data is ephemeral" -ForegroundColor Yellow
+        Write-Log "No persistent storage (data ephemeral)" 'WARN' Yellow
     }
-    Write-Host ""
 
-    # Build the Azure CLI command
     $updateCommand = "az containerapp update -n '$AppName' -g '$ResourceGroup' --image '$imageRef'"
+    if (-not $Quiet) { Write-Host $updateCommand -ForegroundColor Yellow }
 
-    Write-Host "Update command:" -ForegroundColor Cyan
-    Write-Host "  $updateCommand" -ForegroundColor Yellow
-    Write-Host ""
-
-    # ⚠️ DATA WARNING (conditional based on storage)
     if (-not $hasVolumes) {
-    Write-Host "[WARN] WARNING: EXISTING DATA WILL BE DELETED" -ForegroundColor Red -BackgroundColor Yellow
-        Write-Host "   This update will replace the container with a new version." -ForegroundColor Red
-        Write-Host "   All existing activity logs, users, and groups will be lost." -ForegroundColor Red
-        Write-Host "   Consider adding persistent storage with add-persistent-storage.ps1" -ForegroundColor Yellow
-        Write-Host ""
+        Write-Log "DATA WARNING: Existing data will be lost (no volume)" 'WARN' Yellow
+        if (-not $Quiet) { Write-Host "Add storage: scripts/add-persistent-storage.ps1" -ForegroundColor Gray }
     }
 
-    if ($DryRun) {
-        Write-Host "🔍 Dry run mode - command would execute but no changes made" -ForegroundColor Yellow
-        return
-    }
+    if ($DryRun) { Write-Log "DryRun: exiting before execution" 'INFO' Cyan; return }
 
     if (-not $NoPrompt) {
         if (-not $hasVolumes) {
-            Write-Host "Please confirm you understand the data loss warning above." -ForegroundColor Yellow
-            do {
-                $response = Read-Host "Proceed with container app update and data deletion? [y/N]"
-                if ([string]::IsNullOrWhiteSpace($response) -or $response -in @('n','N','no','No')) {
-                    Write-Host "[CANCELLED] Update cancelled by user" -ForegroundColor Yellow
-                    return
-                }
-            } while ($response -notin @('y','Y','yes','Yes'))
+            $confirm = Read-Host "Proceed (data loss) [y/N]"
+            if ($confirm -notmatch '^[Yy]$') { Write-Log "Cancelled" 'CANCEL' Yellow; return }
         } else {
-            $response = Read-Host "Proceed with container app update? [Y/n]"
-            if ($response -in @('n','N','no','No')) {
-                Write-Host "[CANCELLED] Update cancelled by user" -ForegroundColor Yellow
-                return
-            }
+            $confirm = Read-Host "Proceed update? [Y/n]"
+            if ($confirm -match '^[Nn]$') { Write-Log "Cancelled" 'CANCEL' Yellow; return }
         }
     }
 
-    Write-Host "[INFO] Updating container app..." -ForegroundColor Cyan
-    Write-Host ""
-
-    # Execute the Azure CLI command
+    Write-Log "Updating container app" 'INFO' Cyan
     try {
         Invoke-Expression $updateCommand
-
         if ($LASTEXITCODE -eq 0) {
-            Write-Host ""
-            Write-Host "[OK] Container app updated successfully!" -ForegroundColor Green
-            Write-Host ""
-            Write-Host "Next steps:" -ForegroundColor Cyan
-            Write-Host "• Monitor deployment: az containerapp revision list -n $AppName -g $ResourceGroup -o table" -ForegroundColor Gray
-            Write-Host "• Check logs: az containerapp logs show -n $AppName -g $ResourceGroup --tail 20" -ForegroundColor Gray
-            Write-Host "• Access app: az containerapp show -n $AppName -g $ResourceGroup --query properties.configuration.ingress.fqdn -o tsv" -ForegroundColor Gray
-        } else {
-            Write-Host "[ERROR] Container app update failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
-        }
-    } catch {
-    Write-Host "[ERROR] Error during update: $($_.Exception.Message)" -ForegroundColor Red
-    }
+            Write-Log "Update successful" 'OK' Green
+            if (-not $Quiet) {
+                Write-Host "Revisions: az containerapp revision list -n $AppName -g $ResourceGroup -o table" -ForegroundColor Gray
+                Write-Host "Logs:     az containerapp logs show -n $AppName -g $ResourceGroup --tail 20" -ForegroundColor Gray
+                Write-Host "FQDN:     az containerapp show -n $AppName -g $ResourceGroup --query properties.configuration.ingress.fqdn -o tsv" -ForegroundColor Gray
+            }
+        } else { Write-Log "Update failed (exit $LASTEXITCODE)" 'ERROR' Red }
+    } catch { Write-Log "Error: $($_.Exception.Message)" 'ERROR' Red }
 }
 
 # Auto-execute with parameters if they were passed to the script
@@ -200,15 +133,11 @@ if ($args.Count -gt 0) {
         }
     }
 
-    if ($params.Count -gt 0 -and $params.ContainsKey('Version')) {
-        Update-SCIMTool @params
-    } else {
-    Write-Host "Usage: Update-SCIMTool -Version 'v0.7.6' [-ResourceGroup 'rg-name'] [-AppName 'app-name'] [-NoPrompt] [-DryRun]" -ForegroundColor Yellow
-    }
+    if ($params.Count -gt 0 -and $params.ContainsKey('Version')) { Update-SCIMTool @params }
+    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.7.6' [-ResourceGroup rg] [-AppName app] [-NoPrompt] [-DryRun] [-Quiet]" -ForegroundColor Yellow }
 } else {
-    Write-Host "SCIMTool update function loaded. Usage:" -ForegroundColor Green
-    Write-Host "  Update-SCIMTool -Version 'v0.7.6'" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version 'v0.7.6' -ResourceGroup 'my-rg' -AppName 'my-app'" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version 'v0.7.6' -NoPrompt" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version 'v0.7.6' -DryRun" -ForegroundColor Gray
+    Write-Host "SCIMTool update function loaded." -ForegroundColor Green
+    Write-Host "Examples:" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version v0.7.6" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version v0.7.6 -ResourceGroup rg -AppName app -Quiet" -ForegroundColor Gray
 }
