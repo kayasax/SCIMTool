@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchLogs, clearLogs, fetchLog, RequestLogItem, LogQuery, LogListResponse, fetchLocalVersion, VersionInfo } from './api/client';
 import { LogList } from './components/LogList';
 import { LogDetail } from './components/LogDetail';
@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { DatabaseBrowser } from './components/database/DatabaseBrowser';
 import { ActivityFeed } from './components/activity/ActivityFeed';
 import { ThemeProvider } from './hooks/useTheme';
+import { useAuth, AuthProvider } from './hooks/useAuth';
 import './theme.css';
 import styles from './app.module.css';
 
@@ -17,6 +18,7 @@ const updateScriptUrl =
 type AppView = 'logs' | 'database' | 'activity';
 
 const AppContent: React.FC = () => {
+  const { token, setToken, clearToken } = useAuth();
   const [currentView, setCurrentView] = useState<AppView>('activity');
   const [items, setItems] = useState<RequestLogItem[]>([]);
   const [meta, setMeta] = useState<Omit<LogListResponse,'items'>>();
@@ -32,6 +34,10 @@ const AppContent: React.FC = () => {
   const [latestSource, setLatestSource] = useState<'release' | 'tag' | null>(null);
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(() => !token);
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenMessage, setTokenMessage] = useState<string | null>(null);
+  const [needsToken, setNeedsToken] = useState(() => !token);
 
   const azResourceGroup = import.meta.env.VITE_AZURE_RESOURCE_GROUP; // optional
   const azContainerApp = import.meta.env.VITE_AZURE_CONTAINER_APP;
@@ -79,7 +85,30 @@ const AppContent: React.FC = () => {
     return `iex (irm '${scriptUrl}'); Update-SCIMTool ${args.join(' ')}`;
   }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp]);
 
-  async function load(applyPageReset = false, override?: LogQuery) {
+  useEffect(() => {
+    if (showTokenModal) {
+      setTokenInput(token ?? '');
+      setTokenMessage(null);
+    }
+  }, [showTokenModal, token]);
+
+  useEffect(() => {
+    if (!token) {
+      setNeedsToken(true);
+      setShowTokenModal(true);
+    } else {
+      setNeedsToken(false);
+    }
+  }, [token]);
+
+  const load = useCallback(async (applyPageReset = false, override?: LogQuery) => {
+    if (!token) {
+      setNeedsToken(true);
+      setItems([]);
+      setMeta(undefined);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -104,13 +133,24 @@ const AppContent: React.FC = () => {
       });
       setFilters(q); // persist any page reset
     } catch (e: any) {
-      setError(e.message);
+      const message = e?.message ?? 'Unknown error';
+      if (typeof message === 'string' && (message.includes('401') || message.includes('not configured'))) {
+        setNeedsToken(true);
+        setShowTokenModal(true);
+        setError(null);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
-  }
+  }, [filters, token]);
 
   async function handleClear() {
+    if (!token) {
+      setShowTokenModal(true);
+      return;
+    }
     if (!confirm('Clear all logs?')) return;
     setLoading(true);
     try {
@@ -123,10 +163,28 @@ const AppContent: React.FC = () => {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!token) return;
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
   useEffect(() => {
     // Local version
-    (async () => { try { setLocalVersion(await fetchLocalVersion()); } catch {/* ignore */} })();
+    if (!token) {
+      setLocalVersion(null);
+      return;
+    }
+    (async () => {
+      try {
+        setLocalVersion(await fetchLocalVersion());
+      } catch (err: any) {
+        const message = err?.message ?? '';
+        if (typeof message === 'string' && message.includes('401')) {
+          setNeedsToken(true);
+          setShowTokenModal(true);
+        }
+      }
+    })();
     // Latest GitHub release polling
     const fetchLatest = async () => {
       try {
@@ -172,19 +230,23 @@ const AppContent: React.FC = () => {
     return () => clearInterval(interval);
   }, [githubRepo]);
   useEffect(() => {
-    if (!auto) return;
+    if (!auto || !token) return;
     const h = setInterval(() => { if (!loading && !selected) load(); }, 10000);
     return () => clearInterval(h);
-  }, [auto, loading, selected, filters]);
+  }, [auto, loading, selected, load, token]);
 
   // Refresh logs when switching to Raw Logs tab
   useEffect(() => {
-    if (currentView === 'logs') {
+    if (currentView === 'logs' && token) {
       load();
     }
-  }, [currentView]);
+  }, [currentView, load, token]);
 
   async function handleSelect(partial: RequestLogItem) {
+    if (!token) {
+      setShowTokenModal(true);
+      return;
+    }
     try {
       // If we already have bodies (e.g., future optimization), just set.
       setSelected({ ...partial, requestHeaders: { loading: true } });
@@ -196,9 +258,39 @@ const AppContent: React.FC = () => {
     }
   }
 
+  const handleTokenSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = tokenInput.trim();
+    if (!value) {
+      setTokenMessage('Token cannot be empty.');
+      return;
+    }
+    setToken(value);
+    setShowTokenModal(false);
+    setTokenMessage(null);
+    setTimeout(() => load(true), 0);
+  };
+
+  const handleTokenClear = () => {
+    clearToken();
+    setTokenInput('');
+    setShowTokenModal(true);
+    setNeedsToken(true);
+    setItems([]);
+    setSelected(null);
+    setMeta(undefined);
+  };
+
   return (
     <div className={styles.app}>
-      <Header />
+      <Header
+        tokenConfigured={Boolean(token)}
+        onChangeToken={() => {
+          setTokenInput(token ?? '');
+          setTokenMessage(null);
+          setShowTokenModal(true);
+        }}
+      />
       <div className={styles.page}>
       {upgradeAvailable && latestTag && (
         <div className={styles.upgradeBanner}>
@@ -265,6 +357,65 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
+      {showTokenModal && (
+        <div
+          className={styles.overlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tokenModalTitle"
+          onClick={() => {
+            if (!needsToken) {
+              setShowTokenModal(false);
+            }
+          }}
+        >
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.spaceBetween}>
+              <h3 id="tokenModalTitle">SCIM Bearer Token</h3>
+              <button
+                type="button"
+                className={styles.buttonSmall}
+                onClick={() => {
+                  if (!needsToken) {
+                    setShowTokenModal(false);
+                  }
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <p className={styles.tokenHint}>
+              Enter the bearer token configured for this SCIMTool deployment. The value is stored locally in your browser only and never embedded in the app bundle.
+            </p>
+            <form className={styles.tokenForm} onSubmit={handleTokenSave}>
+              <input
+                type="password"
+                className={styles.tokenInput}
+                value={tokenInput}
+                onChange={event => setTokenInput(event.target.value)}
+                placeholder="e.g. S3cret-Value"
+                autoFocus
+              />
+              {tokenMessage && <div className={styles.error}>{tokenMessage}</div>}
+              <div className={styles.tokenActions}>
+                {token && (
+                  <button
+                    type="button"
+                    className={styles.buttonSecondary}
+                    onClick={handleTokenClear}
+                  >
+                    Clear
+                  </button>
+                )}
+                <button type="submit" className={styles.button}>
+                  Save Token
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Tabs */}
       <div className={styles.viewTabs}>
         <button
@@ -299,6 +450,11 @@ const AppContent: React.FC = () => {
         <>
           <p className={styles.subtitle}>Inspect raw SCIM traffic captured by the troubleshooting endpoint.</p>
           {error && <div className={styles.error}>{error}</div>}
+          {needsToken && (
+            <div className={styles.error}>
+              Provide the current SCIM bearer token to access logs and admin tools.
+            </div>
+          )}
           <LogFilters
             value={filters}
             onChange={setFilters}
@@ -345,7 +501,9 @@ const AppContent: React.FC = () => {
 const AppWithTheme: React.FC = () => {
   return (
     <ThemeProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 };

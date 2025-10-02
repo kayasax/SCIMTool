@@ -1,4 +1,6 @@
-﻿export interface RequestLogItem {
+﻿import { getStoredToken } from '../auth/token';
+
+export interface RequestLogItem {
   id: string;
   method: string;
   url: string;
@@ -108,9 +110,16 @@ export async function fetchRemoteManifest(url: string): Promise<RemoteManifest> 
   return res.json();
 }
 
+function requireToken(): string {
+  const token = getStoredToken();
+  if (!token) {
+    throw new Error('SCIM authentication token not configured');
+  }
+  return token;
+}
+
 function authHeader(): Record<string, string> {
-  const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
-  return { Authorization: `Bearer ${token}` };
+  return { Authorization: `Bearer ${requireToken()}` };
 }
 
 // Backup status

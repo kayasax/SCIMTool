@@ -1,5 +1,7 @@
 | Date | Achievement |
 |------|-------------|
+| 2025-10-02 | 🔖 **Release Prep** - Bumped API/Web packages to v0.7.4 and created release tag trigger for GitHub Actions build. |
+| 2025-10-01 | 🔐 **Runtime Token Enforcement** - Activity Feed & Database Browser now consume bearer tokens from AuthProvider (no build-time secrets). |
 | 2025-09-30 | � **CRITICAL FIX: Hybrid Storage Architecture** - SQLite on LOCAL container storage (fast) + Azure Files for backups only (solves locking/performance issues)! |
 | 2025-09-30 | 🧹 **Azure Resource Cleanup** - Identified obsolete resources (ACR, duplicate LAW, orphaned job) - documented cleanup saving $7-12/month! |
 | 2025-09-30 | ⚠️ **Production Crisis Resolved** - Discovered DATABASE_URL pointing to Azure Files caused timeout errors, manual journal file cleanup restored app! |
@@ -62,7 +64,7 @@
 
 ## SCIMTool - Session Context
 
-**Status:** ✅ **PRODUCTION READY v0.7.3** - Critical hybrid storage performance fix (150x faster!)
+**Status:** ✅ **PRODUCTION READY v0.7.4** - Critical hybrid storage performance fix (150x faster!)
 
 ## � Quick Commands
 ```powershell
@@ -349,4 +351,5 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - [x] ✅ **Docker Image Optimization Attempted** - Current image ~1.1GB despite aggressive optimization (NestJS ecosystem + dependencies inherently large)
 - [x] ✅ **GitHub Release Created** - v0.3.0 release published with comprehensive changelog and upgrade instructions
 - [ ] **Consider Lighter Architecture** - Evaluate Express.js or Fastify instead of NestJS for smaller image size
+- [ ] Add front-end regression tests covering token prompt states (logged-out, token change, storage clearing)
 - [ ] **Distroless Runtime** - Test Google distroless Node.js images for production

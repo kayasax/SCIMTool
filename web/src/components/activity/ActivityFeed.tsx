@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import styles from './ActivityFeed.module.css';
+import { useAuth } from '../../hooks/useAuth';
 
 interface ActivitySummary {
   id: string;
@@ -18,6 +19,7 @@ interface ActivityFeedProps {
 }
 
 export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
+  const { token } = useAuth();
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -40,10 +42,13 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   // Store last activity ID in localStorage for persistence across component re-renders
   const storeLastActivityId = (id: string) => {
     setLastActivityId(id);
-    localStorage.setItem('scimtool-last-activity-id', id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('scimtool-last-activity-id', id);
+    }
   };
 
   const getStoredLastActivityId = () => {
+    if (typeof window === 'undefined') return lastActivityId;
     const stored = localStorage.getItem('scimtool-last-activity-id');
     return stored || lastActivityId;
   };
@@ -163,6 +168,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     }
 
     try {
+      if (!token) {
+        return;
+      }
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
@@ -172,7 +180,6 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       if (filters.severity) params.append('severity', filters.severity);
       if (filters.search) params.append('search', filters.search);
 
-      const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
       const response = await fetch(`/scim/admin/activity?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -231,7 +238,10 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
 
   const fetchSummary = async () => {
     try {
-      const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
+      if (!token) {
+        setSummary(null);
+        return;
+      }
       const response = await fetch('/scim/admin/activity/summary', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -247,6 +257,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
 
   // Initialize stored activity ID on component mount
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const stored = localStorage.getItem('scimtool-last-activity-id');
     if (stored && !lastActivityId) {
       setLastActivityId(stored);
@@ -254,11 +265,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
   }, []);
 
   useEffect(() => {
+    if (!token) {
+      setActivities([]);
+      setSummary(null);
+      return;
+    }
+
     fetchActivities();
     fetchSummary();
 
     // Auto-refresh every 10 seconds when enabled
-    if (autoRefresh) {
+    if (autoRefresh && token) {
       const interval = setInterval(() => {
         fetchActivities(true); // Silent refresh - no loading state
         fetchSummary();
@@ -266,7 +283,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
 
       return () => clearInterval(interval);
     }
-  }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh]);
+  }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh, token]);
 
   // Clear badge when user focuses on the tab - but wait a moment to let them see it
   useEffect(() => {

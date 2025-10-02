@@ -141,6 +141,28 @@
   transform: scale(0.95);
 }
 
+.tokenButton {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--current-border);
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground);
+  cursor: pointer;
+  font-size: var(--font-size-200);
+  transition: all var(--transition-fast);
+}
+
+.tokenButton:hover {
+  background: var(--current-surface-tertiary);
+  border-color: var(--current-border-strong);
+}
+
+.tokenStatus {
+  font-size: var(--font-size-200);
+  color: var(--current-error);
+  font-weight: var(--font-weight-medium);
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;

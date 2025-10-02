@@ -292,6 +292,40 @@ tbody tr:hover { background: #1f242d; }
 .spaceBetween { display:flex; justify-content:space-between; align-items:center; }
 .mutedSmall { font-size:11px; color:#6c757d; }
 
+.tokenHint {
+  font-size: var(--font-size-200);
+  color: var(--current-foreground-secondary);
+  margin: var(--spacing-md) 0;
+}
+
+.tokenForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.tokenInput {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--current-border);
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground);
+  font-size: var(--font-size-300);
+}
+
+.tokenInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.tokenActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
 /* Upgrade banner */
 .upgradeBanner {
   background: var(--current-surface-secondary);

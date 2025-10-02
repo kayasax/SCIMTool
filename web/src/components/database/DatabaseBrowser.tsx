@@ -3,6 +3,7 @@ import { UsersTab } from './UsersTab';
 import { GroupsTab } from './GroupsTab';
 import { StatisticsTab } from './StatisticsTab';
 import styles from './DatabaseBrowser.module.css';
+import { useAuth } from '../../hooks/useAuth';
 
 interface User {
   id: string;
@@ -44,6 +45,7 @@ interface Statistics {
 type TabType = 'statistics' | 'users' | 'groups';
 
 export const DatabaseBrowser: React.FC = () => {
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('statistics');
   const [users, setUsers] = useState<User[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -78,6 +80,12 @@ export const DatabaseBrowser: React.FC = () => {
   const [groupsSearchTerm, setGroupsSearchTerm] = useState('');
 
   const fetchUsers = async () => {
+    if (!token) {
+      setUsers([]);
+      setUsersLoading(false);
+      return;
+    }
+
     setUsersLoading(true);
     try {
       const params = new URLSearchParams({
@@ -87,8 +95,6 @@ export const DatabaseBrowser: React.FC = () => {
 
       if (usersSearchTerm) params.append('search', usersSearchTerm);
       if (usersActiveFilter) params.append('active', usersActiveFilter);
-
-      const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
       const response = await fetch(`/scim/admin/database/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -105,6 +111,12 @@ export const DatabaseBrowser: React.FC = () => {
   };
 
   const fetchGroups = async () => {
+    if (!token) {
+      setGroups([]);
+      setGroupsLoading(false);
+      return;
+    }
+
     setGroupsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -113,8 +125,6 @@ export const DatabaseBrowser: React.FC = () => {
       });
 
       if (groupsSearchTerm) params.append('search', groupsSearchTerm);
-
-      const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
       const response = await fetch(`/scim/admin/database/groups?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -131,9 +141,14 @@ export const DatabaseBrowser: React.FC = () => {
   };
 
   const fetchStatistics = async () => {
+    if (!token) {
+      setStatistics(null);
+      setStatisticsLoading(false);
+      return;
+    }
+
     setStatisticsLoading(true);
     try {
-      const token = import.meta.env.VITE_SCIM_TOKEN ?? 'changeme';
       const response = await fetch('/scim/admin/database/statistics', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -150,6 +165,17 @@ export const DatabaseBrowser: React.FC = () => {
 
   // Load data when tab changes or search/filter changes
   useEffect(() => {
+    if (!token) {
+      setStatistics(null);
+      if (activeTab === 'users') {
+        setUsers([]);
+      }
+      if (activeTab === 'groups') {
+        setGroups([]);
+      }
+      return;
+    }
+
     if (activeTab === 'users') {
       fetchUsers();
     } else if (activeTab === 'groups') {
@@ -157,7 +183,7 @@ export const DatabaseBrowser: React.FC = () => {
     } else if (activeTab === 'statistics') {
       fetchStatistics();
     }
-  }, [activeTab, usersPagination.page, usersSearchTerm, usersActiveFilter, groupsPagination.page, groupsSearchTerm]);
+  }, [activeTab, usersPagination.page, usersSearchTerm, usersActiveFilter, groupsPagination.page, groupsSearchTerm, token]);
 
   const handleUserClick = (user: User) => {
     setSelectedUser(user);

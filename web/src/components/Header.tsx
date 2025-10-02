@@ -3,7 +3,12 @@ import { useTheme } from '../hooks/useTheme';
 import { fetchBackupStats, type BackupStats } from '../api/client';
 import styles from './Header.module.css';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onChangeToken: () => void;
+  tokenConfigured: boolean;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onChangeToken, tokenConfigured }) => {
   const { theme, toggleTheme } = useTheme();
   const [backupStats, setBackupStats] = useState<BackupStats | null>(null);
   const [backupError, setBackupError] = useState(false);
@@ -11,6 +16,11 @@ export const Header: React.FC = () => {
   useEffect(() => {
     // Fetch backup stats on mount and every 30 seconds
     const fetchStats = async () => {
+      if (!tokenConfigured) {
+        setBackupStats(null);
+        setBackupError(false);
+        return;
+      }
       try {
         const stats = await fetchBackupStats();
         setBackupStats(stats);
@@ -25,7 +35,7 @@ export const Header: React.FC = () => {
     const interval = setInterval(fetchStats, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [tokenConfigured]);
 
   const formatLastBackup = (lastBackupTime: string | null): string => {
     if (!lastBackupTime) return 'No backup yet';
@@ -87,7 +97,19 @@ export const Header: React.FC = () => {
                 </span>
               </div>
             )}
+
+            {!tokenConfigured && (
+              <span className={styles.tokenStatus}>Token required</span>
+            )}
           </div>
+
+          <button
+            className={styles.tokenButton}
+            onClick={onChangeToken}
+            title={tokenConfigured ? 'Update SCIM bearer token' : 'Set SCIM bearer token'}
+          >
+            {tokenConfigured ? 'Change Token' : 'Set Token'}
+          </button>
 
           <button
             className={styles.themeToggle}
