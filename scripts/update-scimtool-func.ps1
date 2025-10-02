@@ -19,35 +19,35 @@ function Update-SCIMTool {
     $cleanVersion = $Version.Trim().TrimStart('v','V')
     $imageRef = "$Registry/scimtool:$cleanVersion"
 
-    Write-Host "🚀 SCIMTool Container App Updater" -ForegroundColor Cyan
-    Write-Host "   Version: $cleanVersion" -ForegroundColor Gray
-    Write-Host "   Image: $imageRef" -ForegroundColor Gray
+    Write-Host "SCIMTool Container App Updater" -ForegroundColor Cyan
+    Write-Host "  Version : $cleanVersion" -ForegroundColor Gray
+    Write-Host "  Image   : $imageRef" -ForegroundColor Gray
     Write-Host ""
 
     # Check Azure CLI authentication
     try {
-        Write-Host "Checking Azure CLI authentication..." -ForegroundColor Cyan
+    Write-Host "[INFO] Checking Azure CLI authentication..." -ForegroundColor Cyan
         $account = az account show --output json 2>$null | ConvertFrom-Json
         if (-not $account) {
             throw "Not authenticated"
         }
-        Write-Host "✅ Authenticated as $($account.user.name)" -ForegroundColor Green
-        Write-Host "   Current subscription: $($account.name)" -ForegroundColor Gray
+    Write-Host "[OK] Authenticated as $($account.user.name)" -ForegroundColor Green
+    Write-Host "      Subscription: $($account.name)" -ForegroundColor Gray
         Write-Host ""
     } catch {
-        Write-Host "❌ Azure CLI authentication required" -ForegroundColor Red
+    Write-Host "[ERROR] Azure CLI authentication required" -ForegroundColor Red
         Write-Host "   Please run: az login" -ForegroundColor Yellow
         return
     }
 
     # Subscription selection (unless NoPrompt)
     if (-not $NoPrompt) {
-        Write-Host "📋 Azure Subscription" -ForegroundColor Yellow
-        Write-Host "Current subscription: $($account.name) ($($account.id))" -ForegroundColor Cyan
+    Write-Host "Azure Subscription" -ForegroundColor Yellow
+    Write-Host "Current subscription: $($account.name) ($($account.id))" -ForegroundColor Cyan
         $ChangeSubscription = Read-Host -Prompt "Change subscription? (y/N)"
 
         if ($ChangeSubscription -eq 'y' -or $ChangeSubscription -eq 'Y') {
-            Write-Host "📋 Available subscriptions:" -ForegroundColor Cyan
+            Write-Host "Available subscriptions:" -ForegroundColor Cyan
             az account list --query "[].{Name:name, Id:id, IsDefault:isDefault}" --output table
             Write-Host ""
             $NewSubscriptionId = Read-Host -Prompt "Enter subscription ID or name"
@@ -55,7 +55,7 @@ function Update-SCIMTool {
             if (-not [string]::IsNullOrWhiteSpace($NewSubscriptionId)) {
                 az account set --subscription $NewSubscriptionId
                 $account = az account show | ConvertFrom-Json
-                Write-Host "✅ Switched to: $($account.name)" -ForegroundColor Green
+                Write-Host "[OK] Switched to: $($account.name)" -ForegroundColor Green
             }
         }
         Write-Host ""
@@ -63,26 +63,26 @@ function Update-SCIMTool {
 
     # Discover SCIMTool resources if not specified
     if (-not $ResourceGroup -or -not $AppName) {
-        Write-Host "🔍 Discovering SCIMTool resources..." -ForegroundColor Cyan
+    Write-Host "[INFO] Discovering SCIMTool resources..." -ForegroundColor Cyan
 
         # Find container apps with 'scim' in the name
         $containerApps = az containerapp list --query "[?contains(name, 'scim')].{name:name, resourceGroup:resourceGroup}" --output json | ConvertFrom-Json
 
         if ($containerApps.Count -eq 0) {
-            Write-Host "❌ No SCIMTool container apps found. Please specify -ResourceGroup and -AppName manually." -ForegroundColor Red
+            Write-Host "[ERROR] No SCIMTool container apps found. Please specify -ResourceGroup and -AppName manually." -ForegroundColor Red
             return
         } elseif ($containerApps.Count -eq 1) {
             $ResourceGroup = $containerApps[0].resourceGroup
             $AppName = $containerApps[0].name
-            Write-Host "✅ Found SCIMTool: $AppName in $ResourceGroup" -ForegroundColor Green
+            Write-Host "[OK] Found SCIMTool: $AppName in $ResourceGroup" -ForegroundColor Green
         } else {
-            Write-Host "📋 Multiple SCIMTool apps found:" -ForegroundColor Yellow
+            Write-Host "Multiple SCIMTool apps found:" -ForegroundColor Yellow
             for ($i = 0; $i -lt $containerApps.Count; $i++) {
                 Write-Host "   [$($i+1)] $($containerApps[$i].name) (RG: $($containerApps[$i].resourceGroup))" -ForegroundColor Gray
             }
 
             if ($NoPrompt) {
-                Write-Host "❌ Multiple apps found but NoPrompt specified. Use -ResourceGroup and -AppName." -ForegroundColor Red
+                Write-Host "[ERROR] Multiple apps found but NoPrompt specified. Use -ResourceGroup and -AppName." -ForegroundColor Red
                 return
             }
 
@@ -93,29 +93,29 @@ function Update-SCIMTool {
 
             $ResourceGroup = $containerApps[$index].resourceGroup
             $AppName = $containerApps[$index].name
-            Write-Host "✅ Selected: $AppName in $ResourceGroup" -ForegroundColor Green
+            Write-Host "[OK] Selected: $AppName in $ResourceGroup" -ForegroundColor Green
         }
         Write-Host ""
     }
 
-    Write-Host "📋 Update Details:" -ForegroundColor Yellow
+    Write-Host "Update Details:" -ForegroundColor Yellow
     Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor Gray
     Write-Host "   App Name: $AppName" -ForegroundColor Gray
     Write-Host "   New Image: $imageRef" -ForegroundColor Gray
     Write-Host ""
 
     # Check for persistent storage
-    Write-Host "🔍 Checking storage configuration..." -ForegroundColor Cyan
+    Write-Host "[INFO] Checking storage configuration..." -ForegroundColor Cyan
     $appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json
     $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
 
     if ($hasVolumes) {
-        Write-Host "✅ Persistent storage detected - data will be preserved" -ForegroundColor Green
+    Write-Host "[OK] Persistent storage detected - data will be preserved" -ForegroundColor Green
         $volumeInfo = $appDetails.properties.template.volumes[0]
         Write-Host "   Volume: $($volumeInfo.name)" -ForegroundColor Gray
         Write-Host "   Storage: $($volumeInfo.storageName)" -ForegroundColor Gray
     } else {
-        Write-Host "⚠️  No persistent storage - data is ephemeral" -ForegroundColor Yellow
+    Write-Host "[WARN] No persistent storage - data is ephemeral" -ForegroundColor Yellow
     }
     Write-Host ""
 
@@ -128,7 +128,7 @@ function Update-SCIMTool {
 
     # ⚠️ DATA WARNING (conditional based on storage)
     if (-not $hasVolumes) {
-        Write-Host "⚠️  WARNING: EXISTING DATA WILL BE DELETED" -ForegroundColor Red -BackgroundColor Yellow
+    Write-Host "[WARN] WARNING: EXISTING DATA WILL BE DELETED" -ForegroundColor Red -BackgroundColor Yellow
         Write-Host "   This update will replace the container with a new version." -ForegroundColor Red
         Write-Host "   All existing activity logs, users, and groups will be lost." -ForegroundColor Red
         Write-Host "   Consider adding persistent storage with add-persistent-storage.ps1" -ForegroundColor Yellow
@@ -146,20 +146,20 @@ function Update-SCIMTool {
             do {
                 $response = Read-Host "Proceed with container app update and data deletion? [y/N]"
                 if ([string]::IsNullOrWhiteSpace($response) -or $response -in @('n','N','no','No')) {
-                    Write-Host "❌ Update cancelled by user" -ForegroundColor Yellow
+                    Write-Host "[CANCELLED] Update cancelled by user" -ForegroundColor Yellow
                     return
                 }
             } while ($response -notin @('y','Y','yes','Yes'))
         } else {
             $response = Read-Host "Proceed with container app update? [Y/n]"
             if ($response -in @('n','N','no','No')) {
-                Write-Host "❌ Update cancelled by user" -ForegroundColor Yellow
+                Write-Host "[CANCELLED] Update cancelled by user" -ForegroundColor Yellow
                 return
             }
         }
     }
 
-    Write-Host "🔄 Updating container app..." -ForegroundColor Cyan
+    Write-Host "[INFO] Updating container app..." -ForegroundColor Cyan
     Write-Host ""
 
     # Execute the Azure CLI command
@@ -168,17 +168,17 @@ function Update-SCIMTool {
 
         if ($LASTEXITCODE -eq 0) {
             Write-Host ""
-            Write-Host "✅ Container app updated successfully!" -ForegroundColor Green
+            Write-Host "[OK] Container app updated successfully!" -ForegroundColor Green
             Write-Host ""
             Write-Host "Next steps:" -ForegroundColor Cyan
             Write-Host "• Monitor deployment: az containerapp revision list -n $AppName -g $ResourceGroup -o table" -ForegroundColor Gray
             Write-Host "• Check logs: az containerapp logs show -n $AppName -g $ResourceGroup --tail 20" -ForegroundColor Gray
             Write-Host "• Access app: az containerapp show -n $AppName -g $ResourceGroup --query properties.configuration.ingress.fqdn -o tsv" -ForegroundColor Gray
         } else {
-            Write-Host "❌ Container app update failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
+            Write-Host "[ERROR] Container app update failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
         }
     } catch {
-        Write-Host "❌ Error during update: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "[ERROR] Error during update: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
@@ -203,12 +203,12 @@ if ($args.Count -gt 0) {
     if ($params.Count -gt 0 -and $params.ContainsKey('Version')) {
         Update-SCIMTool @params
     } else {
-        Write-Host "Usage: Update-SCIMTool -Version 'v0.4.9' [-ResourceGroup 'rg-name'] [-AppName 'app-name'] [-NoPrompt] [-DryRun]" -ForegroundColor Yellow
+    Write-Host "Usage: Update-SCIMTool -Version 'v0.7.6' [-ResourceGroup 'rg-name'] [-AppName 'app-name'] [-NoPrompt] [-DryRun]" -ForegroundColor Yellow
     }
 } else {
     Write-Host "SCIMTool update function loaded. Usage:" -ForegroundColor Green
-    Write-Host "  Update-SCIMTool -Version 'v0.4.9'" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version 'v0.4.9' -ResourceGroup 'my-rg' -AppName 'my-app'" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version 'v0.4.9' -NoPrompt" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version 'v0.4.9' -DryRun" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version 'v0.7.6'" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version 'v0.7.6' -ResourceGroup 'my-rg' -AppName 'my-app'" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version 'v0.7.6' -NoPrompt" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version 'v0.7.6' -DryRun" -ForegroundColor Gray
 }
