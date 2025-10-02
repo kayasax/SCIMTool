@@ -1,30 +1,35 @@
 ﻿<#
-SYNOPSIS
-    Simplified deployment bootstrap for SCIMTool (PowerShell 5.1+ compatible)
+SCIMTool Deployment Bootstrap (PowerShell 5.1 compatible)
 
-DESCRIPTION
-    This script now ONLY deploys/updates the Azure Container App using the
-    GitHub Container Registry image (ghcr.io/kayasax/scimtool:<tag>).
-    All previous flags (-TestLocal, -StartTunnel, etc.) have been removed to
-    keep onboarding frictionless.
+Purpose:
+  Deploy or update the Azure Container App using an image from:
+    ghcr.io/kayasax/scimtool:<tag>
 
-USAGE (Interactive zero‑parameter):
-    iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
+Key Behaviors:
+  - ALWAYS generates a NEW secret each run unless you explicitly pass -ScimSecret
+  - Prompts for missing values (zero parameter friendly)
+  - Persistent storage ON by default (stores backups under /app/data)
 
-USAGE (Non‑interactive):
-    ./setup.ps1 -ResourceGroup my-rg -AppName scimtool-prod -ScimSecret SUPER-SECRET -ImageTag 0.7.11
+Usage (interactive):
+  iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
 
-PARAMETERS
-    ResourceGroup  : (optional) RG name (prompted if missing)
-    AppName        : (optional) Container App name (prompted if missing)
-    Location       : Azure region (default: eastus)
-    ScimSecret     : Shared secret (auto-generated if omitted)
-    ImageTag       : Image tag in ghcr.io/kayasax/scimtool (default: latest)
-    EnablePersistentStorage : Switch (default: On). Use -EnablePersistentStorage:$false to disable.
+Usage (non-interactive example):
+  ./setup.ps1 -ResourceGroup my-rg -AppName scimtool-prod -ImageTag 0.7.11
 
-NOTES
-    Persistent storage mounts Azure Files at /app/data (backup copy) while runtime DB lives in /tmp/local-data.
-    Rotating the secret: re-run with a new -ScimSecret and (optionally) new -ImageTag.
+Optional override secret (NOT recommended routinely):
+  ./setup.ps1 -ResourceGroup my-rg -AppName scimtool-prod -ScimSecret MyStaticSecret123!
+
+Disable persistent storage (NOT recommended):
+  ./setup.ps1 -ResourceGroup my-rg -AppName scimtool-prod -DisablePersistentStorage
+
+Security:
+  A fresh high-entropy secret is generated when -ScimSecret is omitted. This enforces unique deployment tokens.
+  Copy and store it securely; it cannot be recovered later from the script.
+
+Notes:
+  Runtime DB: /tmp/local-data/scim.db (ephemeral)
+  Backup copy (if persistent enabled): /app/data/scim.db
+  Re-run to upgrade image or rotate the secret.
 #>
 
 param(
@@ -33,27 +38,43 @@ param(
   [string]$Location = 'eastus',
   [string]$ScimSecret,
   [string]$ImageTag = 'latest',
-  [switch]$EnablePersistentStorage
+  [switch]$DisablePersistentStorage
 )
 
-# Default to persistent storage enabled unless explicitly disabled via -EnablePersistentStorage:$false pattern
-if ($PSBoundParameters.ContainsKey('EnablePersistentStorage')) {
-  # If explicitly passed as $false (EnablePersistentStorage:$false) treat as disabled, otherwise enabled
-  $persistentEnabled = [bool]$EnablePersistentStorage
-} else {
-  $persistentEnabled = $true
-}
-# Dynamic secret generation for security
-function New-RandomScimSecret { "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format 'yyyyMMdd')" }
+$ErrorActionPreference = 'Stop'
 
-# Interactive prompts for missing values (so script works with zero parameters)
+# --- Helper: Strong secret generator (32 bytes -> base64 url safe) ---
+function New-ScimSecret {
+  $bytes = New-Object byte[] 32
+  [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+  $b64 = [Convert]::ToBase64String($bytes)
+  # Make URL safe & trim padding
+  ($b64 -replace '\+', '-' -replace '/', '_' -replace '=' , '').Substring(0,48)
+}
+
+# Determine persistent storage
+$persistentEnabled = -not $DisablePersistentStorage.IsPresent
+# Interactive collection
 if (-not $ResourceGroup) { $ResourceGroup = Read-Host 'Resource Group (will be created if missing)' }
 if (-not $AppName)       { $AppName       = Read-Host 'Container App Name' }
-if (-not $ScimSecret)    { $ScimSecret    = Read-Host 'SCIM Secret (Enter for auto-generate)'; if (-not $ScimSecret) { $ScimSecret = New-RandomScimSecret; Write-Host "Generated Secret: $ScimSecret" -ForegroundColor Yellow } }
 
-if (-not $ResourceGroup -or -not $AppName -or -not $ScimSecret) {
-    Write-Host 'Missing required values. Aborting.' -ForegroundColor Red
-    exit 1
+# Secret handling: ALWAYS generate if user did not pass one
+if (-not $PSBoundParameters.ContainsKey('ScimSecret')) {
+  Write-Host 'Generating unique SCIM secret (no reuse).' -ForegroundColor Yellow
+  $ScimSecret = New-ScimSecret
+  Write-Host "Generated Secret: $ScimSecret" -ForegroundColor Green
+  Write-Host 'Store this securely. It will NOT be shown again after this run.' -ForegroundColor Yellow
+} elseif (-not $ScimSecret) {
+  Write-Host 'Empty -ScimSecret provided. Aborting.' -ForegroundColor Red
+  exit 1
+} elseif ($ScimSecret.Length -lt 16) {
+  Write-Host 'Provided -ScimSecret is too short (min 16 chars). Aborting.' -ForegroundColor Red
+  exit 1
+}
+
+if (-not $ResourceGroup -or -not $AppName) {
+  Write-Host 'Missing required values. Aborting.' -ForegroundColor Red
+  exit 1
 }
 
 Write-Host ''
