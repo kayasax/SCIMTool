@@ -1,8 +1,12 @@
 ﻿$ErrorActionPreference = 'Stop'
 
+# Optional deterministic overrides via environment variables:
+#   SCIMTOOL_RG, SCIMTOOL_APP, SCIMTOOL_SECRET, SCIMTOOL_LOCATION, SCIMTOOL_IMAGETAG
+# If provided, random generation is skipped.
+
 # Auto values (no prompts to avoid hanging under iex)
-$Location = 'eastus'
-$ImageTag = 'latest'
+$Location = $env:SCIMTOOL_LOCATION  ? $env:SCIMTOOL_LOCATION  : 'eastus'
+$ImageTag = $env:SCIMTOOL_IMAGETAG ? $env:SCIMTOOL_IMAGETAG : 'latest'
 $persistentEnabled = $true
 
 function New-ScimSecret {
@@ -14,11 +18,11 @@ function New-ScimSecret {
 }
 function New-Suffix { (Get-Random -Minimum 1000 -Maximum 9999) }
 
-$ResourceGroup = "scimtool-rg-$(New-Suffix)"
-$AppName       = "scimtool-app-$(New-Suffix)"
-$ScimSecret    = New-ScimSecret
+$ResourceGroup = if ($env:SCIMTOOL_RG)  { $env:SCIMTOOL_RG }  else { "scimtool-rg-$(New-Suffix)" }
+$AppName       = if ($env:SCIMTOOL_APP) { $env:SCIMTOOL_APP } else { "scimtool-app-$(New-Suffix)" }
+$ScimSecret    = if ($env:SCIMTOOL_SECRET) { $env:SCIMTOOL_SECRET } else { New-ScimSecret }
 
-Write-Host "AUTO CONFIG:" -ForegroundColor Cyan
+Write-Host "CONFIG:" -ForegroundColor Cyan
 Write-Host "  ResourceGroup : $ResourceGroup" -ForegroundColor White
 Write-Host "  AppName       : $AppName" -ForegroundColor White
 Write-Host "  Location      : $Location" -ForegroundColor White
@@ -64,6 +68,15 @@ Write-Host 'Starting deployment...' -ForegroundColor Cyan
 & pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
 if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (exit $LASTEXITCODE)" -ForegroundColor Red; exit $LASTEXITCODE }
 
-Write-Host 'Deployment finished. Retrieve the FQDN above to form:' -ForegroundColor Green
-Write-Host '  SCIM Endpoint: https://<fqdn>/scim/v2' -ForegroundColor Green
-Write-Host "  Secret: $ScimSecret" -ForegroundColor Green
+# Try to retrieve FQDN (best effort) and echo final secret so user doesn't scroll
+$fqdn = $null
+try {
+	$fqdn = az containerapp show --name $AppName --resource-group $ResourceGroup --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
+} catch {}
+if ($fqdn) {
+	Write-Host "FINAL URL: https://$fqdn" -ForegroundColor Green
+	Write-Host "SCIM Endpoint: https://$fqdn/scim/v2" -ForegroundColor Green
+} else {
+	Write-Host 'FINAL URL: <unavailable - check portal>' -ForegroundColor Yellow
+}
+Write-Host "Bearer Secret: $ScimSecret" -ForegroundColor Green

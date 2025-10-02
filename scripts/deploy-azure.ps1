@@ -447,6 +447,9 @@ Write-Host "📋 Deployment Summary:" -ForegroundColor Cyan
 Write-Host "   App URL: $url" -ForegroundColor Yellow
 Write-Host "   SCIM Endpoint: $url/scim/v2" -ForegroundColor Yellow
 Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
+$secretEcho = $ScimSecret
+if (-not $secretEcho -and $env:SCIM_SHARED_SECRET) { $secretEcho = $env:SCIM_SHARED_SECRET }
+if ($secretEcho) { Write-Host "   SCIM Shared Secret: $secretEcho" -ForegroundColor Yellow }
 $storageStatus = if($EnablePersistentStorage){'Enabled ✅'}else{'Disabled ⚠️'}
 $storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
 Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
