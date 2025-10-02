@@ -31,7 +31,7 @@ iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
 
 Outputs:
 * Public URL (web UI root)
-* SCIM Base URL: https://<fqdn>/scim/v2
+* SCIM Base URL: https://fqdn/scim/v2
 * Generated / provided shared secret (reprinted at end)
 
 Cost: scale‑to‑zero + storage (low idle spend).
