@@ -1,7 +1,9 @@
 | Date | Achievement |
 |------|-------------|
-| 2025-10-02 | 🔖 **Release Prep** - Bumped API/Web packages to v0.7.4 and created release tag trigger for GitHub Actions build. |
+| 2025-10-02 | �️ **Token Resilience** - Frontend now clears stored bearer on 401, shows modal with guidance, and skips env fallback outside dev builds. |
+| 2025-10-02 | �🔖 **Release Prep** - Bumped API/Web packages to v0.7.4 and created release tag trigger for GitHub Actions build. |
 | 2025-10-01 | 🔐 **Runtime Token Enforcement** - Activity Feed & Database Browser now consume bearer tokens from AuthProvider (no build-time secrets). |
+| 2025-10-02 | 🐳 **Unified Image Pipeline** - GitHub Actions now builds the root Dockerfile so web + API assets ship together automatically. |
 | 2025-09-30 | � **CRITICAL FIX: Hybrid Storage Architecture** - SQLite on LOCAL container storage (fast) + Azure Files for backups only (solves locking/performance issues)! |
 | 2025-09-30 | 🧹 **Azure Resource Cleanup** - Identified obsolete resources (ACR, duplicate LAW, orphaned job) - documented cleanup saving $7-12/month! |
 | 2025-09-30 | ⚠️ **Production Crisis Resolved** - Discovered DATABASE_URL pointing to Azure Files caused timeout errors, manual journal file cleanup restored app! |

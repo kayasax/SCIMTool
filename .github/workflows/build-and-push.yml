@@ -21,12 +21,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node (API tests)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            api/package-lock.json
+            web/package-lock.json
+
+      - name: Install & test API
+        working-directory: api
+        run: |
+          npm ci --no-audit --no-fund
+          npm test -- --ci --passWithNoTests
+
+      - name: Build web (sanity check)
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract metadata
         id: meta
@@ -40,10 +64,64 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Derive primary tag
+        id: primary_tag
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "PRIMARY_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          else
+            echo "PRIMARY_TAG=latest" >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./api
+          context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test container image
+        run: |
+          echo "Using primary tag: ${PRIMARY_TAG}"
+          docker run -d --name scimtool-test -p 8080:80 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${PRIMARY_TAG}
+          for i in {1..20}; do
+            sleep 3
+            if curl -fsS http://localhost:8080/health >/dev/null; then
+              echo "Health endpoint OK"; break
+            fi
+            echo "Waiting for container (attempt $i)";
+            if [[ $i -eq 20 ]]; then echo "Container failed health check"; docker logs scimtool-test || true; exit 1; fi
+          done
+          docker logs scimtool-test --tail 50 || true
+          docker rm -f scimtool-test
+
+      - name: Azure Login (optional)
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.AZURE_CREDENTIALS != '' && secrets.AZ_RESOURCE_GROUP != '' && secrets.AZ_CONTAINER_APP != '' && secrets.AZ_SUBSCRIPTION_ID != '' }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container App (tagged release)
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && secrets.AZURE_CREDENTIALS != '' && secrets.AZ_RESOURCE_GROUP != '' && secrets.AZ_CONTAINER_APP != '' && secrets.AZ_SUBSCRIPTION_ID != '' }}
+        env:
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+          AZ_RESOURCE_GROUP: ${{ secrets.AZ_RESOURCE_GROUP }}
+          AZ_CONTAINER_APP: ${{ secrets.AZ_CONTAINER_APP }}
+          AZ_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
+        run: |
+          set -e
+          echo "🔐 Setting subscription"
+          az account set --subscription "$AZ_SUBSCRIPTION_ID"
+          IMAGE_TAG="${APP_VERSION}"
+          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          echo "🚀 Updating Container App $AZ_CONTAINER_APP in $AZ_RESOURCE_GROUP to image $IMAGE_REF"
+          az containerapp update -n "$AZ_CONTAINER_APP" -g "$AZ_RESOURCE_GROUP" --image "$IMAGE_REF"
+          echo "✅ Update command submitted. Listing revisions:"
+          az containerapp revision list -n "$AZ_CONTAINER_APP" -g "$AZ_RESOURCE_GROUP" --query "[].{name:name,traffic:properties.trafficWeight,active:properties.active}" -o table || true

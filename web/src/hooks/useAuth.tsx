@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { clearStoredToken, getStoredToken, setStoredToken, TOKEN_STORAGE_KEY } from '../auth/token';
+import {
+  clearStoredToken,
+  getStoredToken,
+  setStoredToken,
+  TOKEN_CHANGED_EVENT,
+  TOKEN_INVALID_EVENT,
+  TOKEN_STORAGE_KEY
+} from '../auth/token';
 
 interface AuthContextValue {
   token: string | null;
@@ -19,8 +26,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
+    const handleTokenChange = (event: Event) => {
+      const custom = event as CustomEvent<{ token: string | null }>;
+      setTokenState(custom.detail?.token ?? null);
+    };
+
+    const handleTokenInvalid = () => {
+      setTokenState(null);
+    };
+
     window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener(TOKEN_CHANGED_EVENT, handleTokenChange as EventListener);
+    window.addEventListener(TOKEN_INVALID_EVENT, handleTokenInvalid);
+    return () => {
+      window.removeEventListener('storage', handler);
+      window.removeEventListener(TOKEN_CHANGED_EVENT, handleTokenChange as EventListener);
+      window.removeEventListener(TOKEN_INVALID_EVENT, handleTokenInvalid);
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(() => ({

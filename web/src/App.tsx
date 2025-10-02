@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchLogs, clearLogs, fetchLog, RequestLogItem, LogQuery, LogListResponse, fetchLocalVersion, VersionInfo } from './api/client';
+import { TOKEN_INVALID_EVENT } from './auth/token';
 import { LogList } from './components/LogList';
 import { LogDetail } from './components/LogDetail';
 import { LogFilters } from './components/LogFilters';
@@ -100,6 +101,21 @@ const AppContent: React.FC = () => {
       setNeedsToken(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleInvalid = () => {
+      setTokenMessage('The previous token was rejected by the API. Please enter a new bearer token.');
+      setNeedsToken(true);
+      setShowTokenModal(true);
+      setTokenInput('');
+      setItems([]);
+      setSelected(null);
+      setMeta(undefined);
+    };
+    window.addEventListener(TOKEN_INVALID_EVENT, handleInvalid);
+    return () => window.removeEventListener(TOKEN_INVALID_EVENT, handleInvalid);
+  }, []);
 
   const load = useCallback(async (applyPageReset = false, override?: LogQuery) => {
     if (!token) {

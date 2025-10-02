@@ -1,4 +1,4 @@
-﻿import { getStoredToken } from '../auth/token';
+﻿import { clearStoredToken, getStoredToken, notifyTokenInvalid } from '../auth/token';
 
 export interface RequestLogItem {
   id: string;
@@ -33,6 +33,13 @@ const getApiBase = (): string => {
 
 const base = getApiBase();
 
+const buildUrl = (path: string): string => {
+  if (!base) return path;
+  const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  const normalisedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${trimmedBase}${normalisedPath}`;
+};
+
 export interface LogQuery {
   page?: number;
   pageSize?: number;
@@ -63,22 +70,21 @@ export async function fetchLogs(q: LogQuery = {}): Promise<LogListResponse> {
     params.set(k, String(v));
   });
   const qs = params.toString();
-  const url = `/scim/admin/logs${qs ? `?${qs}` : ''}`;
-  const res = await fetch(url, { headers: authHeader() });
+  const url = buildUrl(`/scim/admin/logs${qs ? `?${qs}` : ''}`);
+  const res = await fetchWithAuth(url);
   if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
   return res.json();
 }
 
 export async function clearLogs(): Promise<void> {
-  const res = await fetch(`${base}/scim/admin/logs/clear`, {
-    method: 'POST',
-    headers: authHeader()
+  const res = await fetchWithAuth(buildUrl('/scim/admin/logs/clear'), {
+    method: 'POST'
   });
   if (!res.ok && res.status !== 204) throw new Error(`Failed to clear logs: ${res.status}`);
 }
 
 export async function fetchLog(id: string): Promise<RequestLogItem> {
-  const res = await fetch(`${base}/scim/admin/logs/${id}`, { headers: authHeader() });
+  const res = await fetchWithAuth(buildUrl(`/scim/admin/logs/${id}`));
   if (!res.ok) throw new Error(`Failed to load log ${id}: ${res.status}`);
   return res.json();
 }
@@ -92,7 +98,7 @@ export interface VersionInfo {
 }
 
 export async function fetchLocalVersion(): Promise<VersionInfo> {
-  const res = await fetch(`${base}/scim/admin/version`, { headers: authHeader() });
+  const res = await fetchWithAuth(buildUrl('/scim/admin/version'));
   if (!res.ok) throw new Error(`Failed to fetch version: ${res.status}`);
   return res.json();
 }
@@ -118,8 +124,16 @@ function requireToken(): string {
   return token;
 }
 
-function authHeader(): Record<string, string> {
-  return { Authorization: `Bearer ${requireToken()}` };
+async function fetchWithAuth(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers ?? undefined);
+  headers.set('Authorization', `Bearer ${requireToken()}`);
+  const response = await fetch(input, { ...init, headers });
+  if (response.status === 401) {
+    clearStoredToken();
+    notifyTokenInvalid();
+    throw new Error('SCIM authentication token rejected (HTTP 401).');
+  }
+  return response;
 }
 
 // Backup status
@@ -131,7 +145,7 @@ export interface BackupStats {
 }
 
 export async function fetchBackupStats(): Promise<BackupStats> {
-  const res = await fetch(`${base}/scim/admin/backup/stats`, { headers: authHeader() });
+  const res = await fetchWithAuth(buildUrl('/scim/admin/backup/stats'));
   if (!res.ok) throw new Error(`Failed to fetch backup stats: ${res.status}`);
   return res.json();
 }
