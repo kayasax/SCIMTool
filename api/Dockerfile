@@ -1,52 +1,37 @@
-﻿# Build API server with pre-built web client
-FROM node:18-alpine
+﻿###########
+# Multi-stage build for SCIMTool API (fixes local-data permission issue)
+###########
 
-# Install OpenSSL for Prisma compatibility
+# Builder stage: install deps, generate Prisma, compile TS
+FROM node:20-alpine AS build
 RUN apk add --no-cache openssl
-
-# Set working directory
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies (including dev dependencies for build)
 RUN npm ci
-
-# Copy source code
 COPY . .
-
-# Copy pre-built web client
 COPY public/ ./public
-
-# Generate Prisma client first
 RUN npx prisma generate
-
-# Initialize SQLite database schema
 ENV DATABASE_URL="file:./data.db"
 RUN npx prisma db push
-
-# Build the application
-RUN npx tsc -p tsconfig.build.json
-
-# Remove dev dependencies after build
+RUN npm run build
 RUN npm prune --production
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
+# Runtime stage: only production deps + dist + entrypoint
+FROM node:20-alpine AS runtime
+RUN apk add --no-cache openssl
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/public ./public
+COPY docker-entrypoint.sh ./
 
-# Change ownership of the app directory
-RUN chown -R nestjs:nodejs /app
-
-# Copy entrypoint script and make it executable
-COPY docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
+# Create non-root user and ensure writable local-data directory exists before dropping privileges
+RUN addgroup -g 1001 -S nodejs \
+	&& adduser -S nestjs -u 1001 \
+	&& mkdir -p /app/local-data \
+	&& chown -R nestjs:nodejs /app/local-data /app
 
 USER nestjs
-
-# Expose port 80 (as specified in environment variables)
 EXPOSE 80
-
-# Start the application with migrations
 CMD ["/app/docker-entrypoint.sh"]
