@@ -174,7 +174,17 @@ if ($EnablePersistentStorage) {
         $storageExit = $LASTEXITCODE
         $storageDeployment = $null
         if ($storageExit -eq 0) {
-            try { $storageDeployment = $rawStorageJson | ConvertFrom-Json } catch { }
+            # Remove any leading warning lines before JSON (e.g., bicep upgrade notice)
+            $jsonCandidate = $rawStorageJson
+            $firstBrace = $jsonCandidate.IndexOf('{')
+            if ($firstBrace -ge 0) {
+                $jsonCandidate = $jsonCandidate.Substring($firstBrace)
+                $lastBrace = $jsonCandidate.LastIndexOf('}')
+                if ($lastBrace -ge 0 -and $lastBrace + 1 -le $jsonCandidate.Length) {
+                    $jsonCandidate = $jsonCandidate.Substring(0, $lastBrace + 1)
+                }
+                try { $storageDeployment = $jsonCandidate | ConvertFrom-Json } catch { $storageDeployment = $null }
+            }
         }
         $provisioningSucceeded = $false
         if ($storageDeployment -and $storageDeployment.properties.provisioningState -eq 'Succeeded') { $provisioningSucceeded = $true }
