@@ -176,8 +176,18 @@ if ($EnablePersistentStorage) {
         if ($storageExit -eq 0) {
             try { $storageDeployment = $rawStorageJson | ConvertFrom-Json } catch { }
         }
-        if ($storageExit -eq 0 -and $storageDeployment -and $storageDeployment.properties.provisioningState -eq 'Succeeded') {
-            $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
+        $provisioningSucceeded = $false
+        if ($storageDeployment -and $storageDeployment.properties.provisioningState -eq 'Succeeded') { $provisioningSucceeded = $true }
+        elseif ($rawStorageJson -match '"provisioningState"\s*:\s*"Succeeded"') { $provisioningSucceeded = $true }
+
+        if ($provisioningSucceeded) {
+            # Retrieve key explicitly (secure output not echoed in CLI response)
+            $keyValue = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --query "[0].value" -o tsv 2>$null
+            if (-not $keyValue) {
+                Write-Host "   WARNING: Unable to retrieve storage key" -ForegroundColor Yellow
+            } else {
+                $storageAccountKey = $keyValue
+            }
             Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
             Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
             Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
