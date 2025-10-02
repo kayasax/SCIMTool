@@ -43,6 +43,27 @@ if ($env:SCIMTOOL_SECRET -and $env:SCIMTOOL_SECRET.Trim().Length -gt 0) {
 	$ScimSecret = New-ScimSecret
 }
 
+# Interactive prompting (unless explicitly disabled)
+$interactive = $true
+if ($env:SCIMTOOL_UNATTENDED -and $env:SCIMTOOL_UNATTENDED -in @('1','true','yes')) { $interactive = $false }
+
+function Prompt-Default($label, $default) {
+	$input = Read-Host "$label [$default]"
+	if ([string]::IsNullOrWhiteSpace($input)) { return $default } else { return $input }
+}
+
+if ($interactive) {
+	Write-Host "Interactive mode: Press Enter to accept values in brackets, or type a new value." -ForegroundColor Cyan
+	$ResourceGroup = Prompt-Default 'Resource Group' $ResourceGroup
+	$AppName       = Prompt-Default 'App Name'       $AppName
+	$Location      = Prompt-Default 'Location'       $Location
+	$ImageTag      = Prompt-Default 'Image Tag'      $ImageTag
+	$secretInput = Read-Host 'SCIM Shared Secret (leave blank to keep generated)'
+	if (-not [string]::IsNullOrWhiteSpace($secretInput)) { $ScimSecret = $secretInput }
+	$persistInput = Read-Host 'Enable Persistent Storage? (Y/n) [Y]'
+	if ($persistInput -and $persistInput.ToLower() -eq 'n') { $persistentEnabled = $false }
+}
+
 Write-Host "CONFIG:" -ForegroundColor Cyan
 Write-Host "  ResourceGroup : $ResourceGroup" -ForegroundColor White
 Write-Host "  AppName       : $AppName" -ForegroundColor White
