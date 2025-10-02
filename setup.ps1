@@ -12,9 +12,9 @@ if ($env:SCIMTOOL_LOCATION -and $env:SCIMTOOL_LOCATION.Trim().Length -gt 0) {
 	$Location = 'eastus'
 }
 if ($env:SCIMTOOL_IMAGETAG -and $env:SCIMTOOL_IMAGETAG.Trim().Length -gt 0) {
-	$ImageTag = $env:SCIMTOOL_IMAGETAG
+    $ImageTag = $env:SCIMTOOL_IMAGETAG
 } else {
-	$ImageTag = 'latest'
+    $ImageTag = 'latest'
 }
 $persistentEnabled = $true
 
@@ -47,17 +47,17 @@ if ($env:SCIMTOOL_SECRET -and $env:SCIMTOOL_SECRET.Trim().Length -gt 0) {
 $interactive = $true
 if ($env:SCIMTOOL_UNATTENDED -and $env:SCIMTOOL_UNATTENDED -in @('1','true','yes')) { $interactive = $false }
 
-function Prompt-Default($label, $default) {
-	$input = Read-Host "$label [$default]"
-	if ([string]::IsNullOrWhiteSpace($input)) { return $default } else { return $input }
+function Get-DefaultValue($label, $default) {
+    $userInput = Read-Host "$label [$default]"
+    if ([string]::IsNullOrWhiteSpace($userInput)) { return $default } else { return $userInput }
 }
 
 if ($interactive) {
 	Write-Host "Interactive mode: Press Enter to accept values in brackets, or type a new value." -ForegroundColor Cyan
-	$ResourceGroup = Prompt-Default 'Resource Group' $ResourceGroup
-	$AppName       = Prompt-Default 'App Name'       $AppName
-	$Location      = Prompt-Default 'Location'       $Location
-	$ImageTag      = Prompt-Default 'Image Tag'      $ImageTag
+	$ResourceGroup = Get-DefaultValue 'Resource Group' $ResourceGroup
+	$AppName       = Get-DefaultValue 'App Name'       $AppName
+	$Location      = Get-DefaultValue 'Location'       $Location
+	# Image Tag prompt removed: always using $ImageTag (default 'latest')
 	$secretInput = Read-Host 'SCIM Shared Secret (leave blank to keep generated)'
 	if (-not [string]::IsNullOrWhiteSpace($secretInput)) { $ScimSecret = $secretInput }
 	$persistInput = Read-Host 'Enable Persistent Storage? (Y/n) [Y]'
