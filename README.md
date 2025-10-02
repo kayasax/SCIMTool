@@ -36,23 +36,6 @@ Outputs:
 
 Cost: scale‑to‑zero + storage (low idle spend).
 
-### Non‑Interactive / CI (Deterministic)
-```powershell
-$env:SCIMTOOL_RG='scimtool-rg'
-$env:SCIMTOOL_APP='scimtool-prod'
-$env:SCIMTOOL_SECRET='REPLACE-ME-STRONG'
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
-```
-Optional: `SCIMTOOL_LOCATION` (default eastus), `SCIMTOOL_IMAGETAG` (default latest), `SCIMTOOL_UNATTENDED=1`.
-
-Disable persistence (NOT recommended):
-```powershell
-$env:SCIMTOOL_UNATTENDED=1; $env:SCIMTOOL_RG='scimtool-ephem'; $env:SCIMTOOL_APP='scimtool-ephemeral'; $env:SCIMTOOL_SECRET='TEMP-ONLY'
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
-```
-
----
-
 ## 🔧 Configure Microsoft Entra Provisioning (Right After Deploy)
 1. Entra Portal → Enterprise Applications → Your Enterprise App
 2. Provisioning → Set Provisioning Mode: Automatic
