@@ -1,4 +1,3 @@
-
 # SCIMTool setup script (safe header, no BOM)
 $ErrorActionPreference = 'Stop'
 
@@ -107,3 +106,4 @@ if ($fqdn) {
 	Write-Host 'FINAL URL: <unavailable - check portal>' -ForegroundColor Yellow
 }
 Write-Host "Bearer Secret: $ScimSecret" -ForegroundColor Green
+
