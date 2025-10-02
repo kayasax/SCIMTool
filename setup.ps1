@@ -1,5 +1,4 @@
-﻿# SCIMTool one-line setup (auto mode)
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 # Auto values (no prompts to avoid hanging under iex)
 $Location = 'eastus'
@@ -27,10 +26,35 @@ Write-Host "  ImageTag      : $ImageTag" -ForegroundColor White
 Write-Host "  Persistent    : $persistentEnabled" -ForegroundColor White
 Write-Host "  Secret        : $ScimSecret" -ForegroundColor Yellow
 
-# Download deploy script fresh each run
-$deployUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1'
-$deployScript = Join-Path $env:TEMP 'scimtool-deploy.ps1'
-try { Invoke-WebRequest -Uri $deployUrl -OutFile $deployScript -UseBasicParsing -ErrorAction Stop } catch { Write-Host 'Failed to download deploy script.' -ForegroundColor Red; Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }
+<#
+Stage a temporary directory structure so the deployment script's relative
+references to ../infra/*.bicep resolve even when fetched remotely.
+#>
+$tempRoot = Join-Path $env:TEMP ("scimtool-" + ([guid]::NewGuid().ToString('N')))
+$scriptsDir = Join-Path $tempRoot 'scripts'
+$infraDir   = Join-Path $tempRoot 'infra'
+New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
+New-Item -ItemType Directory -Path $infraDir -Force   | Out-Null
+
+$rawBase = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master'
+$files = @(
+	@{ url = "$rawBase/scripts/deploy-azure.ps1"; path = Join-Path $scriptsDir 'deploy-azure.ps1' },
+	@{ url = "$rawBase/infra/storage.bicep";       path = Join-Path $infraDir   'storage.bicep' },
+	@{ url = "$rawBase/infra/containerapp-env.bicep"; path = Join-Path $infraDir 'containerapp-env.bicep' },
+	@{ url = "$rawBase/infra/containerapp.bicep";  path = Join-Path $infraDir   'containerapp.bicep' }
+)
+
+foreach ($f in $files) {
+	try {
+		Invoke-WebRequest -Uri $f.url -OutFile $f.path -UseBasicParsing -ErrorAction Stop
+	} catch {
+		Write-Host "Failed to download $($f.url)" -ForegroundColor Red
+		Write-Host $_.Exception.Message -ForegroundColor Red
+		exit 1
+	}
+}
+
+$deployScript = Join-Path $scriptsDir 'deploy-azure.ps1'
 
 # Azure CLI check
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) { Write-Host 'Azure CLI not installed. Install first: https://learn.microsoft.com/cli/azure/install-azure-cli' -ForegroundColor Red; exit 1 }
