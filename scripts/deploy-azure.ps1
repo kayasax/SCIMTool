@@ -202,9 +202,17 @@ if ($EnablePersistentStorage) {
             Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
             Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
         } else {
-            Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
-            if ($rawStorageJson) { Write-Host $rawStorageJson -ForegroundColor Red }
-            exit 1
+            # Fallback: verify if storage account actually exists despite ambiguous deployment output
+            $acctCheck = az storage account show --name $storageName --resource-group $ResourceGroup --query "name" -o tsv 2>$null
+            if ($LASTEXITCODE -eq 0 -and $acctCheck) {
+                Write-Host "   ✅ Storage account detected after ambiguous deployment output" -ForegroundColor Green
+                $keyValue = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --query "[0].value" -o tsv 2>$null
+                if ($keyValue) { $storageAccountKey = $keyValue }
+            } else {
+                Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
+                if ($rawStorageJson) { Write-Host $rawStorageJson -ForegroundColor Red }
+                exit 1
+            }
         }
     }
 } else {
