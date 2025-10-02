@@ -75,6 +75,7 @@ try {
 $rgSuffix = $ResourceGroup.Replace("-", "").Replace("_", "").ToLower()
 $appPrefix = $AppName.Replace("-", "").Replace("_", "").ToLower()
 $storageName = $appPrefix + $rgSuffix + "stor"
+$fileShareName = 'scimtool-data'
 
 # Truncate to 24 characters if too long
 if ($storageName.Length -gt 24) {
@@ -167,6 +168,7 @@ if ($EnablePersistentStorage) {
             --resource-group $ResourceGroup `
             --template-file "$PSScriptRoot/../infra/storage.bicep" `
             --parameters storageAccountName=$storageName `
+                         fileShareName=$fileShareName `
                          location=$Location `
             --output json 2>$null | ConvertFrom-Json
 
@@ -174,7 +176,7 @@ if ($EnablePersistentStorage) {
             $storageAccountKey = $storageDeployment.properties.outputs.storageAccountKey.value
             Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
             Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
-            Write-Host "      File Share: scimtool-data (5 GiB)" -ForegroundColor Gray
+            Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
         } else {
             Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
             exit 1
