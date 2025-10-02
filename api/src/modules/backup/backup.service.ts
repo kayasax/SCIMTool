@@ -1,27 +1,26 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { copyFile, stat, access, constants } from 'fs/promises';
-import { join } from 'path';
 
 @Injectable()
 export class BackupService implements OnModuleInit {
   private readonly logger = new Logger(BackupService.name);
-  private readonly localDbPath = '/app/local-data/scim.db';
+  // Primary ephemeral DB now standardized to /tmp/local-data
+  private readonly localDbPath = '/tmp/local-data/scim.db';
   private readonly azureFilesBackupPath = '/app/data/scim.db';
   private backupCount = 0;
   private lastBackupTime: Date | null = null;
 
-  async onModuleInit() {
+  onModuleInit() {
     this.logger.log('Backup service initialized');
-    this.logger.log(`Local DB: ${this.localDbPath}`);
-    this.logger.log(`Azure Files backup: ${this.azureFilesBackupPath}`);
+  this.logger.log(`Local DB (ephemeral): ${this.localDbPath}`);
+  this.logger.log(`Azure Files backup (persistent): ${this.azureFilesBackupPath}`);
 
-    // Perform initial backup after 30 seconds to allow app to initialize
+    // Attempt an early initial backup after 10s; if local DB is not yet created,
+    // it will be retried on the cron schedule.
     setTimeout(() => {
-      this.performBackup().catch(err =>
-        this.logger.error('Initial backup failed:', err)
-      );
-    }, 30000);
+      this.performBackup().catch(err => this.logger.error('Initial backup failed:', err));
+    }, 10000);
   }
 
   /**
@@ -41,7 +40,7 @@ export class BackupService implements OnModuleInit {
       try {
         await access(this.localDbPath, constants.R_OK);
       } catch {
-        this.logger.warn('Local database not found, skipping backup');
+    this.logger.warn(`Local database not found at ${this.localDbPath}, skipping backup`);
         return;
       }
 

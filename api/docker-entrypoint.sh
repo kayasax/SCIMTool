@@ -1,23 +1,17 @@
 #!/bin/sh
 set -e
 
-# Define paths
-AZURE_FILES_BACKUP="/app/data/scim.db"
-LOCAL_DB="/app/local-data/scim.db"
-LOCAL_DIR="/app/local-data"
+#############################################
+# Unified ephemeral DB location strategy    #
+# Primary (writable) DB: /tmp/local-data    #
+# Persistent backup:     /app/data/scim.db  #
+#############################################
 
-# Create local data directory with fallback if creation fails (avoid hard crash due to set -e)
-if ! mkdir -p "$LOCAL_DIR" 2>/dev/null; then
-    echo "⚠ Unable to create $LOCAL_DIR (permission denied). Falling back to /tmp/local-data"
-    LOCAL_DIR="/tmp/local-data"
-    LOCAL_DB="$LOCAL_DIR/scim.db"
-    if mkdir -p "$LOCAL_DIR" 2>/dev/null; then
-        echo "✓ Created fallback directory: $LOCAL_DIR"
-    else
-        echo "✗ Failed to create fallback directory. Exiting."
-        exit 1
-    fi
-fi
+AZURE_FILES_BACKUP="/app/data/scim.db"
+LOCAL_DIR="/tmp/local-data"
+LOCAL_DB="$LOCAL_DIR/scim.db"
+
+mkdir -p "$LOCAL_DIR"
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  SCIMTool - Hybrid Storage Initialization                 ║"
@@ -49,13 +43,8 @@ fi
 echo ""
 echo "Configuring primary database environment..."
 
-# Always point Prisma (runtime app) at the fast local ephemeral DB.
-if [ "$LOCAL_DIR" = "/tmp/local-data" ]; then
-    # Use absolute path when falling back to /tmp to avoid relative path confusion
-    export DATABASE_URL="file:/tmp/local-data/scim.db"
-else
-    export DATABASE_URL="file:./local-data/scim.db"
-fi
+# Always point Prisma (runtime app) at the unified ephemeral DB path.
+export DATABASE_URL="file:/tmp/local-data/scim.db"
 echo "Using DATABASE_URL=$DATABASE_URL"
 
 echo "Running database migrations on local storage..."
@@ -80,8 +69,8 @@ fi
 
 echo ""
 echo "Starting application..."
-echo "  └─ Primary DB: $LOCAL_DB (ephemeral, fast)"
-echo "  └─ Backup to:  $AZURE_FILES_BACKUP (persistent)"
+echo "  └─ Primary DB: $LOCAL_DB (ephemeral in /tmp)"
+echo "  └─ Backup to:  $AZURE_FILES_BACKUP (persistent Azure Files)"
 echo "  └─ Backup interval: 5 minutes"
 echo ""
 
