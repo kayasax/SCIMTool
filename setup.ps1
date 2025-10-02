@@ -5,8 +5,16 @@
 # If provided, random generation is skipped.
 
 # Auto values (no prompts to avoid hanging under iex)
-$Location = $env:SCIMTOOL_LOCATION  ? $env:SCIMTOOL_LOCATION  : 'eastus'
-$ImageTag = $env:SCIMTOOL_IMAGETAG ? $env:SCIMTOOL_IMAGETAG : 'latest'
+if ($env:SCIMTOOL_LOCATION -and $env:SCIMTOOL_LOCATION.Trim().Length -gt 0) {
+	$Location = $env:SCIMTOOL_LOCATION
+} else {
+	$Location = 'eastus'
+}
+if ($env:SCIMTOOL_IMAGETAG -and $env:SCIMTOOL_IMAGETAG.Trim().Length -gt 0) {
+	$ImageTag = $env:SCIMTOOL_IMAGETAG
+} else {
+	$ImageTag = 'latest'
+}
 $persistentEnabled = $true
 
 function New-ScimSecret {
@@ -18,9 +26,21 @@ function New-ScimSecret {
 }
 function New-Suffix { (Get-Random -Minimum 1000 -Maximum 9999) }
 
-$ResourceGroup = if ($env:SCIMTOOL_RG)  { $env:SCIMTOOL_RG }  else { "scimtool-rg-$(New-Suffix)" }
-$AppName       = if ($env:SCIMTOOL_APP) { $env:SCIMTOOL_APP } else { "scimtool-app-$(New-Suffix)" }
-$ScimSecret    = if ($env:SCIMTOOL_SECRET) { $env:SCIMTOOL_SECRET } else { New-ScimSecret }
+if ($env:SCIMTOOL_RG -and $env:SCIMTOOL_RG.Trim().Length -gt 0) {
+	$ResourceGroup = $env:SCIMTOOL_RG
+} else {
+	$ResourceGroup = "scimtool-rg-$(New-Suffix)"
+}
+if ($env:SCIMTOOL_APP -and $env:SCIMTOOL_APP.Trim().Length -gt 0) {
+	$AppName = $env:SCIMTOOL_APP
+} else {
+	$AppName = "scimtool-app-$(New-Suffix)"
+}
+if ($env:SCIMTOOL_SECRET -and $env:SCIMTOOL_SECRET.Trim().Length -gt 0) {
+	$ScimSecret = $env:SCIMTOOL_SECRET
+} else {
+	$ScimSecret = New-ScimSecret
+}
 
 Write-Host "CONFIG:" -ForegroundColor Cyan
 Write-Host "  ResourceGroup : $ResourceGroup" -ForegroundColor White
