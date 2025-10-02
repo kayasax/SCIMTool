@@ -32,21 +32,55 @@
 #>
 
 param(
-    [Parameter(Mandatory)]
     [string]$ResourceGroup,
-
-    [Parameter(Mandatory)]
     [string]$AppName,
-
     [string]$Location = "eastus",
-
-    [Parameter(Mandatory)]
     [string]$ScimSecret,
-
     [string]$ImageTag = "latest",
-
     [switch]$EnablePersistentStorage = $true
 )
+
+# --- Interactive Fallback ----------------------------------------------------
+# Allow zero‑parameter one‑liner usage via: iex (irm <raw-url>/deploy-azure.ps1)
+# Any missing required values are prompted for here. This replaces relying on
+# [Parameter(Mandatory)] which blocks interactive prompting when invoked via
+# the raw GitHub one-liner.
+
+function New-RandomScimSecret {
+    return "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format 'yyyyMMdd')"
+}
+
+if (-not $ResourceGroup) {
+    $ResourceGroup = Read-Host "Enter Resource Group name (will be created if missing)"
+    if (-not $ResourceGroup) { Write-Host "Resource Group is required." -ForegroundColor Red; exit 1 }
+}
+
+if (-not $AppName) {
+    $AppName = Read-Host "Enter Container App name"
+    if (-not $AppName) { Write-Host "App Name is required." -ForegroundColor Red; exit 1 }
+}
+
+if (-not $ScimSecret) {
+    $inputSecret = Read-Host "Enter SCIM shared secret (press Enter to auto-generate)"
+    if ([string]::IsNullOrWhiteSpace($inputSecret)) {
+        $ScimSecret = New-RandomScimSecret
+        Write-Host "🔐 Generated secret: $ScimSecret" -ForegroundColor Yellow
+    } else {
+        $ScimSecret = $inputSecret
+    }
+}
+
+if (-not $ImageTag) { $ImageTag = "latest" }
+
+Write-Host ""; Write-Host "Configuration Summary:" -ForegroundColor Cyan
+Write-Host "  Resource Group : $ResourceGroup" -ForegroundColor White
+Write-Host "  App Name       : $AppName" -ForegroundColor White
+Write-Host "  Location       : $Location" -ForegroundColor White
+Write-Host "  Image Tag      : $ImageTag" -ForegroundColor White
+Write-Host "  Persistent     : $($EnablePersistentStorage.IsPresent)" -ForegroundColor White
+Write-Host "  SCIM Secret    : $ScimSecret" -ForegroundColor Yellow
+Write-Host ""
+Start-Sleep -Milliseconds 300
 
 $ErrorActionPreference = "Stop"
 

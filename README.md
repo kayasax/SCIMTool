@@ -21,29 +21,52 @@ Stop parsing raw JSON provisioning logs. Get instant, human‑readable events, r
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Zero-Parameter One‑Liner)
 
-**One command to deploy everything:**
+Just run this from any PowerShell 7+ session (Windows, macOS, or Linux). You'll be interactively prompted for the required values (Resource Group, App Name, Secret, etc.), then a full Azure Container Apps deployment (with persistent storage) will be created:
 
 ```powershell
-.\setup.ps1
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1)
 ```
 
-This interactive script:
-- ✅ Checks prerequisites (Azure CLI, PowerShell)
-- ✅ Deploys Azure Container App with persistent storage
-- ✅ Creates public HTTPS endpoint
-- ✅ Configures auto-scaling (scales to zero when idle)
-- ✅ Provides your SCIM endpoint URL and secret
-- ✅ **Typical cost: ~$5‑15/month** (mostly idle time = nearly free!)
+What happens:
+- Prompts you for: Resource Group (created if missing), App Name, Region (defaults), Secret Token
+- Builds/Deploys: Resource Group, Log Analytics, Container App Environment, Storage (Azure Files), Container App
+- Outputs: Public URL, SCIM base URL (`/scim/v2`), reminder of your secret token
+- Persistence: SQLite backup stored on Azure Files; primary DB runs on fast ephemeral storage
 
-**Want local dev/testing first?**
+Typical cost: **~$5–15/month** (scale-to-zero keeps idle cost low; storage + minimal logs).
+
+### Non‑Interactive / CI Variant
+If you want a single copy/paste with no prompts (replace placeholder values):
+
+```powershell
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-rg" -AppName "scimtool-prod" -ScimSecret "REPLACE-ME-STRONG" -ImageTag "0.7.11"
+```
+
+Ephemeral (no persistence – NOT recommended for real usage):
+```powershell
+iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/deploy-azure.ps1) -ResourceGroup "scimtool-test" -AppName "scimtool-ephemeral" -ScimSecret "TEMP-ONLY" -EnablePersistentStorage:$false
+```
+
+### Local Development Instead?
+Clone the repo and run:
 
 ```powershell
 .\setup.ps1 -TestLocal
 ```
 
-That's it! The script handles everything else.
+Then:
+- API: http://localhost:3000
+- Web UI: http://localhost:5173
+
+Or manual:
+```powershell
+cd api; npm install; npm run start:dev
+cd ../web; npm install; npm run dev
+```
+
+---
 
 ---
 
