@@ -15,12 +15,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.7.6 (tag + packages aligned)
+Current Version: v0.8.0 (pending tag – blob snapshot persistence)
 
 ---
 
 ## Status
-Production Ready (v0.7.6) – Hybrid storage + SCIM v2 path rewrite + update automation.
+Production Ready (v0.8.0) – Blob snapshot persistence (replaces Azure Files) + SCIM v2 rewrite.
 
 ## Quick Commands
 ```powershell
@@ -28,7 +28,7 @@ Production Ready (v0.7.6) – Hybrid storage + SCIM v2 path rewrite + update aut
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1'); Update-SCIMTool -Version v0.7.6
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1'); Update-SCIMTool -Version v0.8.0
 ```
 
 ## Project Summary
