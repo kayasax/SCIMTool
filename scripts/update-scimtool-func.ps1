@@ -134,10 +134,10 @@ if ($args.Count -gt 0) {
     }
 
     if ($params.Count -gt 0 -and $params.ContainsKey('Version')) { Update-SCIMTool @params }
-    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.8.0' [-ResourceGroup rg] [-AppName app] [-NoPrompt] [-DryRun] [-Quiet]" -ForegroundColor Yellow }
+    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.8.1' [-ResourceGroup rg] [-AppName app] [-NoPrompt] [-DryRun] [-Quiet]" -ForegroundColor Yellow }
 } else {
     Write-Host "SCIMTool update function loaded." -ForegroundColor Green
     Write-Host "Examples:" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version v0.8.0" -ForegroundColor Gray
-    Write-Host "  Update-SCIMTool -Version v0.8.0 -ResourceGroup rg -AppName app -Quiet" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version v0.8.1" -ForegroundColor Gray
+    Write-Host "  Update-SCIMTool -Version v0.8.1 -ResourceGroup rg -AppName app -Quiet" -ForegroundColor Gray
 }
