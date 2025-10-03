@@ -68,11 +68,11 @@ Open the root URL (same host, no /scim) to watch events in near real-time.
 Use the lightweight update function (auto-discovery if you omit names):
 ```powershell
 iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1); \
-	Update-SCIMTool -Version v0.7.6
+	Update-SCIMTool -Version v0.8.0
 ```
 Specify RG/App explicitly if you have multiple deployments:
 ```powershell
-Update-SCIMTool -Version v0.7.6 -ResourceGroup scimtool-rg -AppName scimtool-prod
+Update-SCIMTool -Version v0.8.0 -ResourceGroup scimtool-rg -AppName scimtool-prod
 ```
 Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using `setup.ps1`.
 
