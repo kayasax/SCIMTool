@@ -16,7 +16,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.3 (structured membership arrays + previous improvements)
+Current Version: v0.8.4 (blob snapshot dependency fix + structured membership arrays)
 
 ---
 
