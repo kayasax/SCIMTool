@@ -51,6 +51,8 @@ Cost: scale‑to‑zero + storage (low idle spend).
 
 ## 🔧 Configure Microsoft Entra Provisioning (Right After Deploy)
 1. Entra Portal → Enterprise Applications → Create new Enterprise App (non-gallery)
+<img width="1680" height="709" alt="image" src="https://github.com/user-attachments/assets/5c0f6fb2-f063-4fbb-9ff1-6c370ade9e0b" />
+
 2. Provisioning → Set Provisioning Mode: Automatic
 3. Tenant URL: `https://<your-app>.azurecontainerapps.io/scim/v2`
 4. Secret Token: (printed by setup script)
