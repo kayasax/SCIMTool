@@ -152,44 +152,40 @@ Write-Host "💾 Step 2/5: Blob Storage (snapshot persistence)" -ForegroundColor
 # Check if storage account exists
 $blobExists = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query name -o tsv 2>$null
 if (-not $blobExists) {
-    Write-Host "   Creating storage account $BlobBackupAccount + container $BlobBackupContainer" -ForegroundColor Yellow
-    $blobDeploymentName = "blob-storage-$(Get-Date -Format 'yyyyMMddHHmmss')"
-    $blobOut = az deployment group create `
-        --resource-group $ResourceGroup `
-        --name $blobDeploymentName `
-        --template-file "$PSScriptRoot/../infra/blob-storage.bicep" `
-        --parameters storageAccountName=$BlobBackupAccount containerName=$BlobBackupContainer location=$Location `
-        --output none 2>&1
+    Write-Host "   Creating storage account $BlobBackupAccount" -ForegroundColor Yellow
+    $createOut = az storage account create -n $BlobBackupAccount -g $ResourceGroup -l $Location --sku Standard_LRS --kind StorageV2 --allow-blob-public-access false --output none 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
-        Write-Host $blobOut -ForegroundColor Red
+        Write-Host "   ❌ Failed to create storage account" -ForegroundColor Red
+        Write-Host $createOut -ForegroundColor Red
         return
     }
-    # Poll for storage account readiness before continuing
-    $maxWait = 60; $waited = 0; $ready = $false
+    # Poll provisioning state
+    $maxWait = 90; $waited = 0; $ready = $false
     while ($waited -lt $maxWait) {
-        $blobExists = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query name -o tsv 2>$null
-        if ($blobExists) { $ready = $true; break }
+        $state = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query provisioningState -o tsv 2>$null
+        if ($state -eq 'Succeeded') { $ready = $true; break }
         Start-Sleep -Seconds 5; $waited += 5
-        Write-Host "   Waiting for storage account to be ready... ($waited s)" -ForegroundColor Gray
+        Write-Host "   Provisioning state: $state (waited ${waited}s)" -ForegroundColor Gray
     }
     if (-not $ready) {
-        Write-Host "   ❌ Storage account did not become available after deployment." -ForegroundColor Red
+        Write-Host "   ❌ Storage account not ready after $maxWait seconds" -ForegroundColor Red
         return
     }
-    Write-Host "   ✅ Blob storage created and ready" -ForegroundColor Green
+    Write-Host "   ✅ Storage account ready" -ForegroundColor Green
 } else {
     Write-Host "   ✅ Storage account exists: $BlobBackupAccount" -ForegroundColor Green
-    # Ensure container exists
-    $containerExists = az storage container exists --name $BlobBackupContainer --account-name $BlobBackupAccount --query exists -o tsv 2>$null
-    if ($containerExists -ne 'true') {
-        Write-Host "   Creating container $BlobBackupContainer" -ForegroundColor Yellow
-        az storage container create --name $BlobBackupContainer --account-name $BlobBackupAccount -o none 2>$null
-        if ($LASTEXITCODE -ne 0) { Write-Host "   WARNING: Could not create container (may require key/identity)." -ForegroundColor Yellow }
-    } else {
-        Write-Host "   ✅ Container exists: $BlobBackupContainer" -ForegroundColor Green
-    }
 }
+
+# Ensure container exists (using --auth-mode login with MSI / user auth)
+$containerExists = az storage container exists --name $BlobBackupContainer --account-name $BlobBackupAccount --auth-mode login --query exists -o tsv 2>$null
+if ($containerExists -ne 'true') {
+    Write-Host "   Creating container $BlobBackupContainer" -ForegroundColor Yellow
+    $cOut = az storage container create --name $BlobBackupContainer --account-name $BlobBackupAccount --auth-mode login -o none 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ⚠️  Container creation failed (may still succeed later via app)." -ForegroundColor Yellow
+        Write-Host $cOut -ForegroundColor DarkYellow
+    } else { Write-Host "   ✅ Container created" -ForegroundColor Green }
+} else { Write-Host "   ✅ Container exists: $BlobBackupContainer" -ForegroundColor Green }
 Write-Host ""
 
 # Step 3: Deploy Container App Environment
