@@ -22,11 +22,24 @@ Stop scrolling walls of JSON. SCIMTool turns raw provisioning calls into clean, 
 
 ---
 
-## 🚀 60‑Second Cloud Deploy (Interactive One‑Liner)
-Run in PowerShell (Windows PowerShell 5.1 or PowerShell 7+; macOS/Linux require PowerShell 7+). Prompts for RG / App / Region / Secret (or auto‑generate), then provisions Azure Container Apps + persistent storage.
+## 🚀 60‑Second Cloud Deploy (Cache‑Safe One‑Liner)
+Run in PowerShell (Windows PowerShell 5.1 or PowerShell 7+; macOS/Linux require PowerShell 7+). Prompts for RG / App / Region / Secret (or auto‑generate), then provisions Azure Container Apps + blob snapshot persistence.
+
+Uses a bootstrap loader that forces a fresh fetch (avoids CDN caching of `setup.ps1`).
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/setup.ps1)
+iex (iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/bootstrap.ps1).Content
+```
+
+Force cache-bust explicitly (adds a GUID query + no-cache headers):
+```powershell
+iex (iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/bootstrap.ps1?cb=$(Get-Random)).Content
+```
+
+Pin to an exact commit (deterministic repeatable install):
+```powershell
+$sha = 'v0.8.0'  # or a full commit SHA
+iwr https://raw.githubusercontent.com/kayasax/SCIMTool/$sha/setup.ps1 | iex
 ```
 
 Outputs:
@@ -58,7 +71,7 @@ Specify RG/App explicitly if you have multiple deployments:
 ```powershell
 Update-SCIMTool -Version v0.8.0 -ResourceGroup scimtool-rg -AppName scimtool-prod
 ```
-Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using `setup.ps1`.
+Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using the bootstrap one‑liner (it will pull latest `setup.ps1`).
 
 ---
 
