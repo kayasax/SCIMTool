@@ -11,6 +11,14 @@
 if (-not $Location -or $Location -eq '') { $Location = 'eastus' }
 if (-not $ImageTag -or $ImageTag -eq '') { $ImageTag = 'latest' }
 if (-not $BlobBackupAccount) { $BlobBackupAccount = "$($AppName.ToLower())backup" }
+# Sanitize blob backup storage account name (must be 3-24 chars, lowercase/numbers only)
+$BlobBackupAccount = ($BlobBackupAccount -replace '[^a-z0-9]', '')
+if ($BlobBackupAccount.Length -lt 3) { $BlobBackupAccount = ("scim" + (Get-Random -Minimum 100 -Maximum 999)) }
+if ($BlobBackupAccount.Length -gt 24) { $BlobBackupAccount = $BlobBackupAccount.Substring(0,24) }
+if ($BlobBackupAccount -notmatch '^[a-z0-9]{3,24}$') {
+    Write-Host "   WARNING: Generated invalid storage account name; generating fallback" -ForegroundColor Yellow
+    $BlobBackupAccount = "scim" + (Get-Random -Minimum 100000 -Maximum 999999)
+}
 if (-not $BlobBackupContainer) { $BlobBackupContainer = 'scimtool-backups' }
 
 # --- Interactive Fallback ----------------------------------------------------
