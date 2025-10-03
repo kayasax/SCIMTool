@@ -30,19 +30,7 @@ Uses a bootstrap loader that forces a fresh fetch (avoids CDN caching of `setup.
 ```powershell
 iex (iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/bootstrap.ps1).Content
 ```
-
-Force cache-bust explicitly (adds a GUID query + no-cache headers):
-```powershell
-iex (iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/bootstrap.ps1?cb=$(Get-Random)).Content
-```
-
-Pin to an exact commit (deterministic repeatable install):
-```powershell
-$sha = 'v0.8.3'  # or a full commit SHA
-iwr https://raw.githubusercontent.com/kayasax/SCIMTool/$sha/setup.ps1 | iex
-```
-
-Outputs:
+Outputs (copy these, we will need them to configure the Entra app) :
 * Public URL (web UI root)
 * SCIM Base URL: https://fqdn/scim/v2
 * Generated / provided shared secret (reprinted at end)
@@ -53,17 +41,19 @@ Cost: scale‑to‑zero + storage (low idle spend).
 1. Entra Portal → Enterprise Applications → Create new Enterprise App (non-gallery)
 <img width="1680" height="709" alt="image" src="https://github.com/user-attachments/assets/5c0f6fb2-f063-4fbb-9ff1-6c370ade9e0b" />
 
-2. Provisioning → Set Provisioning Mode: Automatic
-3. Tenant URL: `https://<your-app>.azurecontainerapps.io/scim/v2`
-4. Secret Token: (printed by setup script)
-5. Test Connection → expect success
-6. Turn provisioning ON & assign users / groups
+2.Open your app and create a new configuration, paste the SCIM endpoint and secret from the powershell output, ex:
+<img width="1108" height="592" alt="image" src="https://github.com/user-attachments/assets/26e4a213-1617-4166-a8fa-4a614491bfe1" />
 
-Open the root URL (same host, no /scim) to watch events in near real-time.
+3. Test Connection → expect success
+4. Turn provisioning ON & assign users / groups
+
+Open the root URL (same host, no /scim) to watch events in near real-time. ex https://scimtool-app-1839.purplestone-a06f6cdf.eastus.azurecontainerapps.io/
 
 ---
 
 ## 🔄 Updating to a New Version
+You will be notified when a new version is available and a powershell command will be provided so you can updat effortlessly :)
+
 Use the lightweight update function (auto-discovery if you omit names):
 ```powershell
 iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1); \
@@ -87,19 +77,6 @@ Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using the bootstrap one‑l
 | Favicon badge missing | Trigger an event in background tab; clear cache if stale |
 
 More: see `DEPLOYMENT.md` for deeper architecture / options.
-
----
-## 🧪 Local Development
-Automated:
-```powershell
-./setup.ps1 -TestLocal
-```
-Manual:
-```powershell
-cd api; npm install; npm run start:dev
-cd ../web; npm install; npm run dev
-```
-Backend: http://localhost:3000  |  Web UI: http://localhost:5173
 
 ---
 ## 🤝 Contribute / Support
