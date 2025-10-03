@@ -15,12 +15,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.1 (activity feed filter fix + storage provisioning hardening)
+Current Version: v0.8.2 (direct update script + in-app copy command metadata)
 
 ---
 
 ## Status
-Production Ready (v0.8.1) – Blob snapshots + SCIM v2 rewrite + reliability fixes.
+Production Ready (v0.8.2) – Blob snapshots + direct update flow (no discovery) + reliability fixes.
 
 ## Quick Commands
 ```powershell
@@ -28,7 +28,7 @@ Production Ready (v0.8.1) – Blob snapshots + SCIM v2 rewrite + reliability fix
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1'); Update-SCIMTool -Version v0.8.1
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.2 -ResourceGroup <rg> -AppName <app> -NoPrompt
 ```
 
 ## Project Summary
