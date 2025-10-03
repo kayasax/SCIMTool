@@ -15,6 +15,7 @@ function Update-SCIMTool {
         [switch]$DryRun,
         [switch]$Quiet,
         [switch]$DebugDiscovery,
+        [switch]$AutoSelect,
         [switch]$SelfTest
     )
 
@@ -173,7 +174,50 @@ Some other warning line
             $ResourceGroup = $containerApps[0].rg; $AppName = $containerApps[0].name
             Write-Log "Using $AppName ($ResourceGroup)" 'OK' Green
         } else {
-            if ($NoPrompt) { Write-Log "Multiple apps found; supply -ResourceGroup/-AppName or adjust -NamePattern '$NamePattern'" 'ERROR' Red; return }
+            if ($NoPrompt -and $AutoSelect) {
+                # Auto selection heuristic:
+                # 1. Attempt to pick app whose image tag != target version.
+                # 2. If still ambiguous, prefer app without volumes when updating to new backup model (or with volumes if only one has volumes).
+                # 3. If still >1, abort with guidance.
+                $desiredTag = $cleanVersion
+                $candidates = @()
+                foreach ($c in $containerApps) {
+                    try {
+                        $det = az containerapp show -n $c.name -g $c.rg -o json 2>$null | ConvertFrom-Json
+                        $img = $det.properties.template.containers[0].image
+                        $vols = $det.properties.template.volumes
+                        $hasVols = $false; if ($vols -and $vols.Count -gt 0) { $hasVols = $true }
+                        $tag = $null; if ($img -match ':' ) { $tag = ($img.Split(':')[-1]) }
+                        $c | Add-Member -NotePropertyName image -NotePropertyValue $img -Force
+                        $c | Add-Member -NotePropertyName tag -NotePropertyValue $tag -Force
+                        $c | Add-Member -NotePropertyName hasVolumes -NotePropertyValue $hasVols -Force
+                        $candidates += $c
+                    } catch { }
+                }
+                $mismatch = $candidates | Where-Object { $_.tag -and $_.tag -ne $desiredTag }
+                if ($mismatch.Count -eq 1) {
+                    $ResourceGroup = $mismatch[0].rg; $AppName = $mismatch[0].name
+                    Write-Log "AutoSelect: picked $AppName (image tag '$($mismatch[0].tag)' != target '$desiredTag')" 'OK' Green
+                } else {
+                    if (-not $ResourceGroup) {
+                        $volPref = $candidates | Where-Object { -not $_.hasVolumes }
+                        if ($volPref.Count -eq 1) {
+                            $ResourceGroup = $volPref[0].rg; $AppName = $volPref[0].name
+                            Write-Log "AutoSelect: picked $AppName (only app without volumes)" 'OK' Green
+                        }
+                    }
+                    if (-not $ResourceGroup -and $candidates.Count -eq 1) {
+                        $ResourceGroup = $candidates[0].rg; $AppName = $candidates[0].name
+                        Write-Log "AutoSelect: single candidate after inspection $AppName" 'OK' Green
+                    }
+                    if (-not $ResourceGroup) {
+                        Write-Log "AutoSelect unable to disambiguate between: $($candidates | ForEach-Object { $_.name } -join ', ')" 'ERROR' Red
+                        Write-Log "Provide -ResourceGroup/-AppName or refine -NamePattern." 'ERROR' Red
+                        return
+                    }
+                }
+            } elseif ($NoPrompt) {
+                Write-Log "Multiple apps found; supply -ResourceGroup/-AppName or adjust -NamePattern '$NamePattern' (or add -AutoSelect)" 'ERROR' Red; return }
             for ($i=0;$i -lt $containerApps.Count;$i++){ if (-not $Quiet) { Write-Host "[$($i+1)] $($containerApps[$i].name) (RG: $($containerApps[$i].rg))" -ForegroundColor Gray } }
             do { $sel = Read-Host -Prompt "Select [1-$($containerApps.Count)]"; $idx = [int]$sel - 1 } while ($idx -lt 0 -or $idx -ge $containerApps.Count)
             $ResourceGroup = $containerApps[$idx].rg; $AppName = $containerApps[$idx].name

@@ -38,7 +38,7 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: environmentName
 }
 
-// (Azure Files mount removed in blob backup mode) 
+// (Azure Files mount removed in blob backup mode)
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
@@ -80,6 +80,11 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'DATABASE_URL', value: 'file:/tmp/local-data/scim.db' }
             { name: 'BLOB_BACKUP_ACCOUNT', value: blobBackupAccountName }
             { name: 'BLOB_BACKUP_CONTAINER', value: blobBackupContainerName }
+            // Metadata for in-app "Copy Update Command" (avoids discovery in update script)
+            { name: 'SCIM_RG', value: resourceGroup().name }
+            { name: 'SCIM_APP', value: appName }
+            { name: 'SCIM_REGISTRY', value: acrLoginServer }
+            { name: 'SCIM_CURRENT_IMAGE', value: '${acrLoginServer}/${image}' }
           ]
           resources: {
             cpu: json(cpuCores)
