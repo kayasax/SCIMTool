@@ -41,8 +41,10 @@ Cost: scale‑to‑zero + storage (low idle spend).
 1. Entra Portal → Enterprise Applications → Create new Enterprise App (non-gallery)
 <img width="1680" height="709" alt="image" src="https://github.com/user-attachments/assets/5c0f6fb2-f063-4fbb-9ff1-6c370ade9e0b" />
 
+
 2.Open your app and create a new configuration, paste the SCIM endpoint and secret from the powershell output, ex:
 <img width="1108" height="592" alt="image" src="https://github.com/user-attachments/assets/26e4a213-1617-4166-a8fa-4a614491bfe1" />
+
 
 3. Test Connection → expect success
 4. Turn provisioning ON & assign users / groups
