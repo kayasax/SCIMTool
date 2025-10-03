@@ -16,7 +16,7 @@ if ($env:SCIMTOOL_IMAGETAG -and $env:SCIMTOOL_IMAGETAG.Trim().Length -gt 0) {
 } else {
     $ImageTag = 'latest'
 }
-$persistentEnabled = $true
+$persistentEnabled = $true # Legacy flag retained for compatibility but blob snapshot persistence is always enabled now
 
 function New-ScimSecret {
 	$b = New-Object byte[] 32
@@ -54,14 +54,32 @@ function Get-DefaultValue($label, $default) {
 
 if ($interactive) {
 	Write-Host "Interactive mode: Press Enter to accept values in brackets, or type a new value." -ForegroundColor Cyan
+	# Show current subscription and allow switch before resource creation
+	try {
+		$currentSub = az account show --query "{name:name,id:id}" -o json 2>$null | ConvertFrom-Json
+		if ($currentSub) {
+			Write-Host "Current Subscription: $($currentSub.name) ($($currentSub.id))" -ForegroundColor Gray
+			$switch = Read-Host 'Change subscription? (y/N)'
+			if ($switch -match '^[Yy]$') {
+				az account list --query "[].{Name:name,Id:id,IsDefault:isDefault}" -o table
+				$newSub = Read-Host 'Enter subscription id or name'
+				if ($newSub) {
+					az account set --subscription $newSub 2>$null
+					$currentSub = az account show --query "{name:name,id:id}" -o json 2>$null | ConvertFrom-Json
+					if ($currentSub) { Write-Host "Switched to: $($currentSub.name)" -ForegroundColor Green }
+				}
+			}
+		}
+	} catch { Write-Host 'Subscription check skipped (az CLI not ready).' -ForegroundColor Yellow }
+
 	$ResourceGroup = Get-DefaultValue 'Resource Group' $ResourceGroup
 	$AppName       = Get-DefaultValue 'App Name'       $AppName
 	$Location      = Get-DefaultValue 'Location'       $Location
 	# Image Tag prompt removed: always using $ImageTag (default 'latest')
 	$secretInput = Read-Host 'SCIM Shared Secret (leave blank to keep generated)'
 	if (-not [string]::IsNullOrWhiteSpace($secretInput)) { $ScimSecret = $secretInput }
-	$persistInput = Read-Host 'Enable Persistent Storage? (Y/n) [Y]'
-	if ($persistInput -and $persistInput.ToLower() -eq 'n') { $persistentEnabled = $false }
+	# Persistent storage now always enabled via blob snapshots (no user choice)
+	$persistentEnabled = $true
 }
 
 Write-Host "CONFIG:" -ForegroundColor Cyan
@@ -69,7 +87,7 @@ Write-Host "  ResourceGroup : $ResourceGroup" -ForegroundColor White
 Write-Host "  AppName       : $AppName" -ForegroundColor White
 Write-Host "  Location      : $Location" -ForegroundColor White
 Write-Host "  ImageTag      : $ImageTag" -ForegroundColor White
-Write-Host "  Persistent    : $persistentEnabled" -ForegroundColor White
+Write-Host "  Persistence   : Blob snapshots (always on)" -ForegroundColor White
 Write-Host "  Secret        : $ScimSecret" -ForegroundColor Yellow
 
 <#
@@ -84,10 +102,10 @@ New-Item -ItemType Directory -Path $infraDir -Force   | Out-Null
 
 $rawBase = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master'
 $files = @(
-	@{ url = "$rawBase/scripts/deploy-azure.ps1"; path = Join-Path $scriptsDir 'deploy-azure.ps1' },
-	@{ url = "$rawBase/infra/storage.bicep";       path = Join-Path $infraDir   'storage.bicep' },
-	@{ url = "$rawBase/infra/containerapp-env.bicep"; path = Join-Path $infraDir 'containerapp-env.bicep' },
-	@{ url = "$rawBase/infra/containerapp.bicep";  path = Join-Path $infraDir   'containerapp.bicep' }
+    @{ url = "$rawBase/scripts/deploy-azure.ps1"; path = Join-Path $scriptsDir 'deploy-azure.ps1' },
+    @{ url = "$rawBase/infra/blob-storage.bicep"; path = Join-Path $infraDir   'blob-storage.bicep' },
+    @{ url = "$rawBase/infra/containerapp-env.bicep"; path = Join-Path $infraDir 'containerapp-env.bicep' },
+    @{ url = "$rawBase/infra/containerapp.bicep";  path = Join-Path $infraDir   'containerapp.bicep' }
 )
 
 foreach ($f in $files) {
@@ -109,9 +127,9 @@ try { az account show -o none 2>$null } catch { Write-Host 'Not logged in. Run: 
 Write-Host 'Starting deployment...' -ForegroundColor Cyan
 # Prefer pwsh if available, otherwise fall back to current powershell
 if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-	& pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
+    & pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$true
 } else {
-	& powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$persistentEnabled
+    & powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$true
 }
 if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (exit $LASTEXITCODE)" -ForegroundColor Red; exit $LASTEXITCODE }
 

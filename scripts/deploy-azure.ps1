@@ -114,19 +114,8 @@ Write-Host "   Log Analytics: $lawName" -ForegroundColor White
 Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
 $storageStatus = if($EnablePersistentStorage){'Enabled'}else{'Disabled'}
 $storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
-Write-Host "   Blob Backups: Account=$BlobBackupAccount Container=$BlobBackupContainer" -ForegroundColor Green
+Write-Host "   Persistence: Blob snapshots (Account=$BlobBackupAccount Container=$BlobBackupContainer)" -ForegroundColor Green
 Write-Host ""
-
-if (-not $EnablePersistentStorage) {
-    Write-Host "WARNING: Persistent storage is disabled!" -ForegroundColor Yellow
-    Write-Host "   Data will be lost when the container restarts or scales to zero." -ForegroundColor Yellow
-    Write-Host ""
-    $confirm = Read-Host "Continue without persistent storage? (y/N)"
-    if ($confirm -ne 'y') {
-        Write-Host "Deployment cancelled." -ForegroundColor Yellow
-        exit 0
-    }
-}
 
 # Step 1: Create or verify resource group
 Write-Host "📦 Step 1/5: Resource Group" -ForegroundColor Cyan
@@ -410,9 +399,7 @@ Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
 $secretEcho = $ScimSecret
 if (-not $secretEcho -and $env:SCIM_SHARED_SECRET) { $secretEcho = $env:SCIM_SHARED_SECRET }
 if ($secretEcho) { Write-Host "   SCIM Shared Secret: $secretEcho" -ForegroundColor Yellow }
-$storageStatus = if($EnablePersistentStorage){'Enabled ✅'}else{'Disabled ⚠️'}
-$storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
-Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
+Write-Host "   Persistence: Blob snapshot backups (enabled)" -ForegroundColor Green
 Write-Host ""
 
 Write-Host "💾 Blob Backup Strategy:" -ForegroundColor Cyan
@@ -452,16 +439,10 @@ Write-Host "   • Logs: $ResourceGroup > $lawName" -ForegroundColor Gray
 Write-Host ""
 
 Write-Host "💰 Estimated Monthly Cost:" -ForegroundColor Cyan
-if ($EnablePersistentStorage) {
-    Write-Host '   Container App: ~$5-15 (scales to zero when idle)' -ForegroundColor White
-    Write-Host '   Storage Account: ~$0.30 (5 GiB file share)' -ForegroundColor White
-    Write-Host '   Log Analytics: ~$0-5 (depends on log volume)' -ForegroundColor White
-    Write-Host '   Total: ~$5.30-20/month' -ForegroundColor Yellow
-} else {
-    Write-Host '   Container App: ~$5-15 (scales to zero when idle)' -ForegroundColor White
-    Write-Host '   Log Analytics: ~$0-5 (depends on log volume)' -ForegroundColor White
-    Write-Host '   Total: ~$5-20/month' -ForegroundColor Yellow
-}
+Write-Host '   Container App: ~$5-15 (scales to zero when idle)' -ForegroundColor White
+Write-Host '   Blob Storage (snapshots): ~$0.20-0.50 (light DB snapshots)' -ForegroundColor White
+Write-Host '   Log Analytics: ~$0-5 (depends on log volume)' -ForegroundColor White
+Write-Host '   Total: ~$5.20-20/month' -ForegroundColor Yellow
 Write-Host ""
 
 Write-Host "🏁 Deployment complete!" -ForegroundColor Green
