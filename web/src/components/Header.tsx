@@ -87,13 +87,33 @@ export const Header: React.FC<HeaderProps> = ({ onChangeToken, tokenConfigured }
             {!backupError && backupStats && (
               <div
                 className={styles.backupIndicator}
-                title={`Local DB + Azure Files backup\nBackup count: ${backupStats.backupCount}\nLast backup: ${formatLastBackup(backupStats.lastBackupTime)}`}
+                title={(() => {
+                  const base = [] as string[];
+                  base.push(`Mode: ${backupStats.mode}`);
+                  if (backupStats.mode === 'blob') {
+                    base.push(backupStats.hasSnapshots ? 'Snapshots present' : 'No snapshots yet');
+                  } else if (backupStats.mode === 'none') {
+                    base.push('NO PERSISTENCE - data will be lost on revision');
+                  } else {
+                    base.push('Azure Files copy mode (legacy)');
+                  }
+                  base.push(`Backups: ${backupStats.backupCount}`);
+                  if (backupStats.lastBackupTime) base.push(`Last: ${formatLastBackup(backupStats.lastBackupTime)}`);
+                  if (backupStats.restoredFromSnapshot) base.push('Restored from snapshot at startup');
+                  if (backupStats.lastError) base.push(`Last error: ${backupStats.lastError}`);
+                  return base.join('\n');
+                })()}
+                style={backupStats.mode === 'none' ? { color: 'var(--color-danger)' } : undefined}
               >
-                <span className={styles.backupIcon}>💾</span>
+                <span className={styles.backupIcon}>
+                  {backupStats.mode === 'none' ? '⚠️' : backupStats.mode === 'blob' ? '�' : '�💾'}
+                </span>
                 <span className={styles.backupText}>
-                  {backupStats.backupCount > 0
-                    ? formatLastBackup(backupStats.lastBackupTime)
-                    : 'Starting backups...'}
+                  {backupStats.mode === 'none'
+                    ? 'No persistence'
+                    : backupStats.backupCount > 0
+                      ? formatLastBackup(backupStats.lastBackupTime)
+                      : (backupStats.mode === 'blob' ? 'Waiting snapshot...' : 'Starting...')}
                 </span>
               </div>
             )}

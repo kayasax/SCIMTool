@@ -142,6 +142,13 @@ export interface BackupStats {
   lastBackupTime: string | null;
   localDbPath: string;
   azureFilesBackupPath: string;
+  mode: 'blob' | 'azureFiles' | 'none';
+  blobMode: boolean;
+  lastBackupSucceeded: boolean | null;
+  lastError: string | null;
+  restoredFromSnapshot: boolean;
+  initialRestoreAttempted: boolean;
+  hasSnapshots: boolean;
 }
 
 export async function fetchBackupStats(): Promise<BackupStats> {

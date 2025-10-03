@@ -38,6 +38,14 @@ export class BackupService implements OnModuleInit {
   private blobMode = false;
   private backupCount = 0;
   private lastBackupTime: Date | null = null;
+  private lastBackupSucceeded: boolean | null = null;
+  private lastError: string | null = null;
+  private restoredFromSnapshot = false;
+  private initialRestoreAttempted = false;
+  private hasSnapshots = false; // true once we either restore or upload at least one
+  private initialBackupRetryAttempts = 0;
+  private readonly maxInitialBackupRetries = 10; // ~5 minutes if 30s cadence
+  private readonly initialBackupRetryIntervalMs = 30_000;
 
   onModuleInit() {
     this.logger.log('Backup service initialized');
@@ -71,6 +79,17 @@ export class BackupService implements OnModuleInit {
       this.initialRestore().then(() => this.performBackup())
         .catch(err => this.logger.error('Initial cycle failed:', err));
     }, 8000);
+
+    // Retry loop to capture first backup as soon as DB file appears (common race: app starts, DB created after first request)
+    const scheduleRetry = () => {
+      if (this.backupCount > 0 || this.initialBackupRetryAttempts >= this.maxInitialBackupRetries) return;
+      this.initialBackupRetryAttempts++;
+      setTimeout(async () => {
+        try { await this.performBackup(); } catch (e) { /* already logged */ }
+        scheduleRetry();
+      }, this.initialBackupRetryIntervalMs);
+    };
+    scheduleRetry();
   }
 
   /**
@@ -91,6 +110,7 @@ export class BackupService implements OnModuleInit {
         await access(this.localDbPath, constants.R_OK);
       } catch {
         this.logger.warn(`Local database not found at ${this.localDbPath}, skipping backup`);
+        this.lastBackupSucceeded = false;
         return;
       }
 
@@ -104,17 +124,29 @@ export class BackupService implements OnModuleInit {
         await this.backupToBlob();
       } else {
         // Legacy Azure Files copy
-        await copyFile(this.localDbPath, this.azureFilesBackupPath);
+        try {
+          await copyFile(this.localDbPath, this.azureFilesBackupPath);
+        } catch (e) {
+          // If no persistence layer this will fail; mark explicitly
+          const msg = e instanceof Error ? e.message : String(e);
+          this.lastError = msg;
+          this.logger.warn(`Azure Files copy failed (no persistence mounted?): ${msg}`);
+          this.lastBackupSucceeded = false;
+          return;
+        }
       }
 
       // Update counters
       this.backupCount++;
       this.lastBackupTime = new Date();
+      this.lastBackupSucceeded = true;
 
       this.logger.log(`✓ Backup #${this.backupCount} completed (${fileSizeKB} KB) @ ${this.lastBackupTime.toISOString()}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Backup failed:', errorMessage);
+      this.lastError = errorMessage;
+      this.lastBackupSucceeded = false;
 
       // Don't throw - we want the app to continue even if backup fails
       // This is important because Azure Files might be temporarily unavailable
@@ -164,11 +196,21 @@ export class BackupService implements OnModuleInit {
   const blockBlob = blockBlobUnknown as { uploadStream: (s: NodeJS.ReadableStream, bufferSize: number, maxConcurrency: number, opts: unknown) => Promise<void> };
     if (!existsSync(this.localDbPath)) {
       this.logger.warn('Local DB disappeared before blob upload');
+      const mode: 'blob' | 'azureFiles' | 'none' = this.blobMode ? 'blob'
+        : existsSync(this.azureFilesBackupPath) ? 'azureFiles'
+        : 'none';
       return;
     }
     const stream = createReadStream(this.localDbPath);
     await blockBlob.uploadStream(stream, 4 * 1024 * 1024, 5, { blobHTTPHeaders: { blobContentType: 'application/octet-stream' } });
     this.logger.log(`Uploaded blob snapshot: ${blobName}`);
+        mode,
+        blobMode: this.blobMode,
+        lastBackupSucceeded: this.lastBackupSucceeded,
+        lastError: this.lastError,
+        restoredFromSnapshot: this.restoredFromSnapshot,
+        initialRestoreAttempted: this.initialRestoreAttempted,
+        hasSnapshots: this.hasSnapshots,
     await this.pruneOldBlobs(container);
   }
 
@@ -194,6 +236,7 @@ export class BackupService implements OnModuleInit {
   }
 
   private async initialRestore(): Promise<void> {
+    this.initialRestoreAttempted = true;
     if (!this.blobMode || !this.blobClient) return;
     if (existsSync(this.localDbPath)) {
       this.logger.log('Local DB already present, skipping restore');
@@ -228,5 +271,7 @@ export class BackupService implements OnModuleInit {
         .on('error', reject);
     });
     this.logger.log('Restore complete');
+    this.restoredFromSnapshot = true;
+    this.hasSnapshots = true;
   }
 }
