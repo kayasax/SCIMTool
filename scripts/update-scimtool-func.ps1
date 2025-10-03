@@ -14,7 +14,8 @@ function Update-SCIMTool {
         [switch]$NoPrompt,
         [switch]$DryRun,
         [switch]$Quiet,
-        [switch]$DebugDiscovery
+        [switch]$DebugDiscovery,
+        [switch]$SelfTest
     )
 
     $ErrorActionPreference = 'Stop'
@@ -34,28 +35,35 @@ function Update-SCIMTool {
         Write-Host "Image  : $imageRef" -ForegroundColor Gray
     }
 
-    try {
-        Write-Log "Checking Azure CLI auth" 'INFO' Cyan
-        $account = az account show --output json 2>$null | ConvertFrom-Json
-        if (-not $account) { throw 'Not authenticated' }
-        Write-Log "Authenticated: $($account.user.name) / $($account.name)" 'OK' Green
-    } catch {
-        Write-Log "Azure CLI authentication required (run az login)" 'ERROR' Red
-        return
+    if ($SelfTest) {
+        Write-Log "SelfTest mode: faking Azure account context" 'INFO' Cyan
+        $account = [pscustomobject]@{ user = @{ name = 'selftest@example.com' }; name = 'SELFTEST-SUB'; id = '00000000-0000-0000-0000-000000000000' }
+    } else {
+        try {
+            Write-Log "Checking Azure CLI auth" 'INFO' Cyan
+            $account = az account show --output json 2>$null | ConvertFrom-Json
+            if (-not $account) { throw 'Not authenticated' }
+            Write-Log "Authenticated: $($account.user.name) / $($account.name)" 'OK' Green
+        } catch {
+            Write-Log "Azure CLI authentication required (run az login)" 'ERROR' Red
+            return
+        }
     }
 
     # Ensure containerapp extension is installed (quietly)
-    try {
-        $ext = az extension show --name containerapp --query name -o tsv 2>$null
-        if (-not $ext) {
-            Write-Log "Installing containerapp CLI extension" 'INFO' Cyan
-            az extension add --name containerapp -y --only-show-errors 2>$null | Out-Null
+    if (-not $SelfTest) {
+        try {
+            $ext = az extension show --name containerapp --query name -o tsv 2>$null
+            if (-not $ext) {
+                Write-Log "Installing containerapp CLI extension" 'INFO' Cyan
+                az extension add --name containerapp -y --only-show-errors 2>$null | Out-Null
+            }
+        } catch {
+            Write-Log "Unable to verify/install containerapp extension (continuing)" 'WARN' Yellow
         }
-    } catch {
-        Write-Log "Unable to verify/install containerapp extension (continuing)" 'WARN' Yellow
     }
 
-    if (-not $NoPrompt) {
+    if (-not $NoPrompt -and -not $SelfTest) {
         Write-Log "Subscription: $($account.name) ($($account.id))" 'SUB' Cyan
         $ChangeSubscription = Read-Host -Prompt "Change subscription? (y/N)"
         if ($ChangeSubscription -match '^[Yy]$') {
@@ -106,8 +114,21 @@ function Update-SCIMTool {
 
     if (-not $ResourceGroup -or -not $AppName) {
         Write-Log "Discovering SCIMTool container apps" 'INFO' Cyan
-        # Collect full list (warnings may be mixed in)
-        $rawList = az containerapp list -o json 2>$null
+        # Collect full list (warnings may be mixed in) or simulate in SelfTest
+        if ($SelfTest) {
+            $rawList = @'
+UserWarning: cryptography performance issue
+Some other warning line
+[
+  {"name":"scimtool-app","resourceGroup":"rg-scim"},
+  {"name":"otherapp","resourceGroup":"rg-other"},
+  {"name":"scim-extra","resourceGroup":"rg-scim2"}
+]
+'@
+            $LASTEXITCODE = 0
+        } else {
+            $rawList = az containerapp list -o json 2>$null
+        }
         if ($DebugDiscovery -and $rawList) { Write-Host "--- RAW LIST (NOISY) ---`n$rawList`n-----------------------" -ForegroundColor DarkGray }
         $cleanJson = Get-CleanJson $rawList
         if ($DebugDiscovery -and $cleanJson) { Write-Host "--- CLEAN JSON ---`n$cleanJson`n-----------------------" -ForegroundColor DarkGray }
@@ -126,7 +147,11 @@ function Update-SCIMTool {
         }
         if (-not $containerApps -or $containerApps.Count -eq 0) {
             Write-Log "Primary discovery produced no results; attempting TSV fallback (sanitized)." 'INFO' Cyan
-            $tsvRaw = az containerapp list --output tsv 2>$null
+            if ($SelfTest) {
+                $tsvRaw = "scimtool-app	rg-scim`notherapp	rg-other`nscim-extra	rg-scim2"; $LASTEXITCODE = 0
+            } else {
+                $tsvRaw = az containerapp list --output tsv 2>$null
+            }
             if ($DebugDiscovery -and $tsvRaw) { Write-Host "--- RAW TSV (POSSIBLY NOISY) ---`n$tsvRaw`n---------------------" -ForegroundColor DarkGray }
             if ($LASTEXITCODE -eq 0 -and $tsvRaw) {
                 $lines = $tsvRaw -split "`n" | Where-Object { $_ -match "\t" }
@@ -158,7 +183,12 @@ function Update-SCIMTool {
 
     Write-Log "RG=$ResourceGroup App=$AppName NewImage=$imageRef" 'INFO' Cyan
 
-    $appDetails = az containerapp show -n $AppName -g $ResourceGroup -o json | ConvertFrom-Json
+    $appDetails = $null
+    if ($SelfTest) {
+        $appDetails = [pscustomobject]@{ properties = @{ template = @{ volumes = @() } } }
+    } else {
+        $appDetails = az containerapp show -n $AppName -g $ResourceGroup -o json | ConvertFrom-Json
+    }
     $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
     if ($hasVolumes) {
         Write-Log "Persistent storage detected" 'OK' Green
@@ -174,7 +204,7 @@ function Update-SCIMTool {
         if (-not $Quiet) { Write-Host "Add storage: scripts/add-persistent-storage.ps1" -ForegroundColor Gray }
     }
 
-    if ($DryRun) { Write-Log "DryRun: exiting before execution" 'INFO' Cyan; return }
+    if ($DryRun -or $SelfTest) { Write-Log "DryRun/SelfTest: exiting before execution" 'INFO' Cyan; return }
 
     if (-not $NoPrompt) {
         if (-not $hasVolumes) {
