@@ -22,20 +22,19 @@ export class ActivityController {
     const skip = (pageNum - 1) * limitNum;
 
     // Build where clause for filtering logs
+    // Include both legacy (/scim/Users) and versioned (/scim/v2/Users) plus any SCIM base rewrite variants
     const baseConditions = {
       AND: [
         {
           OR: [
-            { url: { contains: '/scim/Users' } },
-            { url: { contains: '/scim/Groups' } },
+            { url: { contains: '/Users' } },
+            { url: { contains: '/Groups' } },
           ],
         },
         {
-          NOT: {
-            url: { contains: '/admin/' }
-          }
+          NOT: { url: { contains: '/admin/' } }
         }
-      ],
+      ]
     };
 
     const where = search ? {
