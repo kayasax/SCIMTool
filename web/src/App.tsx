@@ -76,14 +76,17 @@ const AppContent: React.FC = () => {
   const upgradeCommand = useMemo(() => {
     if (!(upgradeAvailable && latestTag)) return '';
 
-    // Use function-based approach like Chocolatey and other popular tools
-    const scriptUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1';
-    const args = [`-Version ${latestTag}`];
-    if (azResourceGroup) args.push(`-ResourceGroup ${azResourceGroup}`);
-    if (azContainerApp) args.push(`-AppName ${azContainerApp}`);
+    // Prefer direct script if we have explicit metadata (no discovery path)
+    const directUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1';
+    const funcUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1';
+    const cleanTag = latestTag.startsWith('v') ? latestTag : `v${latestTag}`;
 
-    // Pattern: iex (irm 'script.ps1'); Then call function with parameters
-    return `iex (irm '${scriptUrl}'); Update-SCIMTool ${args.join(' ')}`;
+    if (azResourceGroup && azContainerApp) {
+      // Direct invocation with required params (NoPrompt, ShowCurrent for convenience)
+      return `iex (irm '${directUrl}'); Update-SCIMToolDirect -Version ${cleanTag} -ResourceGroup ${azResourceGroup} -AppName ${azContainerApp} -NoPrompt -ShowCurrent`;
+    }
+    // Fallback: function script with discovery (legacy)
+    return `iex (irm '${funcUrl}'); Update-SCIMTool -Version ${cleanTag}`;
   }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp]);
 
   useEffect(() => {
