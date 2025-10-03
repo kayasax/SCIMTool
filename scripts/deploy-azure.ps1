@@ -145,6 +145,7 @@ if ($rgExitCode -ne 0 -or -not $rgJson) {
 }
 Write-Host ""
 
+
 # Step 2: Blob Storage (for snapshot persistence)
 Write-Host "💾 Step 2/5: Blob Storage (snapshot persistence)" -ForegroundColor Cyan
 
@@ -160,11 +161,23 @@ if (-not $blobExists) {
         --parameters storageAccountName=$BlobBackupAccount containerName=$BlobBackupContainer location=$Location `
         --output none 2>&1
     if ($LASTEXITCODE -ne 0) {
-    Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
-    Write-Host $blobOut -ForegroundColor Red
-    return
+        Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
+        Write-Host $blobOut -ForegroundColor Red
+        return
     }
-    Write-Host "   ✅ Blob storage created" -ForegroundColor Green
+    # Poll for storage account readiness before continuing
+    $maxWait = 60; $waited = 0; $ready = $false
+    while ($waited -lt $maxWait) {
+        $blobExists = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query name -o tsv 2>$null
+        if ($blobExists) { $ready = $true; break }
+        Start-Sleep -Seconds 5; $waited += 5
+        Write-Host "   Waiting for storage account to be ready... ($waited s)" -ForegroundColor Gray
+    }
+    if (-not $ready) {
+        Write-Host "   ❌ Storage account did not become available after deployment." -ForegroundColor Red
+        return
+    }
+    Write-Host "   ✅ Blob storage created and ready" -ForegroundColor Green
 } else {
     Write-Host "   ✅ Storage account exists: $BlobBackupAccount" -ForegroundColor Green
     # Ensure container exists
