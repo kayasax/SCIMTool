@@ -22,7 +22,7 @@ Stop scrolling walls of JSON. SCIMTool turns raw provisioning calls into clean, 
 
 ---
 
-## 🚀 60‑Second Cloud Deploy (Cache‑Safe One‑Liner)
+## 🚀 5 minutes Cloud Deploy 
 Run in PowerShell (Windows PowerShell 5.1 or PowerShell 7+; macOS/Linux require PowerShell 7+). Prompts for RG / App / Region / Secret (or auto‑generate), then provisions Azure Container Apps + blob snapshot persistence.
 
 Uses a bootstrap loader that forces a fresh fetch (avoids CDN caching of `setup.ps1`).
@@ -32,10 +32,17 @@ iex (iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/bootstrap.ps1
 ```
 Outputs (copy these, we will need them to configure the Entra app) :
 * Public URL (web UI root)
-* SCIM Base URL: https://fqdn/scim/v2
+* SCIM Base URL
 * Generated / provided shared secret (reprinted at end)
+  
+Example:
+<img width="1144" height="111" alt="image" src="https://github.com/user-attachments/assets/fe47af5a-2e1f-451b-a9e4-492ae704646f" />
 
 Cost: scale‑to‑zero + storage (low idle spend).
+
+For information these resource types will be deployed  
+<img width="527" height="157" alt="image" src="https://github.com/user-attachments/assets/f0f65069-5345-492e-b01a-6dc206754228" />
+
 
 ## 🔧 Configure Microsoft Entra Provisioning (Right After Deploy)
 1. Entra Portal → Enterprise Applications → Create new Enterprise App (non-gallery)
@@ -50,7 +57,7 @@ Cost: scale‑to‑zero + storage (low idle spend).
 4. Turn provisioning ON & assign users / groups
 
 Open the root URL (same host, no /scim) to watch events in near real-time. ex https://scimtool-app-1839.purplestone-a06f6cdf.eastus.azurecontainerapps.io/
-
+>Note: you will have to copy the SCIM secret at first opening
 ---
 
 ## 🔄 Updating to a New Version
