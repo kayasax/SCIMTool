@@ -25,7 +25,6 @@ Stop scrolling walls of JSON. SCIMTool turns raw provisioning calls into clean, 
 ## 🚀 5 minutes Cloud Deploy 
 Run in PowerShell (Windows PowerShell 5.1 or PowerShell 7+; macOS/Linux require PowerShell 7+). Prompts for RG / App / Region / Secret (or auto‑generate), then provisions Azure Container Apps + blob snapshot persistence.
 
-Uses a bootstrap loader that forces a fresh fetch (avoids CDN caching of `setup.ps1`).
 
 ```powershell
 iex (iwr https://raw.githubusercontent.com/kayasax/SCIMTool/master/bootstrap.ps1).Content
