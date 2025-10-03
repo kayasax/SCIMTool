@@ -11,7 +11,8 @@ function Update-SCIMTool {
         [string]$Registry = "ghcr.io/kayasax",
         [switch]$NoPrompt,
         [switch]$DryRun,
-        [switch]$Quiet
+        [switch]$Quiet,
+        [switch]$DebugDiscovery
     )
 
     $ErrorActionPreference = 'Stop'
@@ -69,12 +70,27 @@ function Update-SCIMTool {
     if (-not $ResourceGroup -or -not $AppName) {
         Write-Log "Discovering SCIMTool container apps" 'INFO' Cyan
         $rawList = az containerapp list --query "[?contains(name,'scim')].{name:name,rg:resourceGroup}" -o json 2>$null
+        if ($DebugDiscovery -and $rawList) { Write-Host "--- RAW JSON LIST ---`n$rawList`n---------------------" -ForegroundColor DarkGray }
         $containerApps = $null
         if ($LASTEXITCODE -eq 0 -and $rawList) {
-            try { $containerApps = $rawList | ConvertFrom-Json } catch { Write-Log "List parse failed (non-JSON output)." 'WARN' Yellow }
+            try { $containerApps = $rawList | ConvertFrom-Json } catch { Write-Log "JSON parse failed; switching to TSV fallback." 'WARN' Yellow }
+        }
+        if (-not $containerApps -or $containerApps.Count -eq 0) {
+            # Fallback: TSV output (avoids JSON parsing / odd leading chars)
+            $tsv = az containerapp list --query "[?contains(name,'scim')].[name,resourceGroup]" -o tsv 2>$null
+            if ($DebugDiscovery -and $tsv) { Write-Host "--- RAW TSV LIST ---`n$tsv`n---------------------" -ForegroundColor DarkGray }
+            if ($LASTEXITCODE -eq 0 -and $tsv) {
+                $lines = $tsv -split "`n" | Where-Object { $_.Trim() -ne '' }
+                $containerApps = @()
+                foreach ($line in $lines) {
+                    $parts = $line -split "\t"
+                    if ($parts.Count -ge 2) { $containerApps += [pscustomobject]@{ name = $parts[0]; rg = $parts[1] } }
+                }
+            }
         }
         if (-not $containerApps -or $containerApps.Count -eq 0) {
             Write-Log "No container apps auto-discovered. Provide -ResourceGroup and -AppName explicitly." 'ERROR' Red
+            if (-not $Quiet) { Write-Host "Try adding -DebugDiscovery for more details." -ForegroundColor Gray }
             return
         }
         if ($containerApps.Count -eq 1) {
@@ -142,7 +158,7 @@ if ($args.Count -gt 0) {
         $arg = $args[$i]
         if ($arg.StartsWith('-')) {
             $paramName = $arg.TrimStart('-')
-            if ($paramName -in @('NoPrompt', 'DryRun')) {
+            if ($paramName -in @('NoPrompt', 'DryRun', 'Quiet', 'DebugDiscovery')) {
                 $params[$paramName] = $true
             } elseif (($i + 1) -lt $args.Count -and -not $args[$i + 1].StartsWith('-')) {
                 $params[$paramName] = $args[$i + 1]
@@ -152,7 +168,7 @@ if ($args.Count -gt 0) {
     }
 
     if ($params.Count -gt 0 -and $params.ContainsKey('Version')) { Update-SCIMTool @params }
-    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.8.1' [-ResourceGroup rg] [-AppName app] [-NoPrompt] [-DryRun] [-Quiet]" -ForegroundColor Yellow }
+    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.8.1' [-ResourceGroup rg] [-AppName app] [-NoPrompt] [-DryRun] [-Quiet] [-DebugDiscovery]" -ForegroundColor Yellow }
 } else {
     Write-Host "SCIMTool update function loaded." -ForegroundColor Green
     Write-Host "Examples:" -ForegroundColor Gray
