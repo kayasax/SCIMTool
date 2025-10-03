@@ -114,15 +114,16 @@ foreach ($f in $files) {
 	} catch {
 		Write-Host "Failed to download $($f.url)" -ForegroundColor Red
 		Write-Host $_.Exception.Message -ForegroundColor Red
-		exit 1
+		Write-Host "Aborting setup (no exit to keep shell open)." -ForegroundColor Yellow
+		return
 	}
 }
 
 $deployScript = Join-Path $scriptsDir 'deploy-azure.ps1'
 
 # Azure CLI check
-if (-not (Get-Command az -ErrorAction SilentlyContinue)) { Write-Host 'Azure CLI not installed. Install first: https://learn.microsoft.com/cli/azure/install-azure-cli' -ForegroundColor Red; exit 1 }
-try { az account show -o none 2>$null } catch { Write-Host 'Not logged in. Run: az login  then re-run the one-liner.' -ForegroundColor Red; exit 1 }
+if (-not (Get-Command az -ErrorAction SilentlyContinue)) { Write-Host 'Azure CLI not installed. Install first: https://learn.microsoft.com/cli/azure/install-azure-cli' -ForegroundColor Red; Write-Host 'Setup stopped (shell preserved).' -ForegroundColor Yellow; return }
+try { az account show -o none 2>$null } catch { Write-Host 'Not logged in. Run: az login then re-run the one-liner.' -ForegroundColor Red; Write-Host 'Setup stopped (shell preserved).' -ForegroundColor Yellow; return }
 
 Write-Host 'Starting deployment...' -ForegroundColor Cyan
 # Prefer pwsh if available, otherwise fall back to current powershell
@@ -131,7 +132,7 @@ if (Get-Command pwsh -ErrorAction SilentlyContinue) {
 } else {
     & powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$true
 }
-if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (exit $LASTEXITCODE)" -ForegroundColor Red; exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (code $LASTEXITCODE). Shell left open for inspection." -ForegroundColor Red; return }
 
 # Try to retrieve FQDN (poll up to 90s) and echo final secret so user doesn't scroll
 $fqdn = $null; $attempts = 0; $maxAttempts = 18 # 18 * 5s = 90s

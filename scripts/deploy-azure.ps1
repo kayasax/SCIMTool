@@ -23,12 +23,12 @@ function New-RandomScimSecret { "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999
 
 if (-not $ResourceGroup) {
     $ResourceGroup = Read-Host "Enter Resource Group name (will be created if missing)"
-    if (-not $ResourceGroup) { Write-Host "Resource Group is required." -ForegroundColor Red; exit 1 }
+    if (-not $ResourceGroup) { Write-Host "Resource Group is required." -ForegroundColor Red; return }
 }
 
 if (-not $AppName) {
     $AppName = Read-Host "Enter Container App name"
-    if (-not $AppName) { Write-Host "App Name is required." -ForegroundColor Red; exit 1 }
+    if (-not $AppName) { Write-Host "App Name is required." -ForegroundColor Red; return }
 }
 
 if (-not $ScimSecret) {
@@ -69,7 +69,7 @@ try {
 } catch {
     Write-Host "Azure CLI not authenticated" -ForegroundColor Red
     Write-Host "   Run: az login" -ForegroundColor Yellow
-    exit 1
+    return
 }
 
 # Generate resource names
@@ -128,8 +128,8 @@ if ($rgExitCode -ne 0 -or -not $rgJson) {
     Write-Host "   Creating resource group '$ResourceGroup'..." -ForegroundColor Yellow
     az group create --name $ResourceGroup --location $Location --output none 2>$null
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Failed to create resource group" -ForegroundColor Red
-        exit 1
+    Write-Host "   ❌ Failed to create resource group" -ForegroundColor Red
+    return
     }
     Write-Host "   ✅ Resource group created" -ForegroundColor Green
 } else {
@@ -152,9 +152,9 @@ if (-not $blobExists) {
         --parameters storageAccountName=$BlobBackupAccount containerName=$BlobBackupContainer location=$Location `
         --output none 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
-        Write-Host $blobOut -ForegroundColor Red
-        exit 1
+    Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
+    Write-Host $blobOut -ForegroundColor Red
+    return
     }
     Write-Host "   ✅ Blob storage created" -ForegroundColor Green
 } else {
@@ -199,9 +199,9 @@ if (-not $skipEnvDeployment) {
         --output json 2>&1
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Failed to start environment deployment" -ForegroundColor Red
-        Write-Host $envDeployOutput -ForegroundColor Red
-        exit 1
+    Write-Host "   ❌ Failed to start environment deployment" -ForegroundColor Red
+    Write-Host $envDeployOutput -ForegroundColor Red
+    return
     }
 
     # Poll environment deployment
@@ -230,16 +230,16 @@ if (-not $skipEnvDeployment) {
                 --query "properties.error" `
                 --output json 2>$null
             Write-Host "   Error details: $errorDetails" -ForegroundColor Red
-            exit 1
+            return
         } elseif ($status -in @("Running", "Accepted", "")) {
             Write-Host "   ⏳ Still deploying... ($elapsed seconds elapsed)" -ForegroundColor Gray
         }
     }
 
     if ($elapsed -ge $maxWaitSeconds) {
-        Write-Host "   ⚠️  Environment deployment timeout" -ForegroundColor Yellow
-        Write-Host "   Check Azure Portal for status: $ResourceGroup" -ForegroundColor Yellow
-        exit 1
+    Write-Host "   ⚠️  Environment deployment timeout" -ForegroundColor Yellow
+    Write-Host "   Check Azure Portal for status: $ResourceGroup" -ForegroundColor Yellow
+    return
     }
 }
 Write-Host ""
@@ -321,10 +321,10 @@ if (-not $skipAppDeployment) {
     Remove-Item $paramsFile -ErrorAction SilentlyContinue
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Failed to start container app deployment" -ForegroundColor Red
-        Write-Host "   Error output:" -ForegroundColor Red
-        Write-Host $deployOutput -ForegroundColor Red
-        exit 1
+    Write-Host "   ❌ Failed to start container app deployment" -ForegroundColor Red
+    Write-Host "   Error output:" -ForegroundColor Red
+    Write-Host $deployOutput -ForegroundColor Red
+    return
     }
 
     # Poll deployment status with timeout
@@ -356,7 +356,7 @@ if (-not $skipAppDeployment) {
                 --output json
             Write-Host "   Error details:" -ForegroundColor Red
             Write-Host $errorDetails -ForegroundColor Red
-            exit 1
+            return
         } elseif ($status -in @("Running", "Accepted", "")) {
             Write-Host "   ⏳ Still deploying... ($elapsed seconds elapsed)" -ForegroundColor Gray
         } else {
@@ -365,10 +365,10 @@ if (-not $skipAppDeployment) {
     }
 
     if ($elapsed -ge $maxWaitSeconds) {
-        Write-Host "   ⚠️  Deployment timeout after $maxWaitSeconds seconds" -ForegroundColor Yellow
-        Write-Host "   The deployment may still be running. Check Azure Portal:" -ForegroundColor Yellow
-        Write-Host "   https://portal.azure.com/#@/resource/subscriptions/$((az account show --query id -o tsv))/resourceGroups/$ResourceGroup/deployments" -ForegroundColor Cyan
-        exit 1
+    Write-Host "   ⚠️  Deployment timeout after $maxWaitSeconds seconds" -ForegroundColor Yellow
+    Write-Host "   The deployment may still be running. Check Azure Portal:" -ForegroundColor Yellow
+    Write-Host "   https://portal.azure.com/#@/resource/subscriptions/$((az account show --query id -o tsv))/resourceGroups/$ResourceGroup/deployments" -ForegroundColor Cyan
+    return
     }
 }
 Write-Host ""
