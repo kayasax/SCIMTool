@@ -1,6 +1,6 @@
-﻿# SCIMTool Container App Update Function
+# SCIMTool Container App Update Function
 # NOTE: Saved as UTF-8 WITHOUT BOM. If remote fetch shows a leading invisible char, strip with -replace "^[\uFEFF]","".
-# (BOM stripped; ensure saved UTF-8 no BOM) 
+# (BOM stripped; ensure saved UTF-8 no BOM)
 # Usage: iex ((irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1') -replace "^[\uFEFF]","")
 
 function Update-SCIMTool {
@@ -10,6 +10,7 @@ function Update-SCIMTool {
         [string]$ResourceGroup,
         [string]$AppName,
         [string]$Registry = "ghcr.io/kayasax",
+        [string]$NamePattern = 'scim',
         [switch]$NoPrompt,
         [switch]$DryRun,
         [switch]$Quiet,
@@ -68,15 +69,53 @@ function Update-SCIMTool {
         }
     }
 
+    # Helper: extract first JSON array or object from noisy az output (warnings etc.)
+    function Get-CleanJson([string]$raw) {
+        if (-not $raw) { return $null }
+        # Fast path: if raw starts with [ or { and converts fine
+        $trim = $raw.TrimStart()
+        if ($trim.StartsWith('[') -or $trim.StartsWith('{')) {
+            try { return $trim } catch { }
+        }
+        # Find first '[' or '{'
+        $firstIdx = $raw.IndexOf('[')
+        if ($firstIdx -lt 0) { $firstIdx = $raw.IndexOf('{') }
+        if ($firstIdx -lt 0) { return $null }
+        $candidate = $raw.Substring($firstIdx)
+        # Heuristic: truncate after last ']' or '}' whichever is last in string
+        $lastSq = $candidate.LastIndexOf(']')
+        $lastCr = $candidate.LastIndexOf('}')
+        $endIdx = [Math]::Max($lastSq, $lastCr)
+        if ($endIdx -gt 0) { $candidate = $candidate.Substring(0, $endIdx + 1) }
+        try { $null = $candidate | ConvertFrom-Json; return $candidate } catch { return $null }
+    }
+
+    # Auto-detect BOM in this script content when loaded via iex without manual replace.
+    if (-not (Get-Variable -Name SCIMTool_BOMStripped -ErrorAction SilentlyContinue)) {
+        $scriptText = $null
+        try { $scriptText = (Get-Content -LiteralPath $PSCommandPath -Raw -ErrorAction SilentlyContinue) } catch { }
+        if ($scriptText -and $scriptText.Length -gt 0 -and $scriptText[0] -eq [char]0xFEFF) {
+            # Re-invoke without BOM
+            $rebased = $scriptText.Substring(1)
+            $env:SCIMTool_BOMStripped = '1'
+            Invoke-Expression $rebased
+            return
+        }
+        Set-Variable -Name SCIMTool_BOMStripped -Value 1 -Scope Script -Option ReadOnly -ErrorAction SilentlyContinue
+    }
+
     if (-not $ResourceGroup -or -not $AppName) {
         Write-Log "Discovering SCIMTool container apps" 'INFO' Cyan
-        $rawList = az containerapp list -o json --only-show-errors 2>$null
-        if ($DebugDiscovery -and $rawList) { Write-Host "--- RAW LIST (FULL) ---`n$rawList`n-----------------------" -ForegroundColor DarkGray }
+        # Collect full list (warnings may be mixed in)
+        $rawList = az containerapp list -o json 2>$null
+        if ($DebugDiscovery -and $rawList) { Write-Host "--- RAW LIST (NOISY) ---`n$rawList`n-----------------------" -ForegroundColor DarkGray }
+        $cleanJson = Get-CleanJson $rawList
+        if ($DebugDiscovery -and $cleanJson) { Write-Host "--- CLEAN JSON ---`n$cleanJson`n-----------------------" -ForegroundColor DarkGray }
         $containerApps = $null
-        if ($LASTEXITCODE -eq 0 -and $rawList) {
+        if ($LASTEXITCODE -eq 0 -and $cleanJson) {
             try {
-                $allApps = $rawList | ConvertFrom-Json
-                $filtered = $allApps | Where-Object { $_.name -match 'scim' }
+                $allApps = $cleanJson | ConvertFrom-Json
+                $filtered = $allApps | Where-Object { $_.name -match $NamePattern }
                 if ($filtered) {
                     $containerApps = @()
                     foreach ($app in $filtered) { $containerApps += [pscustomobject]@{ name = $app.name; rg = $app.resourceGroup } }
@@ -86,17 +125,18 @@ function Update-SCIMTool {
             }
         }
         if (-not $containerApps -or $containerApps.Count -eq 0) {
-            Write-Log "Primary discovery method produced no results; attempting simplified TSV fallback." 'INFO' Cyan
-            $tsv = az containerapp list --query "[].{name:name,rg:resourceGroup}" -o tsv 2>$null
-            if ($DebugDiscovery -and $tsv) { Write-Host "--- RAW TSV (ALL) ---`n$tsv`n---------------------" -ForegroundColor DarkGray }
-            if ($LASTEXITCODE -eq 0 -and $tsv) {
-                $lines = $tsv -split "`n" | Where-Object { $_.Trim() -ne '' }
+            Write-Log "Primary discovery produced no results; attempting TSV fallback (sanitized)." 'INFO' Cyan
+            $tsvRaw = az containerapp list --output tsv 2>$null
+            if ($DebugDiscovery -and $tsvRaw) { Write-Host "--- RAW TSV (POSSIBLY NOISY) ---`n$tsvRaw`n---------------------" -ForegroundColor DarkGray }
+            if ($LASTEXITCODE -eq 0 -and $tsvRaw) {
+                $lines = $tsvRaw -split "`n" | Where-Object { $_ -match "\t" }
                 $appsTmp = @()
                 foreach ($line in $lines) {
                     $parts = $line -split "\t"
+                    # Heuristic: name and one of resource group fields (some extra columns may exist); choose first two tokens
                     if ($parts.Count -ge 2) { $appsTmp += [pscustomobject]@{ name = $parts[0]; rg = $parts[1] } }
                 }
-                if ($appsTmp.Count -gt 0) { $containerApps = $appsTmp | Where-Object { $_.name -match 'scim' } }
+                if ($appsTmp.Count -gt 0) { $containerApps = $appsTmp | Where-Object { $_.name -match $NamePattern } }
             }
         }
         if (-not $containerApps -or $containerApps.Count -eq 0) {
@@ -108,7 +148,7 @@ function Update-SCIMTool {
             $ResourceGroup = $containerApps[0].rg; $AppName = $containerApps[0].name
             Write-Log "Using $AppName ($ResourceGroup)" 'OK' Green
         } else {
-            if ($NoPrompt) { Write-Log "Multiple apps found; supply -ResourceGroup/-AppName" 'ERROR' Red; return }
+            if ($NoPrompt) { Write-Log "Multiple apps found; supply -ResourceGroup/-AppName or adjust -NamePattern '$NamePattern'" 'ERROR' Red; return }
             for ($i=0;$i -lt $containerApps.Count;$i++){ if (-not $Quiet) { Write-Host "[$($i+1)] $($containerApps[$i].name) (RG: $($containerApps[$i].rg))" -ForegroundColor Gray } }
             do { $sel = Read-Host -Prompt "Select [1-$($containerApps.Count)]"; $idx = [int]$sel - 1 } while ($idx -lt 0 -or $idx -ge $containerApps.Count)
             $ResourceGroup = $containerApps[$idx].rg; $AppName = $containerApps[$idx].name
@@ -179,7 +219,7 @@ if ($args.Count -gt 0) {
     }
 
     if ($params.Count -gt 0 -and $params.ContainsKey('Version')) { Update-SCIMTool @params }
-    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.8.1' [-ResourceGroup rg] [-AppName app] [-NoPrompt] [-DryRun] [-Quiet] [-DebugDiscovery]" -ForegroundColor Yellow }
+    else { Write-Host "Usage: Update-SCIMTool -Version 'v0.8.1' [-ResourceGroup rg] [-AppName app] [-NamePattern regex] [-NoPrompt] [-DryRun] [-Quiet] [-DebugDiscovery]" -ForegroundColor Yellow }
 } else {
     Write-Host "SCIMTool update function loaded." -ForegroundColor Green
     Write-Host "Examples:" -ForegroundColor Gray
