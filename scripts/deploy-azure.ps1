@@ -148,8 +148,38 @@ if ($rgExitCode -ne 0 -or -not $rgJson) {
 }
 Write-Host ""
 
-# Step 2 removed (Azure Files persistence deprecated in favor of blob snapshots)
-Write-Host "💾 Step 2/5: (Removed) Azure Files persistence skipped – using blob snapshot strategy" -ForegroundColor Cyan
+# Step 2: Blob Storage (for snapshot persistence)
+Write-Host "💾 Step 2/5: Blob Storage (snapshot persistence)" -ForegroundColor Cyan
+
+# Check if storage account exists
+$blobExists = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query name -o tsv 2>$null
+if (-not $blobExists) {
+    Write-Host "   Creating storage account $BlobBackupAccount + container $BlobBackupContainer" -ForegroundColor Yellow
+    $blobDeploymentName = "blob-storage-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    $blobOut = az deployment group create `
+        --resource-group $ResourceGroup `
+        --name $blobDeploymentName `
+        --template-file "$PSScriptRoot/../infra/blob-storage.bicep" `
+        --parameters storageAccountName=$BlobBackupAccount containerName=$BlobBackupContainer location=$Location `
+        --output none 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
+        Write-Host $blobOut -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "   ✅ Blob storage created" -ForegroundColor Green
+} else {
+    Write-Host "   ✅ Storage account exists: $BlobBackupAccount" -ForegroundColor Green
+    # Ensure container exists
+    $containerExists = az storage container exists --name $BlobBackupContainer --account-name $BlobBackupAccount --query exists -o tsv 2>$null
+    if ($containerExists -ne 'true') {
+        Write-Host "   Creating container $BlobBackupContainer" -ForegroundColor Yellow
+        az storage container create --name $BlobBackupContainer --account-name $BlobBackupAccount -o none 2>$null
+        if ($LASTEXITCODE -ne 0) { Write-Host "   WARNING: Could not create container (may require key/identity)." -ForegroundColor Yellow }
+    } else {
+        Write-Host "   ✅ Container exists: $BlobBackupContainer" -ForegroundColor Green
+    }
+}
 Write-Host ""
 
 # Step 3: Deploy Container App Environment
@@ -390,6 +420,21 @@ Write-Host "   Account: $BlobBackupAccount" -ForegroundColor White
 Write-Host "   Container: $BlobBackupContainer" -ForegroundColor White
 Write-Host "   Runtime DB: /tmp/local-data/scim.db (ephemeral)" -ForegroundColor White
 Write-Host "   Snapshots: timestamped SQLite copies in blob storage" -ForegroundColor Gray
+Write-Host ""
+
+# Assign role to container app system identity (after app exists)
+Write-Host "🔐 Assigning Storage Blob Data Contributor role" -ForegroundColor Cyan
+$principalId = az containerapp show -n $AppName -g $ResourceGroup --query identity.principalId -o tsv 2>$null
+if ($principalId) {
+    $scope = "/subscriptions/$((az account show --query id -o tsv))/resourceGroups/$ResourceGroup/providers/Microsoft.Storage/storageAccounts/$BlobBackupAccount"
+    $existingRole = az role assignment list --assignee $principalId --scope $scope --query "[?roleDefinitionName=='Storage Blob Data Contributor'].id" -o tsv 2>$null
+    if (-not $existingRole) {
+        az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $scope -o none 2>$null
+        if ($LASTEXITCODE -eq 0) { Write-Host "   ✅ Role assigned" -ForegroundColor Green } else { Write-Host "   ⚠️  Failed to assign role (manual intervention may be required)" -ForegroundColor Yellow }
+    } else { Write-Host "   ✅ Role already assigned" -ForegroundColor Green }
+} else {
+    Write-Host "   ⚠️  Could not fetch principalId for container app (role assignment skipped)" -ForegroundColor Yellow
+}
 Write-Host ""
 
 Write-Host "📝 Next Steps:" -ForegroundColor Cyan
