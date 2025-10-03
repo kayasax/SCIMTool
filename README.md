@@ -15,7 +15,7 @@ Stop scrolling walls of JSON. SCIMTool turns raw provisioning calls into clean, 
 | 🔍 Searchable Activity Feed | Filter & inspect SCIM requests and responses quickly |
 | 👥 User & Group Browser | Memberships + derived identifiers |
 | 🔔 Visual Change Alerts | Favicon + tab badge for new provisioning activity |
-| 💾 Hybrid Persistence | Fast local SQLite + Azure Files timed backups |
+| 💾 Blob Snapshot Persistence | Fast local SQLite + periodic blob snapshots (no file share mount) |
 | 🔐 Shared Secret Auth | Simple secure SCIM integration for Entra |
 | 🌗 Dark / Light Theme | Clean responsive UI |
 | 🚀 Scale to Zero | Low idle cost on Azure Container Apps |

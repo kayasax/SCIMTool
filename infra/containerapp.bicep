@@ -29,31 +29,16 @@ param maxReplicas int = 2
 param cpuCores string = '0.5'
 @description('Optional memory per replica')
 param memory string = '1Gi'
-@description('Storage account name for persistent data (optional)')
-param storageAccountName string = ''
-@description('Storage account key for file share access (optional)')
-@secure()
-param storageAccountKey string = ''
-@description('File share name for persistent data (optional)')
-param fileShareName string = 'scimtool-data'
+@description('Blob backup storage account name')
+param blobBackupAccountName string
+@description('Blob backup container name')
+param blobBackupContainerName string = 'scimtool-backups'
 
 resource env 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: environmentName
 }
 
-// Conditionally create storage definition if storage account is provided
-resource storage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = if (!empty(storageAccountName)) {
-  name: 'scimtool-storage'
-  parent: env
-  properties: {
-    azureFile: {
-      accountName: storageAccountName
-      accountKey: storageAccountKey
-      shareName: fileShareName
-      accessMode: 'ReadWrite'
-    }
-  }
-}
+// (Azure Files mount removed in blob backup mode) 
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
@@ -83,63 +68,31 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
     }
     template: {
       // Init container only cleans Azure Files journal artifacts now; main container handles restore to /tmp
-      initContainers: !empty(storageAccountName) ? [
-        {
-          name: 'cleanup-journals'
-          image: 'busybox:latest'
-          command: [
-            'sh'
-            '-c'
-            'echo "Cleaning Azure Files journal files..." && rm -f /app/data/*.db-journal /app/data/*.db-shm /app/data/*.db-wal || true && echo "Init cleanup complete"'
-          ]
-          volumeMounts: [
-            {
-              volumeName: 'data-volume'
-              mountPath: '/app/data'
-            }
-          ]
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
-        }
-      ] : []
+      initContainers: []
       containers: [
         {
           name: 'scimtool'
           image: '${acrLoginServer}/${image}'
           env: [
-          { name: 'SCIM_SHARED_SECRET', secretRef: 'scim-shared-secret' }
-          { name: 'NODE_ENV', value: 'production' }
-          { name: 'PORT', value: string(targetPort) }
-          // ALWAYS use local storage for fast database access (backup service handles Azure Files)
-          // Entrypoint sets DATABASE_URL to /tmp/local-data/scim.db; keeping explicit for clarity
-          { name: 'DATABASE_URL', value: 'file:/tmp/local-data/scim.db' }
+            { name: 'SCIM_SHARED_SECRET', secretRef: 'scim-shared-secret' }
+            { name: 'NODE_ENV', value: 'production' }
+            { name: 'PORT', value: string(targetPort) }
+            { name: 'DATABASE_URL', value: 'file:/tmp/local-data/scim.db' }
+            { name: 'BLOB_BACKUP_ACCOUNT', value: blobBackupAccountName }
+            { name: 'BLOB_BACKUP_CONTAINER', value: blobBackupContainerName }
           ]
           resources: {
-            // Map allowed cpuCores string to numeric
             cpu: json(cpuCores)
             memory: memory
           }
-          volumeMounts: !empty(storageAccountName) ? [
-            {
-              volumeName: 'data-volume'
-              mountPath: '/app/data'
-            }
-          ] : []
+          volumeMounts: []
         }
       ]
       scale: {
         minReplicas: minReplicas
         maxReplicas: maxReplicas
       }
-      volumes: !empty(storageAccountName) ? [
-        {
-          name: 'data-volume'
-          storageType: 'AzureFile'
-          storageName: 'scimtool-storage'
-        }
-      ] : []
+      volumes: []
     }
   }
   identity: {

@@ -4,12 +4,14 @@
     [string]$Location,
     [string]$ScimSecret,
     [string]$ImageTag,
-    [switch]$EnablePersistentStorage
+    [string]$BlobBackupAccount,
+    [string]$BlobBackupContainer
 )
 
 if (-not $Location -or $Location -eq '') { $Location = 'eastus' }
 if (-not $ImageTag -or $ImageTag -eq '') { $ImageTag = 'latest' }
-if (-not $PSBoundParameters.ContainsKey('EnablePersistentStorage')) { $EnablePersistentStorage = $true }
+if (-not $BlobBackupAccount) { $BlobBackupAccount = "$($AppName.ToLower())backup" }
+if (-not $BlobBackupContainer) { $BlobBackupContainer = 'scimtool-backups' }
 
 # --- Interactive Fallback ----------------------------------------------------
 # Allow zero‑parameter one‑liner usage via: iex (irm <raw-url>/deploy-azure.ps1)
@@ -46,7 +48,8 @@ Write-Host "  Resource Group : $ResourceGroup" -ForegroundColor White
 Write-Host "  App Name       : $AppName" -ForegroundColor White
 Write-Host "  Location       : $Location" -ForegroundColor White
 Write-Host "  Image Tag      : $ImageTag" -ForegroundColor White
-Write-Host "  Persistent     : $($EnablePersistentStorage.IsPresent)" -ForegroundColor White
+Write-Host "  Blob Backup Acct : $BlobBackupAccount" -ForegroundColor White
+Write-Host "  Blob Container   : $BlobBackupContainer" -ForegroundColor White
 Write-Host "  SCIM Secret    : $ScimSecret" -ForegroundColor Yellow
 Write-Host ""
 Start-Sleep -Milliseconds 300
@@ -111,7 +114,7 @@ Write-Host "   Log Analytics: $lawName" -ForegroundColor White
 Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
 $storageStatus = if($EnablePersistentStorage){'Enabled'}else{'Disabled'}
 $storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
-Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
+Write-Host "   Blob Backups: Account=$BlobBackupAccount Container=$BlobBackupContainer" -ForegroundColor Green
 Write-Host ""
 
 if (-not $EnablePersistentStorage) {
@@ -145,50 +148,37 @@ if ($rgExitCode -ne 0 -or -not $rgJson) {
 }
 Write-Host ""
 
-# Step 2: Deploy storage (if enabled)
-$storageAccountKey = ""
-if ($EnablePersistentStorage) {
-    Write-Host "💾 Step 2/5: Persistent Storage" -ForegroundColor Cyan
+# Step 2: Blob Storage (for snapshot persistence)
+Write-Host "💾 Step 2/5: Blob Storage (snapshot persistence)" -ForegroundColor Cyan
 
-    # Check if storage account already exists
-    $storageCheck = az storage account show --name $storageName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
-    $storageExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($storageCheck)
-
-    if ($storageExists) {
-        Write-Host "   ✅ Storage account already exists" -ForegroundColor Green
-        # Get the existing storage key
-        $keys = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --output json 2>$null | ConvertFrom-Json
-        $storageAccountKey = $keys[0].value
-        Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
-        Write-Host "      File Share: scimtool-data" -ForegroundColor Gray
-    } else {
-        Write-Host "   Deploying storage account and file share..." -ForegroundColor Yellow
-
-        az deployment group create `
-            --resource-group $ResourceGroup `
-            --template-file "$PSScriptRoot/../infra/storage.bicep" `
-            --parameters storageAccountName=$storageName `
-                         fileShareName=$fileShareName `
-                         location=$Location `
-            --output none 2>$null
-        $storageExit = $LASTEXITCODE
-        if ($storageExit -ne 0) {
-            # Check if it actually succeeded despite non-zero exit (sometimes warnings interfere)
-            $acctCheck = az storage account show --name $storageName --resource-group $ResourceGroup --query "name" -o tsv 2>$null
-            if ($LASTEXITCODE -ne 0 -or -not $acctCheck) {
-                Write-Host "   ❌ Storage deployment failed" -ForegroundColor Red
-                exit 1
-            }
-        }
-        # Retrieve key explicitly
-        $keyValue = az storage account keys list --account-name $storageName --resource-group $ResourceGroup --query "[0].value" -o tsv 2>$null
-        if ($keyValue) { $storageAccountKey = $keyValue } else { Write-Host "   WARNING: Could not fetch storage key" -ForegroundColor Yellow }
-        Write-Host "   ✅ Storage deployed successfully" -ForegroundColor Green
-        Write-Host "      Storage Account: $storageName" -ForegroundColor Gray
-        Write-Host "      File Share: $fileShareName (5 GiB)" -ForegroundColor Gray
+# Check if storage account exists
+$blobExists = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query name -o tsv 2>$null
+if (-not $blobExists) {
+    Write-Host "   Creating storage account $BlobBackupAccount + container $BlobBackupContainer" -ForegroundColor Yellow
+    $blobDeploymentName = "blob-storage-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    $blobOut = az deployment group create `
+        --resource-group $ResourceGroup `
+        --name $blobDeploymentName `
+        --template-file "$PSScriptRoot/../infra/blob-storage.bicep" `
+        --parameters storageAccountName=$BlobBackupAccount containerName=$BlobBackupContainer location=$Location `
+        --output none 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ❌ Blob storage deployment failed" -ForegroundColor Red
+        Write-Host $blobOut -ForegroundColor Red
+        exit 1
     }
+    Write-Host "   ✅ Blob storage created" -ForegroundColor Green
 } else {
-    Write-Host "⚠️  Step 2/5: Persistent Storage (Skipped)" -ForegroundColor Yellow
+    Write-Host "   ✅ Storage account exists: $BlobBackupAccount" -ForegroundColor Green
+    # Ensure container exists
+    $containerExists = az storage container exists --name $BlobBackupContainer --account-name $BlobBackupAccount --query exists -o tsv 2>$null
+    if ($containerExists -ne 'true') {
+        Write-Host "   Creating container $BlobBackupContainer" -ForegroundColor Yellow
+        az storage container create --name $BlobBackupContainer --account-name $BlobBackupAccount -o none 2>$null
+        if ($LASTEXITCODE -ne 0) { Write-Host "   WARNING: Could not create container (may require key/identity)." -ForegroundColor Yellow }
+    } else {
+        Write-Host "   ✅ Container exists: $BlobBackupContainer" -ForegroundColor Green
+    }
 }
 Write-Host ""
 
@@ -304,11 +294,9 @@ if (-not $skipAppDeployment) {
         scimSharedSecret = $ScimSecret
     }
 
-    if ($EnablePersistentStorage) {
-        $containerParams.storageAccountName = $storageName
-        $containerParams.storageAccountKey = $storageAccountKey
-        $containerParams.fileShareName = "scimtool-data"
-    }
+    # Pass blob backup parameters
+    $containerParams.blobBackupAccountName = $BlobBackupAccount
+    $containerParams.blobBackupContainerName = $BlobBackupContainer
 
     # Create a temporary parameters file to avoid escaping issues with special characters
     $paramsFile = "$env:TEMP\scimtool-params-$(Get-Date -Format 'yyyyMMddHHmmss').json"
@@ -427,16 +415,27 @@ $storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
 Write-Host "   Persistent Storage: $storageStatus" -ForegroundColor $storageColor
 Write-Host ""
 
-if ($EnablePersistentStorage) {
-    Write-Host "💾 Storage Information:" -ForegroundColor Cyan
-    Write-Host "   Storage Account: $storageName" -ForegroundColor White
-    Write-Host "   File Share: scimtool-data" -ForegroundColor White
-    Write-Host "   Mount Path: /app/data" -ForegroundColor White
-    Write-Host "   Database (persistent copy): /app/data/scim.db" -ForegroundColor White
-    Write-Host "   Runtime primary DB: /tmp/local-data/scim.db (ephemeral)" -ForegroundColor White
-    Write-Host "   Note: Data persists across container restarts and scale-to-zero" -ForegroundColor Gray
-    Write-Host ""
+Write-Host "💾 Blob Backup Strategy:" -ForegroundColor Cyan
+Write-Host "   Account: $BlobBackupAccount" -ForegroundColor White
+Write-Host "   Container: $BlobBackupContainer" -ForegroundColor White
+Write-Host "   Runtime DB: /tmp/local-data/scim.db (ephemeral)" -ForegroundColor White
+Write-Host "   Snapshots: timestamped SQLite copies in blob storage" -ForegroundColor Gray
+Write-Host ""
+
+# Assign role to container app system identity (after app exists)
+Write-Host "🔐 Assigning Storage Blob Data Contributor role" -ForegroundColor Cyan
+$principalId = az containerapp show -n $AppName -g $ResourceGroup --query identity.principalId -o tsv 2>$null
+if ($principalId) {
+    $scope = "/subscriptions/$((az account show --query id -o tsv))/resourceGroups/$ResourceGroup/providers/Microsoft.Storage/storageAccounts/$BlobBackupAccount"
+    $existingRole = az role assignment list --assignee $principalId --scope $scope --query "[?roleDefinitionName=='Storage Blob Data Contributor'].id" -o tsv 2>$null
+    if (-not $existingRole) {
+        az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $scope -o none 2>$null
+        if ($LASTEXITCODE -eq 0) { Write-Host "   ✅ Role assigned" -ForegroundColor Green } else { Write-Host "   ⚠️  Failed to assign role (manual intervention may be required)" -ForegroundColor Yellow }
+    } else { Write-Host "   ✅ Role already assigned" -ForegroundColor Green }
+} else {
+    Write-Host "   ⚠️  Could not fetch principalId for container app (role assignment skipped)" -ForegroundColor Yellow
 }
+Write-Host ""
 
 Write-Host "📝 Next Steps:" -ForegroundColor Cyan
 Write-Host "1. Configure Microsoft Entra ID provisioning:" -ForegroundColor White
