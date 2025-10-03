@@ -69,23 +69,33 @@ function Update-SCIMTool {
 
     if (-not $ResourceGroup -or -not $AppName) {
         Write-Log "Discovering SCIMTool container apps" 'INFO' Cyan
-        $rawList = az containerapp list --query "[?contains(name,'scim')].{name:name,rg:resourceGroup}" -o json 2>$null
-        if ($DebugDiscovery -and $rawList) { Write-Host "--- RAW JSON LIST ---`n$rawList`n---------------------" -ForegroundColor DarkGray }
+        $rawList = az containerapp list -o json --only-show-errors 2>$null
+        if ($DebugDiscovery -and $rawList) { Write-Host "--- RAW LIST (FULL) ---`n$rawList`n-----------------------" -ForegroundColor DarkGray }
         $containerApps = $null
         if ($LASTEXITCODE -eq 0 -and $rawList) {
-            try { $containerApps = $rawList | ConvertFrom-Json } catch { Write-Log "JSON parse failed; switching to TSV fallback." 'WARN' Yellow }
+            try {
+                $allApps = $rawList | ConvertFrom-Json
+                $filtered = $allApps | Where-Object { $_.name -match 'scim' }
+                if ($filtered) {
+                    $containerApps = @()
+                    foreach ($app in $filtered) { $containerApps += [pscustomobject]@{ name = $app.name; rg = $app.resourceGroup } }
+                }
+            } catch {
+                Write-Log "Primary JSON parse/filter failed: $($_.Exception.Message)" 'WARN' Yellow
+            }
         }
         if (-not $containerApps -or $containerApps.Count -eq 0) {
-            # Fallback: TSV output (avoids JSON parsing / odd leading chars)
-            $tsv = az containerapp list --query "[?contains(name,'scim')].[name,resourceGroup]" -o tsv 2>$null
-            if ($DebugDiscovery -and $tsv) { Write-Host "--- RAW TSV LIST ---`n$tsv`n---------------------" -ForegroundColor DarkGray }
+            Write-Log "Primary discovery method produced no results; attempting simplified TSV fallback." 'INFO' Cyan
+            $tsv = az containerapp list --query "[].{name:name,rg:resourceGroup}" -o tsv 2>$null
+            if ($DebugDiscovery -and $tsv) { Write-Host "--- RAW TSV (ALL) ---`n$tsv`n---------------------" -ForegroundColor DarkGray }
             if ($LASTEXITCODE -eq 0 -and $tsv) {
                 $lines = $tsv -split "`n" | Where-Object { $_.Trim() -ne '' }
-                $containerApps = @()
+                $appsTmp = @()
                 foreach ($line in $lines) {
                     $parts = $line -split "\t"
-                    if ($parts.Count -ge 2) { $containerApps += [pscustomobject]@{ name = $parts[0]; rg = $parts[1] } }
+                    if ($parts.Count -ge 2) { $appsTmp += [pscustomobject]@{ name = $parts[0]; rg = $parts[1] } }
                 }
+                if ($appsTmp.Count -gt 0) { $containerApps = $appsTmp | Where-Object { $_.name -match 'scim' } }
             }
         }
         if (-not $containerApps -or $containerApps.Count -eq 0) {
