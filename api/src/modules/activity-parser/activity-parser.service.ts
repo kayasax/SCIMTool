@@ -11,6 +11,9 @@ export interface ActivitySummary {
   severity: 'info' | 'success' | 'warning' | 'error';
   userIdentifier?: string;
   groupIdentifier?: string;
+  // Structured membership change data (optional; present for group membership PATCH operations)
+  addedMembers?: { id: string; name: string }[];
+  removedMembers?: { id: string; name: string }[];
 }
 
 interface ScimPatchOperation {
@@ -327,8 +330,9 @@ export class ActivityParserService {
         );
 
         if (memberOps.length > 0) {
-          const addOps = memberOps.filter((op: ScimPatchOperation) => op.op === 'add');
-          const removeOps = memberOps.filter((op: ScimPatchOperation) => op.op === 'remove');
+          // Azure / various SCIM clients sometimes send op capitalized ("Add" / "Remove"). Treat op case-insensitively.
+          const addOps = memberOps.filter((op: ScimPatchOperation) => (op.op || '').toLowerCase() === 'add');
+          const removeOps = memberOps.filter((op: ScimPatchOperation) => (op.op || '').toLowerCase() === 'remove');
 
           // Extract and resolve member IDs for add operations
           const addedMemberIds: string[] = [];
@@ -350,6 +354,12 @@ export class ActivityParserService {
             } else if (typeof opValue === 'string') {
               // Direct string value
               addedMemberIds.push(opValue);
+            } else if (!opValue && typeof op.path === 'string' && op.path.startsWith('members[')) {
+              // Rare case: add with filter-style path (uncommon, but handle defensively)
+              const filterMatch = op.path.match(/members\[\s*value\s+eq\s+"([^"]+)"\s*\]/i) || op.path.match(/members\[\s*value\s+eq\s+'([^']+)'\s*\]/i);
+              if (filterMatch) {
+                addedMemberIds.push(filterMatch[1]);
+              }
             }
           }
 
@@ -371,6 +381,12 @@ export class ActivityParserService {
             } else if (typeof opValue === 'string') {
               // Direct string value or path-based removal
               removedMemberIds.push(opValue);
+            } else if (!opValue && typeof op.path === 'string' && op.path.startsWith('members[')) {
+              // SCIM remove with filter path: members[value eq "<id>"] (no value payload provided)
+              const filterMatch = op.path.match(/members\[\s*value\s+eq\s+"([^"]+)"\s*\]/i) || op.path.match(/members\[\s*value\s+eq\s+'([^']+)'\s*\]/i);
+              if (filterMatch) {
+                removedMemberIds.push(filterMatch[1]);
+              }
             }
           }
 
@@ -389,6 +405,9 @@ export class ActivityParserService {
             })
           );
 
+          const addedMembers = addedMemberIds.map((id, idx) => ({ id, name: addedMemberNames[idx] }));
+          const removedMembers = removedMemberIds.map((id, idx) => ({ id, name: removedMemberNames[idx] }));
+
           const resolvedGroupName = groupIdentifier ? await this.resolveGroupName(groupIdentifier) : 'Group';
 
           // Build detailed message based on operations
@@ -403,6 +422,7 @@ export class ActivityParserService {
               type: 'group',
               severity: 'success',
               groupIdentifier,
+              addedMembers,
             };
           } else if (removedMemberIds.length > 0 && addedMemberIds.length === 0) {
             // Only removals
@@ -415,6 +435,7 @@ export class ActivityParserService {
               type: 'group',
               severity: 'info',
               groupIdentifier,
+              removedMembers,
             };
           } else if (addedMemberIds.length > 0 && removedMemberIds.length > 0) {
             // Both additions and removals
@@ -434,6 +455,8 @@ export class ActivityParserService {
               type: 'group',
               severity: 'info',
               groupIdentifier,
+              addedMembers: addedMembers.length ? addedMembers : undefined,
+              removedMembers: removedMembers.length ? removedMembers : undefined,
             };
           } else {
             // Couldn't extract member info, show generic message

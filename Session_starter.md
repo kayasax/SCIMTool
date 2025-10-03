@@ -5,7 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
-| 2025-10-03 | v0.8.2 released: direct update script + in‑app copy command metadata (RG/App). Activity feed + blob backup working; upgrade command not yet user‑validated. |
+| 2025-10-03 | v0.8.3 released: structured membership change data (addedMembers/removedMembers) & UI rendering; case-insensitive PATCH ops. |
 | 2025-10-02 | Unified image build (root Dockerfile ships API + Web) |
 | 2025-10-02 | Token resilience: frontend clears bearer on 401 + modal guidance |
 | 2025-10-01 | Runtime token enforcement (no build-time secrets) |
@@ -16,12 +16,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.2 (direct update script + in-app copy command metadata; activity feed & backup confirmed)
+Current Version: v0.8.3 (structured membership arrays + previous improvements)
 
 ---
 
 ## Status
-Production Ready (v0.8.2) – Blob snapshots + direct update flow (no discovery) + reliability & observability (activity feed validated).
+Production Ready (v0.8.3) – Adds structured membership change data to feed; plus blob snapshots + direct update flow + observability.
 
 ## Quick Commands
 ```powershell
@@ -29,7 +29,7 @@ Production Ready (v0.8.2) – Blob snapshots + direct update flow (no discovery)
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.2 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.3 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```

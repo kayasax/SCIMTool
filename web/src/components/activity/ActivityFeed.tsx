@@ -12,6 +12,8 @@ interface ActivitySummary {
   severity: 'info' | 'success' | 'warning' | 'error';
   userIdentifier?: string;
   groupIdentifier?: string;
+  addedMembers?: { id: string; name: string }[];
+  removedMembers?: { id: string; name: string }[];
 }
 
 interface ActivityFeedProps {
@@ -484,6 +486,22 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
                     {activity.details && (
                       <div className={styles.activityDetails}>
                         {activity.details}
+                        {(activity.addedMembers?.length || activity.removedMembers?.length) && (
+                          <div className={styles.memberChanges}>
+                            {activity.addedMembers?.length ? (
+                              <div className={styles.memberSection}>
+                                <strong>Added:</strong>{' '}
+                                {activity.addedMembers.map(m => m.name || m.id).join(', ')}
+                              </div>
+                            ) : null}
+                            {activity.removedMembers?.length ? (
+                              <div className={styles.memberSection}>
+                                <strong>Removed:</strong>{' '}
+                                {activity.removedMembers.map(m => m.name || m.id).join(', ')}
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
