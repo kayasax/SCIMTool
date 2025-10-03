@@ -1,4 +1,5 @@
 ﻿# SCIMTool Container App Update Function
+# NOTE: Saved as UTF-8 WITHOUT BOM. If remote fetch shows a leading invisible char, strip with -replace "^[\uFEFF]","".
 # (BOM stripped; ensure saved UTF-8 no BOM) 
 # Usage: iex ((irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1') -replace "^[\uFEFF]","")
 
