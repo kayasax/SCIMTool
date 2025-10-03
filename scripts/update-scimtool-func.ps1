@@ -1,6 +1,6 @@
 ﻿# SCIMTool Container App Update Function
-# This script is designed to be downloaded and executed remotely
-# Usage: iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1')
+# (BOM stripped; ensure saved UTF-8 no BOM) 
+# Usage: iex ((irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1') -replace "^[\uFEFF]","")
 
 function Update-SCIMTool {
     param(
@@ -41,6 +41,17 @@ function Update-SCIMTool {
         return
     }
 
+    # Ensure containerapp extension is installed (quietly)
+    try {
+        $ext = az extension show --name containerapp --query name -o tsv 2>$null
+        if (-not $ext) {
+            Write-Log "Installing containerapp CLI extension" 'INFO' Cyan
+            az extension add --name containerapp -y --only-show-errors 2>$null | Out-Null
+        }
+    } catch {
+        Write-Log "Unable to verify/install containerapp extension (continuing)" 'WARN' Yellow
+    }
+
     if (-not $NoPrompt) {
         Write-Log "Subscription: $($account.name) ($($account.id))" 'SUB' Cyan
         $ChangeSubscription = Read-Host -Prompt "Change subscription? (y/N)"
@@ -57,8 +68,15 @@ function Update-SCIMTool {
 
     if (-not $ResourceGroup -or -not $AppName) {
         Write-Log "Discovering SCIMTool container apps" 'INFO' Cyan
-        $containerApps = az containerapp list --query "[?contains(name,'scim')].{name:name,rg:resourceGroup}" -o json | ConvertFrom-Json
-        if (-not $containerApps -or $containerApps.Count -eq 0) { Write-Log "No apps found. Specify -ResourceGroup and -AppName." 'ERROR' Red; return }
+        $rawList = az containerapp list --query "[?contains(name,'scim')].{name:name,rg:resourceGroup}" -o json 2>$null
+        $containerApps = $null
+        if ($LASTEXITCODE -eq 0 -and $rawList) {
+            try { $containerApps = $rawList | ConvertFrom-Json } catch { Write-Log "List parse failed (non-JSON output)." 'WARN' Yellow }
+        }
+        if (-not $containerApps -or $containerApps.Count -eq 0) {
+            Write-Log "No container apps auto-discovered. Provide -ResourceGroup and -AppName explicitly." 'ERROR' Red
+            return
+        }
         if ($containerApps.Count -eq 1) {
             $ResourceGroup = $containerApps[0].rg; $AppName = $containerApps[0].name
             Write-Log "Using $AppName ($ResourceGroup)" 'OK' Green
