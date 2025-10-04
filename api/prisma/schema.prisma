@@ -13,8 +13,8 @@ datasource db {
 model ScimUser {
   id          String   @id @default(cuid())
   scimId      String   @unique
-  externalId  String?
-  userName    String
+  externalId  String?  @unique
+  userName    String   @unique
   active      Boolean  @default(true)
   rawPayload  String
   meta        String?

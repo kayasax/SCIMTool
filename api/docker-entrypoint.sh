@@ -10,6 +10,9 @@ set -e
 AZURE_FILES_BACKUP="/app/data/scim.db"
 LOCAL_DIR="/tmp/local-data"
 LOCAL_DB="$LOCAL_DIR/scim.db"
+BLOB_BACKUP_ACCOUNT="${BLOB_BACKUP_ACCOUNT:-}"
+
+export LOCAL_DB_PATH="$LOCAL_DB"
 
 mkdir -p "$LOCAL_DIR"
 
@@ -38,6 +41,20 @@ if [ -f "$AZURE_FILES_BACKUP" ]; then
 else
     echo "⚠ No backup found on Azure Files"
     echo "→ Starting with fresh database on local storage"
+fi
+
+if [ ! -f "$LOCAL_DB" ] && [ -n "$BLOB_BACKUP_ACCOUNT" ]; then
+    echo ""
+    echo "Attempting blob snapshot restore before migrations..."
+    if node dist/bootstrap/blob-restore.js; then
+        if [ -f "$LOCAL_DB" ]; then
+            echo "✓ Blob snapshot restore completed"
+        else
+            echo "⚠ Blob restore script finished but database file still missing"
+        fi
+    else
+        echo "⚠ Blob restore script reported an error; continuing without snapshot"
+    fi
 fi
 
 echo ""

@@ -1,6 +1,6 @@
 {
   "name": "scimtool-api",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "SCIMTool backend service providing SCIM 2.0 endpoints and logging for troubleshooting.",
   "license": "MIT",
   "main": "dist/main.js",
@@ -17,8 +17,8 @@
     "prisma:migrate": "prisma migrate dev --name init"
   },
   "dependencies": {
-  "@azure/storage-blob": "^12.18.0",
-  "@azure/identity": "^4.0.0",
+    "@azure/storage-blob": "^12.18.0",
+    "@azure/identity": "^4.0.0",
     "@nestjs/common": "10.3.8",
     "@nestjs/config": "3.2.1",
     "@nestjs/core": "10.3.8",
