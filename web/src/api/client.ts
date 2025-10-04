@@ -90,11 +90,22 @@ export async function fetchLog(id: string): Promise<RequestLogItem> {
 }
 
 // Versioning
+export interface DeploymentInfo {
+  resourceGroup?: string;
+  containerApp?: string;
+  registry?: string;
+  currentImage?: string;
+  backupMode?: 'blob' | 'azureFiles' | 'none';
+  blobAccount?: string;
+  blobContainer?: string;
+}
+
 export interface VersionInfo {
   version: string;
   commit?: string;
   buildTime?: string;
   runtime: { node: string; platform: string };
+  deployment?: DeploymentInfo;
 }
 
 export async function fetchLocalVersion(): Promise<VersionInfo> {

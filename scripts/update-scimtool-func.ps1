@@ -225,33 +225,67 @@ Some other warning line
         }
     }
 
-    Write-Log "RG=$ResourceGroup App=$AppName NewImage=$imageRef" 'INFO' Cyan
-
     $appDetails = $null
     if ($SelfTest) {
         $appDetails = [pscustomobject]@{ properties = @{ template = @{ volumes = @() } } }
     } else {
         $appDetails = az containerapp show -n $AppName -g $ResourceGroup -o json | ConvertFrom-Json
     }
-    $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
-    if ($hasVolumes) {
-        Write-Log "Persistent storage detected" 'OK' Green
-    } else {
-        Write-Log "No persistent storage (data ephemeral)" 'WARN' Yellow
+    $hasVolumes = $false
+    $primaryContainer = $null
+    if ($appDetails -and $appDetails.properties -and $appDetails.properties.template) {
+        $hasVolumes = $appDetails.properties.template.volumes -and $appDetails.properties.template.volumes.Count -gt 0
+        if ($appDetails.properties.template.containers -and $appDetails.properties.template.containers.Count -gt 0) {
+            $primaryContainer = $appDetails.properties.template.containers[0]
+        }
+    }
+
+    $envMap = @{}
+    if ($primaryContainer -and $primaryContainer.env) {
+        foreach ($envEntry in $primaryContainer.env) {
+            $name = $envEntry.name
+            if (-not $name) { continue }
+            $value = $envEntry.value
+            if (-not $value -and $envEntry.secretRef) { $value = "(secret:$($envEntry.secretRef))" }
+            $envMap[$name] = $value
+        }
+    }
+
+    $blobAccount = $envMap['BLOB_BACKUP_ACCOUNT']
+    $blobContainer = $envMap['BLOB_BACKUP_CONTAINER']
+    $scimRgEnv = $envMap['SCIM_RG']
+    $scimAppEnv = $envMap['SCIM_APP']
+
+    if (-not $ResourceGroup -and $scimRgEnv) { $ResourceGroup = $scimRgEnv }
+    if (-not $AppName -and $scimAppEnv) { $AppName = $scimAppEnv }
+
+    $backupMode = if ($hasVolumes) { 'azureFiles' } elseif ($blobAccount) { 'blob' } else { 'none' }
+
+    Write-Log "RG=$ResourceGroup App=$AppName NewImage=$imageRef" 'INFO' Cyan
+
+    switch ($backupMode) {
+        'azureFiles' { Write-Log 'Persistent storage detected (Azure Files volume)' 'OK' Green }
+        'blob' {
+            $blobSummary = if ($blobContainer) { "account: $blobAccount / container: $blobContainer" } else { "account: $blobAccount" }
+            Write-Log "Blob snapshot backups detected ($blobSummary)" 'OK' Green
+        }
+        default { Write-Log 'No persistent storage (data ephemeral)' 'WARN' Yellow }
     }
 
     $updateCommand = "az containerapp update -n '$AppName' -g '$ResourceGroup' --image '$imageRef'"
     if (-not $Quiet) { Write-Host $updateCommand -ForegroundColor Yellow }
 
-    if (-not $hasVolumes) {
-        Write-Log "DATA WARNING: Existing data will be lost (no volume)" 'WARN' Yellow
+    if ($backupMode -eq 'none') {
+        Write-Log "DATA WARNING: Existing data will be lost (no volume/snapshot)" 'WARN' Yellow
         if (-not $Quiet) { Write-Host "Add storage: scripts/add-persistent-storage.ps1" -ForegroundColor Gray }
+    } elseif ($backupMode -eq 'blob' -and -not $Quiet) {
+        Write-Host "Blob snapshot mode active – ensure retention meets your requirements." -ForegroundColor Gray
     }
 
     if ($DryRun -or $SelfTest) { Write-Log "DryRun/SelfTest: exiting before execution" 'INFO' Cyan; return }
 
     if (-not $NoPrompt) {
-        if (-not $hasVolumes) {
+        if ($backupMode -eq 'none') {
             $confirm = Read-Host "Proceed (data loss) [y/N]"
             if ($confirm -notmatch '^[Yy]$') { Write-Log "Cancelled" 'CANCEL' Yellow; return }
         } else {

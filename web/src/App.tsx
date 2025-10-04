@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchLogs, clearLogs, fetchLog, RequestLogItem, LogQuery, LogListResponse, fetchLocalVersion, VersionInfo } from './api/client';
+import { fetchLogs, clearLogs, fetchLog, RequestLogItem, LogQuery, LogListResponse, fetchLocalVersion, VersionInfo, DeploymentInfo } from './api/client';
 import { TOKEN_INVALID_EVENT } from './auth/token';
 import { LogList } from './components/LogList';
 import { LogDetail } from './components/LogDetail';
@@ -12,9 +12,22 @@ import { useAuth, AuthProvider } from './hooks/useAuth';
 import './theme.css';
 import styles from './app.module.css';
 
-const updateScriptUrl =
-  import.meta.env.VITE_UPDATE_SCRIPT_URL ??
-  'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool.ps1';
+const envDefaultRegistry = (() => {
+  if (import.meta.env.VITE_AZURE_REGISTRY) {
+    return import.meta.env.VITE_AZURE_REGISTRY as string;
+  }
+  const rawImage = import.meta.env.VITE_AZURE_IMAGE as string | undefined;
+  if (!rawImage) return undefined;
+  const withoutTag = rawImage.split(':')[0];
+  const segments = withoutTag.split('/');
+  return segments.length > 1 ? segments.slice(0, -1).join('/') : undefined;
+})();
+
+const ENV_DEPLOYMENT_DEFAULTS: DeploymentInfo = {
+  resourceGroup: import.meta.env.VITE_AZURE_RESOURCE_GROUP,
+  containerApp: import.meta.env.VITE_AZURE_CONTAINER_APP,
+  registry: envDefaultRegistry
+};
 
 type AppView = 'logs' | 'database' | 'activity';
 
@@ -40,9 +53,7 @@ const AppContent: React.FC = () => {
   const [tokenMessage, setTokenMessage] = useState<string | null>(null);
   const [needsToken, setNeedsToken] = useState(() => !token);
 
-  const azResourceGroup = import.meta.env.VITE_AZURE_RESOURCE_GROUP; // optional
-  const azContainerApp = import.meta.env.VITE_AZURE_CONTAINER_APP;
-  const azImage = import.meta.env.VITE_AZURE_IMAGE; // e.g. myacr.azurecr.io/scimtool
+  const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   // Hard-coded upstream GitHub repository for release discovery
   const githubRepo = 'kayasax/SCIMTool';
 
@@ -73,21 +84,76 @@ const AppContent: React.FC = () => {
     return semverNewer(remoteNorm, localNorm);
   }, [localVersion, latestTag]);
 
+  const effectiveDeployment = useMemo<DeploymentInfo>(() => {
+    if (!deploymentInfo) {
+      return { ...ENV_DEPLOYMENT_DEFAULTS };
+    }
+    return {
+      resourceGroup: deploymentInfo.resourceGroup ?? ENV_DEPLOYMENT_DEFAULTS.resourceGroup,
+      containerApp: deploymentInfo.containerApp ?? ENV_DEPLOYMENT_DEFAULTS.containerApp,
+      registry: deploymentInfo.registry ?? ENV_DEPLOYMENT_DEFAULTS.registry,
+      currentImage: deploymentInfo.currentImage,
+      backupMode: deploymentInfo.backupMode,
+      blobAccount: deploymentInfo.blobAccount,
+      blobContainer: deploymentInfo.blobContainer
+    };
+  }, [deploymentInfo]);
+
   const upgradeCommand = useMemo(() => {
     if (!(upgradeAvailable && latestTag)) return '';
 
-    // Prefer direct script if we have explicit metadata (no discovery path)
     const directUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1';
     const funcUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1';
     const cleanTag = latestTag.startsWith('v') ? latestTag : `v${latestTag}`;
 
-    if (azResourceGroup && azContainerApp) {
-      // Direct invocation with required params (NoPrompt, ShowCurrent for convenience)
-      return `iex (irm '${directUrl}'); Update-SCIMToolDirect -Version ${cleanTag} -ResourceGroup ${azResourceGroup} -AppName ${azContainerApp} -NoPrompt -ShowCurrent`;
+    const resourceGroup = effectiveDeployment.resourceGroup;
+    const containerApp = effectiveDeployment.containerApp;
+
+    if (resourceGroup && containerApp) {
+      const psQuote = (value: string) => `'${value.replace(/'/g, "''")}'`;
+      const deriveRegistry = (): string | undefined => {
+        if (effectiveDeployment.registry) {
+          const registryValue = effectiveDeployment.registry;
+          if (registryValue.includes('/')) return registryValue;
+          if (registryValue === 'ghcr.io') {
+            // Derive repository namespace from current image when available
+            if (effectiveDeployment.currentImage) {
+              const withoutTag = effectiveDeployment.currentImage.split(':')[0];
+              const segments = withoutTag.split('/');
+              if (segments.length > 1) {
+                return segments.slice(0, -1).join('/');
+              }
+            }
+            return 'ghcr.io/kayasax';
+          }
+          return registryValue;
+        }
+        if (effectiveDeployment.currentImage) {
+          const withoutTag = effectiveDeployment.currentImage.split(':')[0];
+          const segments = withoutTag.split('/');
+          if (segments.length > 1) {
+            return segments.slice(0, -1).join('/');
+          }
+        }
+        return undefined;
+      };
+
+      const registry = deriveRegistry();
+      const args = [
+        `-Version ${psQuote(cleanTag)}`,
+        `-ResourceGroup ${psQuote(resourceGroup)}`,
+        `-AppName ${psQuote(containerApp)}`,
+        '-NoPrompt',
+        '-ShowCurrent'
+      ];
+      if (registry) {
+        args.push(`-Registry ${psQuote(registry)}`);
+      }
+      return `iex (irm '${directUrl}'); Update-SCIMToolDirect ${args.join(' ')}`;
     }
-    // Fallback: function script with discovery (legacy)
+
     return `iex (irm '${funcUrl}'); Update-SCIMTool -Version ${cleanTag}`;
-  }, [upgradeAvailable, latestTag, azResourceGroup, azContainerApp]);
+  }, [effectiveDeployment, latestTag, upgradeAvailable]);
 
   useEffect(() => {
     if (showTokenModal) {
@@ -195,8 +261,11 @@ const AppContent: React.FC = () => {
     }
     (async () => {
       try {
-        setLocalVersion(await fetchLocalVersion());
+        const info = await fetchLocalVersion();
+        setLocalVersion(info);
+        setDeploymentInfo(info.deployment ?? null);
       } catch (err: any) {
+        setDeploymentInfo(null);
         const message = err?.message ?? '';
         if (typeof message === 'string' && message.includes('401')) {
           setNeedsToken(true);

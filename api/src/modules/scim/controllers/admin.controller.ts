@@ -10,6 +10,15 @@ interface VersionInfo {
     node: string;
     platform: string;
   };
+  deployment?: {
+    resourceGroup?: string;
+    containerApp?: string;
+    registry?: string;
+    currentImage?: string;
+    backupMode?: 'blob' | 'azureFiles' | 'none';
+    blobAccount?: string;
+    blobContainer?: string;
+  };
 }
 
 @Controller('admin')
@@ -62,6 +71,10 @@ export class AdminController {
     const version = process.env.APP_VERSION || this.readPackageVersion();
     const commit = process.env.GIT_COMMIT;
     const buildTime = process.env.BUILD_TIME;
+    const blobAccount = process.env.BLOB_BACKUP_ACCOUNT;
+    const blobContainer = process.env.BLOB_BACKUP_CONTAINER;
+    const backupMode: 'blob' | 'azureFiles' | 'none' = blobAccount ? 'blob' : 'none';
+
     return {
       version,
       commit,
@@ -69,6 +82,15 @@ export class AdminController {
       runtime: {
         node: process.version,
         platform: `${process.platform}-${process.arch}`
+      },
+      deployment: {
+        resourceGroup: process.env.SCIM_RG,
+        containerApp: process.env.SCIM_APP,
+        registry: process.env.SCIM_REGISTRY,
+        currentImage: process.env.SCIM_CURRENT_IMAGE,
+        backupMode,
+        blobAccount,
+        blobContainer
       }
     };
   }
