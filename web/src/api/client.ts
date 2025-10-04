@@ -167,3 +167,92 @@ export async function fetchBackupStats(): Promise<BackupStats> {
   if (!res.ok) throw new Error(`Failed to fetch backup stats: ${res.status}`);
   return res.json();
 }
+
+export interface ScimUserResource {
+  id: string;
+  userName: string;
+  externalId?: string | null;
+  active?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ScimGroupResource {
+  id: string;
+  displayName: string;
+  members?: Array<{
+    value: string;
+    display?: string;
+    type?: string;
+  }>;
+  [key: string]: unknown;
+}
+
+export interface ManualUserRequest {
+  userName: string;
+  externalId?: string;
+  active?: boolean;
+  displayName?: string;
+  givenName?: string;
+  familyName?: string;
+  email?: string;
+  phoneNumber?: string;
+  department?: string;
+}
+
+export interface ManualGroupRequest {
+  displayName: string;
+  scimId?: string;
+  memberIds?: string[];
+}
+
+async function extractError(res: Response, fallback: string): Promise<never> {
+  let message = fallback;
+  try {
+    const text = await res.text();
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        if (typeof parsed?.detail === 'string') {
+          message = parsed.detail;
+        } else if (typeof parsed?.message === 'string') {
+          message = parsed.message;
+        } else {
+          message = text;
+        }
+      } catch {
+        message = text;
+      }
+    }
+  } catch {
+    // ignore secondary parsing errors
+  }
+  throw new Error(message);
+}
+
+export async function createManualUser(payload: ManualUserRequest): Promise<ScimUserResource> {
+  const res = await fetchWithAuth(buildUrl('/scim/admin/users/manual'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    await extractError(res, `Failed to create user (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function createManualGroup(payload: ManualGroupRequest): Promise<ScimGroupResource> {
+  const res = await fetchWithAuth(buildUrl('/scim/admin/groups/manual'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    await extractError(res, `Failed to create group (${res.status})`);
+  }
+
+  return res.json();
+}
