@@ -103,6 +103,7 @@ New-Item -ItemType Directory -Path $infraDir -Force   | Out-Null
 $rawBase = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master'
 $files = @(
     @{ url = "$rawBase/scripts/deploy-azure.ps1"; path = Join-Path $scriptsDir 'deploy-azure.ps1' },
+	@{ url = "$rawBase/infra/networking.bicep"; path = Join-Path $infraDir   'networking.bicep' },
     @{ url = "$rawBase/infra/blob-storage.bicep"; path = Join-Path $infraDir   'blob-storage.bicep' },
     @{ url = "$rawBase/infra/containerapp-env.bicep"; path = Join-Path $infraDir 'containerapp-env.bicep' },
     @{ url = "$rawBase/infra/containerapp.bicep";  path = Join-Path $infraDir   'containerapp.bicep' }
