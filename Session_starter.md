@@ -34,12 +34,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.6 (blob restore bootstrap + SCIM duplicate enforcement groundwork)
+Current Version: v0.8.7 (manual provisioning console + SCIM duplicate enforcement groundwork)
 
 ---
 
 ## Status
-Production Ready (v0.8.6) – Adds structured membership change data to feed, blob restore bootstrap, and duplicate guardrails groundwork.
+Production Ready (v0.8.7) – Adds structured membership change data to feed, blob restore bootstrap, duplicate guardrails groundwork, and manual provisioning console.
 
 ## Quick Commands
 ```powershell
@@ -47,7 +47,7 @@ Production Ready (v0.8.6) – Adds structured membership change data to feed, bl
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.6 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.7 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
