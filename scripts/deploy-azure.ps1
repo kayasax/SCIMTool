@@ -177,35 +177,123 @@ Write-Host ""
 # Step 2: Private network + DNS linkage for Container Apps
 Write-Host "🌐 Step 2/6: Network & Private DNS" -ForegroundColor Cyan
 
+function Ensure-VnetSubnetId {
+    param(
+        [string]$ResourceGroupName,
+        [string]$VirtualNetworkName,
+        [string]$SubnetName,
+        [string]$AddressPrefix,
+        [bool]$DisablePrivateEndpointPolicies = $true,
+        [bool]$DisablePrivateLinkServicePolicies = $true
+    )
+
+    $subnetJson = az network vnet subnet show `
+        --resource-group $ResourceGroupName `
+        --vnet-name $VirtualNetworkName `
+        --name $SubnetName `
+        --output json 2>$null
+
+    if ($LASTEXITCODE -eq 0 -and $subnetJson) {
+        $subnet = $subnetJson | ConvertFrom-Json
+        return $subnet.id
+    }
+
+    Write-Host "   ➕ Creating subnet '$SubnetName' on existing VNet..." -ForegroundColor Yellow
+    $args = @(
+        'network','vnet','subnet','create',
+        '--resource-group',$ResourceGroupName,
+        '--vnet-name',$VirtualNetworkName,
+        '--name',$SubnetName,
+        '--address-prefixes',$AddressPrefix,
+        '--output','json'
+    )
+    if ($DisablePrivateEndpointPolicies) {
+        $args += @('--disable-private-endpoint-network-policies','true')
+    }
+    if ($DisablePrivateLinkServicePolicies) {
+        $args += @('--disable-private-link-service-network-policies','true')
+    }
+
+    $createJson = az @args 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $createJson) {
+        Write-Host "   ❌ Failed to create subnet $SubnetName" -ForegroundColor Red
+        return $null
+    }
+
+    $createdSubnet = $createJson | ConvertFrom-Json
+    return $createdSubnet.id
+}
+
 $expectedInfraSubnetName = 'aca-infra'
 $expectedPeSubnetName = 'private-endpoints'
 $expectedDnsZoneName = 'privatelink.blob.core.windows.net'
 $dnsLinkName = "$vnetName-link"
+$infraPrefix = '10.40.0.0/21'
+$runtimeSubnetName = 'aca-runtime'
+$runtimePrefix = '10.40.8.0/21'
+$privateEndpointPrefix = '10.40.16.0/24'
 
 $existingVnetJson = az network vnet show --resource-group $ResourceGroup --name $vnetName --output json 2>$null
 $networkHealthy = $false
+$infrastructureSubnetId = $null
+$privateEndpointSubnetId = $null
+$workloadSubnetId = $null
+$privateDnsZoneName = $expectedDnsZoneName
 
 if ($LASTEXITCODE -eq 0 -and $existingVnetJson) {
     $existingVnet = $existingVnetJson | ConvertFrom-Json
-    $infraSubnet = $existingVnet.subnets | Where-Object { $_.name -eq $expectedInfraSubnetName }
-    $peSubnet = $existingVnet.subnets | Where-Object { $_.name -eq $expectedPeSubnetName }
+    Write-Host "   🔁 Reusing existing virtual network '$vnetName'" -ForegroundColor Green
 
-    if ($infraSubnet -and $peSubnet) {
-        $privateDnsZoneJson = az network private-dns zone show --resource-group $ResourceGroup --name $expectedDnsZoneName --output json 2>$null
-        if ($LASTEXITCODE -eq 0 -and $privateDnsZoneJson) {
-            $dnsLinkJson = az network private-dns link vnet show --resource-group $ResourceGroup --zone-name $expectedDnsZoneName --name $dnsLinkName --output json 2>$null
-            if ($LASTEXITCODE -eq 0 -and $dnsLinkJson) {
-                $networkHealthy = $true
-                $infrastructureSubnetId = $infraSubnet.id
-                $privateEndpointSubnetId = $peSubnet.id
-                $privateDnsZoneName = $expectedDnsZoneName
-                Write-Host "   ✅ Network already configured" -ForegroundColor Green
-                Write-Host "      Infrastructure subnet: $infrastructureSubnetId" -ForegroundColor Gray
-                Write-Host "      Private endpoint subnet: $privateEndpointSubnetId" -ForegroundColor Gray
-                Write-Host "      Private DNS link: $dnsLinkName" -ForegroundColor Gray
-            }
+    $infrastructureSubnetId = Ensure-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $expectedInfraSubnetName -AddressPrefix $infraPrefix
+    $workloadSubnetId = Ensure-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $runtimeSubnetName -AddressPrefix $runtimePrefix
+    $privateEndpointSubnetId = Ensure-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $expectedPeSubnetName -AddressPrefix $privateEndpointPrefix
+
+    if (-not $infrastructureSubnetId -or -not $privateEndpointSubnetId) {
+        Write-Host "   ❌ Unable to ensure required subnets exist" -ForegroundColor Red
+        return
+    }
+
+    $privateDnsZoneJson = az network private-dns zone show --resource-group $ResourceGroup --name $expectedDnsZoneName --output json 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $privateDnsZoneJson) {
+        Write-Host "   ➕ Creating private DNS zone '$expectedDnsZoneName'" -ForegroundColor Yellow
+        $privateDnsZoneJson = az network private-dns zone create `
+            --resource-group $ResourceGroup `
+            --name $expectedDnsZoneName `
+            --output json 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $privateDnsZoneJson) {
+            Write-Host "   ❌ Failed to create private DNS zone" -ForegroundColor Red
+            return
         }
     }
+
+    $privateDnsZone = $privateDnsZoneJson | ConvertFrom-Json
+    $privateDnsZoneName = $privateDnsZone.name
+
+    $dnsLinkJson = az network private-dns link vnet show --resource-group $ResourceGroup --zone-name $privateDnsZoneName --name $dnsLinkName --output json 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $dnsLinkJson) {
+        Write-Host "   🔗 Creating DNS link '$dnsLinkName'" -ForegroundColor Yellow
+        $dnsLinkJson = az network private-dns link vnet create `
+            --resource-group $ResourceGroup `
+            --zone-name $privateDnsZoneName `
+            --name $dnsLinkName `
+            --virtual-network $existingVnet.id `
+            --registration-enabled false `
+            --output json 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $dnsLinkJson) {
+            Write-Host "   ❌ Failed to create DNS link" -ForegroundColor Red
+            return
+        }
+    }
+
+    Write-Host "      Infrastructure subnet: $infrastructureSubnetId" -ForegroundColor Gray
+    if ($workloadSubnetId) {
+        Write-Host "      Runtime subnet: $workloadSubnetId" -ForegroundColor Gray
+    } else {
+        Write-Host "      Runtime subnet: (not configured)" -ForegroundColor Gray
+    }
+    Write-Host "      Private endpoint subnet: $privateEndpointSubnetId" -ForegroundColor Gray
+    Write-Host "      Private DNS zone: $privateDnsZoneName" -ForegroundColor Gray
+    $networkHealthy = $true
 }
 
 if (-not $networkHealthy) {
