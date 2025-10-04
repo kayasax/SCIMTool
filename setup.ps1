@@ -110,10 +110,12 @@ if ($interactive) {
 	$ResourceGroup = Get-DefaultValue 'Resource Group' $ResourceGroup
 	$existingAppCandidates = Get-ExistingAppCandidates -ResourceGroupName $ResourceGroup
 	if ($existingAppCandidates.Count -gt 0) {
-		Write-Host "Existing Container App resources in '$ResourceGroup':" -ForegroundColor Gray
+		Write-Host "Existing Container Apps detected in '$ResourceGroup':" -ForegroundColor Gray
 		$existingAppCandidates | ForEach-Object { Write-Host "  • $_" -ForegroundColor Gray }
-		# Prefer the first candidate as the default for reuse
-		$AppName = $existingAppCandidates[0]
+		# Prefer the single candidate as the default for reuse when applicable
+		if ($existingAppCandidates.Count -eq 1 -or $AppName -like 'scimtool-app-*') {
+			$AppName = $existingAppCandidates[0]
+		}
 	}
 	$AppName       = Get-DefaultValue 'App Name'       $AppName
 	$Location      = Get-DefaultValue 'Location'       $Location
