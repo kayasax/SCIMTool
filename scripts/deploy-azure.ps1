@@ -54,9 +54,44 @@ if (-not $ResourceGroup) {
     if (-not $ResourceGroup) { Write-Host "Resource Group is required." -ForegroundColor Red; return }
 }
 
+function Get-ExistingContainerApps {
+    param([string]$RgName)
+
+    if (-not $RgName) { return @() }
+    $appsJson = az containerapp list --resource-group $RgName --query "[].name" --output json 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $appsJson) { return @() }
+    try {
+        return $appsJson | ConvertFrom-Json
+    } catch { return @() }
+}
+
 if (-not $AppName) {
-    $AppName = Read-Host "Enter Container App name"
-    if (-not $AppName) { Write-Host "App Name is required." -ForegroundColor Red; return }
+    $existingApps = Get-ExistingContainerApps -RgName $ResourceGroup
+    $defaultAppName = $null
+
+    if ($existingApps.Count -gt 0) {
+        Write-Host "Existing container apps in '$ResourceGroup':" -ForegroundColor Gray
+        $existingApps | ForEach-Object { Write-Host "   • $_" -ForegroundColor Gray }
+        if ($existingApps.Count -eq 1) {
+            $defaultAppName = $existingApps[0]
+        }
+    }
+
+    $prompt = "Enter Container App name"
+    if ($defaultAppName) { $prompt += " [$defaultAppName]" }
+
+    $inputName = Read-Host $prompt
+    if ([string]::IsNullOrWhiteSpace($inputName)) {
+        if ($defaultAppName) {
+            $AppName = $defaultAppName
+            Write-Host "Using existing container app '$AppName'" -ForegroundColor Yellow
+        } else {
+            Write-Host "App Name is required." -ForegroundColor Red
+            return
+        }
+    } else {
+        $AppName = $inputName
+    }
 }
 
 if (-not $ScimSecret) {
@@ -396,9 +431,10 @@ if (-not $skipEnvDeployment) {
     }
 
     # Poll environment deployment
-    $maxWaitSeconds = 300
+    $maxWaitSeconds = 900
     $elapsed = 0
     $checkInterval = 10
+    $deploymentSucceeded = $false
 
     while ($elapsed -lt $maxWaitSeconds) {
         Start-Sleep -Seconds $checkInterval
@@ -412,6 +448,7 @@ if (-not $skipEnvDeployment) {
 
         if ($status -eq "Succeeded") {
             Write-Host "   ✅ Environment deployed successfully" -ForegroundColor Green
+            $deploymentSucceeded = $true
             break
         } elseif ($status -eq "Failed") {
             Write-Host "   ❌ Environment deployment failed" -ForegroundColor Red
@@ -427,10 +464,29 @@ if (-not $skipEnvDeployment) {
         }
     }
 
-    if ($elapsed -ge $maxWaitSeconds) {
-    Write-Host "   ⚠️  Environment deployment timeout" -ForegroundColor Yellow
-    Write-Host "   Check Azure Portal for status: $ResourceGroup" -ForegroundColor Yellow
-    return
+    if (-not $deploymentSucceeded) {
+        Write-Host "   ⚠️  Environment deployment timeout" -ForegroundColor Yellow
+        Write-Host "   Check Azure Portal for status: $ResourceGroup" -ForegroundColor Yellow
+        return
+    }
+
+    # Deployment succeeded, but managed environment may still provision in background.
+    $envProvisionState = az containerapp env show --name $envName --resource-group $ResourceGroup --query "properties.provisioningState" -o tsv 2>$null
+    $envWaitSeconds = 0
+    $envMaxWaitSeconds = 600
+
+    while ($envProvisionState -in @('Waiting', 'Provisioning', 'InProgress', 'Updating', '')) {
+        Write-Host "   ⏳ Environment status: $envProvisionState (waiting for completion)..." -ForegroundColor Gray
+        Start-Sleep -Seconds $checkInterval
+        $envWaitSeconds += $checkInterval
+        if ($envWaitSeconds -ge $envMaxWaitSeconds) { break }
+        $envProvisionState = az containerapp env show --name $envName --resource-group $ResourceGroup --query "properties.provisioningState" -o tsv 2>$null
+    }
+
+    if ($envProvisionState -eq 'Succeeded') {
+        Write-Host "   ✅ Managed environment is fully ready" -ForegroundColor Green
+    } else {
+        Write-Host "   ⚠️  Managed environment provisioning still '$envProvisionState'. Monitor in Azure Portal." -ForegroundColor Yellow
     }
 }
 Write-Host ""
