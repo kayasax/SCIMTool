@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.37.4.10188",
-      "templateHash": "10018629953584571266"
+      "version": "0.38.5.1644",
+      "templateHash": "16809912868929996028"
     }
   },
   "parameters": {
@@ -94,12 +94,23 @@
       }
     },
     {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
-      "name": "[format('{0}/default/{1}', parameters('storageAccountName'), parameters('containerName'))]",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerName'))]",
       "properties": {
         "publicAccess": "None"
-      }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+      ]
     },
     {
       "type": "Microsoft.Network/privateEndpoints",

@@ -48,8 +48,14 @@ resource account 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
 }
 
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
+  name: 'default'
+  parent: account
+}
+
 resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
-  name: '${storageAccountName}/default/${containerName}'
+  name: containerName
+  parent: blobService
   properties: {
     publicAccess: 'None'
   }
