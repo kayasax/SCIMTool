@@ -5,6 +5,8 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-05 | Blob snapshot bootstrap added to Docker entrypoint (restores /tmp DB before migrations) |
+| 2025-10-05 | Initiated SCIM duplicate handling refinement: schema uniqueness enforced & service helpers in progress |
 | 2025-10-05 | Private storage endpoint rollout: VNet + DNS automation baked into deploy-azure.ps1 |
 | 2025-10-05 | Deploy script now reuses existing ACA virtual network & DNS when already configured |
 | 2025-10-05 | Setup auto-registers Microsoft.App & Microsoft.ContainerService providers before deployment |
@@ -14,6 +16,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-05 | Bootstrap setup script auto-detects existing app/env names per resource group |
 | 2025-10-05 | Resource discovery now uses az resource list to avoid extension noise and ensure reuse |
 | 2025-10-05 | Web footer fallback version synced with package.json (0.8.3) |
+| 2025-10-05 | Version bumped to v0.8.6 (blob restore bootstrap + duplicate guardrails prep) |
 | 2025-10-05 | Version bumped to v0.8.5 across API + Web + docs |
 | 2025-10-05 | Version bumped to v0.8.4 across web assets |
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
@@ -30,12 +33,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.5 (blob snapshot dependency fix + structured membership arrays)
+Current Version: v0.8.6 (blob restore bootstrap + SCIM duplicate enforcement groundwork)
 
 ---
 
 ## Status
-Production Ready (v0.8.5) – Adds structured membership change data to feed; plus blob snapshots + direct update flow + observability.
+Production Ready (v0.8.6) – Adds structured membership change data to feed, blob restore bootstrap, and duplicate guardrails groundwork.
 
 ## Quick Commands
 ```powershell
@@ -43,7 +46,7 @@ Production Ready (v0.8.5) – Adds structured membership change data to feed; pl
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.5 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.6 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
@@ -78,7 +81,7 @@ AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when neede
 ---
 
 ## Current Focus
-Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; prepare rollback helper & CI guardrails. Rollout private network baseline (ensure customers recreate Container Apps environment for VNet support).
+Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; prepare rollback helper & CI guardrails. Rollout private network baseline (ensure customers recreate Container Apps environment for VNet support). Finish SCIM duplicate detection flow (uniqueness guardrails + regression coverage).
 
 ## Next Steps / Backlog
 - [ ] Validate copied direct upgrade command in production environment
@@ -88,6 +91,7 @@ Validate blob snapshot build fixes, confirm direct upgrade command copy includes
 - [ ] Parameterize backup interval & retention (env + doc)
 - [ ] Add release automation (GitHub Action) for drafts on tag push
 - [ ] Provide migration helper to rebuild the Container Apps environment when moving to the private VNet baseline
+- [ ] Add SCIM duplicate-handling regression tests (POST + PATCH scenarios)
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**

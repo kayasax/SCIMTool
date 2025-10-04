@@ -32,6 +32,8 @@ export class ScimUsersService {
   async createUser(dto: CreateUserDto, baseUrl: string): Promise<ScimUserResource> {
     this.ensureSchema(dto.schemas, SCIM_CORE_USER_SCHEMA);
 
+    await this.assertUniqueIdentifiers(dto.userName, dto.externalId ?? undefined);
+
     const now = new Date();
     const scimId = randomUUID();
     const sanitizedPayload = this.extractAdditionalAttributes(dto);
@@ -114,7 +116,7 @@ export class ScimUsersService {
       throw createScimError({ status: 404, detail: `Resource ${scimId} not found.` });
     }
 
-    const updatedData = this.applyPatchOperations(user, patchDto);
+  const updatedData = await this.applyPatchOperations(user, patchDto);
 
     const updatedUser = await this.prisma.scimUser.update({
       where: { scimId },
@@ -135,6 +137,8 @@ export class ScimUsersService {
     if (!user) {
       throw createScimError({ status: 404, detail: `Resource ${scimId} not found.` });
     }
+
+    await this.assertUniqueIdentifiers(dto.userName, dto.externalId ?? undefined, scimId);
 
     const now = new Date();
     const sanitizedPayload = this.extractAdditionalAttributes(dto);
@@ -201,12 +205,15 @@ export class ScimUsersService {
     }
   }
 
-  private applyPatchOperations(
+  private async applyPatchOperations(
     user: ScimUser,
     patchDto: PatchUserDto
-  ): Prisma.ScimUserUpdateInput {
-  let active = user.active;
-  let rawPayload = this.parseJson<Record<string, unknown>>(String(user.rawPayload ?? '{}'));
+  ): Promise<Prisma.ScimUserUpdateInput> {
+    let active = user.active;
+    let userName = user.userName;
+    let externalId: string | null = user.externalId ?? null;
+    let rawPayload = this.parseJson<Record<string, unknown>>(String(user.rawPayload ?? '{}'));
+    const meta = this.parseJson<Record<string, unknown>>(String(user.meta ?? '{}'));
 
     for (const operation of patchDto.Operations) {
       const op = operation.op?.toLowerCase();
@@ -217,28 +224,38 @@ export class ScimUsersService {
         });
       }
 
-      const path = operation.path?.toLowerCase();
+      const originalPath = operation.path;
+      const path = originalPath?.toLowerCase();
 
-      // Handle different operations
       if (op === 'add' || op === 'replace') {
         if (path === 'active') {
           const value = this.extractBooleanValue(operation.value);
           active = value;
-          rawPayload = {
-            ...rawPayload,
-            active: value
-          };
+          rawPayload = { ...rawPayload, active: value };
+        } else if (path === 'username') {
+          userName = this.extractStringValue(operation.value, 'userName');
+          rawPayload = this.removeAttribute(rawPayload, 'userName');
+        } else if (path === 'externalid') {
+          externalId = this.extractNullableStringValue(operation.value, 'externalId');
+          rawPayload = this.removeAttribute(rawPayload, 'externalId');
         } else if (path && operation.value !== undefined) {
-          // For other attributes, store in rawPayload
           rawPayload = {
             ...rawPayload,
-            [path]: operation.value
+            [originalPath ?? path]: operation.value
           };
         } else if (!path && typeof operation.value === 'object' && operation.value !== null) {
-          // No path specified - update the entire resource (common for add operations)
-          const updateObj = operation.value as Record<string, unknown>;
+          const updateObj = { ...(operation.value as Record<string, unknown>) };
+          if ('userName' in updateObj) {
+            userName = this.extractStringValue(updateObj.userName, 'userName');
+            delete updateObj.userName;
+          }
+          if ('externalId' in updateObj) {
+            externalId = this.extractNullableStringValue(updateObj.externalId, 'externalId');
+            delete updateObj.externalId;
+          }
           if ('active' in updateObj) {
             active = this.extractBooleanValue(updateObj.active);
+            delete updateObj.active;
           }
           rawPayload = {
             ...rawPayload,
@@ -247,38 +264,132 @@ export class ScimUsersService {
         } else {
           throw createScimError({
             status: 400,
-            detail: `Patch path '${operation.path ?? ''}' is not supported.`
+            detail: `Patch path '${originalPath ?? ''}' is not supported.`
           });
         }
       } else if (op === 'remove') {
         if (path === 'active') {
-          // Cannot remove active attribute, set to false instead
           active = false;
-          rawPayload = {
-            ...rawPayload,
-            active: false
-          };
-        } else if (path) {
-          // Remove attribute from rawPayload
-          const { [path]: removed, ...remaining } = rawPayload;
-          rawPayload = remaining;
+          rawPayload = { ...rawPayload, active: false };
+        } else if (path === 'username') {
+          throw createScimError({
+            status: 400,
+            detail: 'userName is required and cannot be removed.'
+          });
+        } else if (path === 'externalid') {
+          externalId = null;
+          rawPayload = this.removeAttribute(rawPayload, 'externalId');
+        } else if (originalPath) {
+          rawPayload = this.removeAttribute(rawPayload, originalPath);
         } else {
           throw createScimError({
             status: 400,
-            detail: `Remove operation requires a path.`
+            detail: 'Remove operation requires a path.'
           });
         }
       }
     }
 
+    rawPayload = this.stripReservedAttributes(rawPayload);
+
+    await this.assertUniqueIdentifiers(userName, externalId ?? undefined, user.scimId);
+
     return {
+      userName,
+      externalId,
       active,
       rawPayload: JSON.stringify(rawPayload),
       meta: JSON.stringify({
-  ...this.parseJson<Record<string, unknown>>(String(user.meta ?? '{}')),
+        ...meta,
         lastModified: new Date().toISOString()
       })
     } satisfies Prisma.ScimUserUpdateInput;
+  }
+
+  private async assertUniqueIdentifiers(
+    userName: string,
+    externalId?: string,
+    excludeScimId?: string
+  ): Promise<void> {
+    const orConditions: Prisma.ScimUserWhereInput[] = [{ userName }];
+    if (externalId) {
+      orConditions.push({ externalId });
+    }
+
+    const filters: Prisma.ScimUserWhereInput[] = [];
+    if (excludeScimId) {
+      filters.push({ NOT: { scimId: excludeScimId } });
+    }
+    if (orConditions.length === 1) {
+      filters.push(orConditions[0]);
+    } else {
+      filters.push({ OR: orConditions });
+    }
+
+    const where: Prisma.ScimUserWhereInput =
+      filters.length > 1 ? { AND: filters } : filters[0];
+
+    const conflict = await this.prisma.scimUser.findFirst({
+      where,
+      select: { scimId: true, userName: true, externalId: true }
+    });
+
+    if (conflict) {
+      const reason =
+        conflict.userName === userName
+          ? `userName '${userName}'`
+          : `externalId '${externalId}'`;
+
+      throw createScimError({
+        status: 409,
+        scimType: 'uniqueness',
+        detail: `A resource with ${reason} already exists.`
+      });
+    }
+  }
+
+  private stripReservedAttributes(payload: Record<string, unknown>): Record<string, unknown> {
+    const reserved = new Set(['username', 'userid', 'userName', 'externalid', 'externalId', 'active']);
+    const entries = Object.entries(payload).filter(
+      ([key]) => !reserved.has(key) && !reserved.has(key.toLowerCase())
+    );
+    return Object.fromEntries(entries);
+  }
+
+  private removeAttribute(payload: Record<string, unknown>, attribute: string): Record<string, unknown> {
+    if (!attribute) {
+      return { ...payload };
+    }
+    const target = attribute.toLowerCase();
+    return Object.fromEntries(
+      Object.entries(payload).filter(([key]) => key.toLowerCase() !== target)
+    );
+  }
+
+  private extractStringValue(value: unknown, attribute: string): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    throw createScimError({
+      status: 400,
+      detail: `${attribute} must be provided as a string.`
+    });
+  }
+
+  private extractNullableStringValue(value: unknown, attribute: string): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    throw createScimError({
+      status: 400,
+      detail: `${attribute} must be provided as a string or null.`
+    });
   }
 
   private extractBooleanValue(value: unknown): boolean {
@@ -308,13 +419,15 @@ export class ScimUsersService {
 
     throw createScimError({
       status: 400,
-      detail: `Patch operation requires boolean value for active. Received: ${typeof value} "${value}"`
+      detail: `Patch operation requires boolean value for active. Received: ${typeof value} "${String(
+        value
+      )}"`
     });
   }
 
   private toScimUserResource(user: ScimUser, baseUrl: string): ScimUserResource {
-  const meta = this.buildMeta(user, baseUrl);
-  const rawPayload = this.parseJson<Record<string, unknown>>(String(user.rawPayload ?? '{}'));
+    const meta = this.buildMeta(user, baseUrl);
+    const rawPayload = this.parseJson<Record<string, unknown>>(String(user.rawPayload ?? '{}'));
 
     return {
       schemas: [SCIM_CORE_USER_SCHEMA],
@@ -330,14 +443,14 @@ export class ScimUsersService {
   private buildMeta(user: ScimUser, baseUrl: string) {
     const createdAt = user.createdAt.toISOString();
     const lastModified = user.updatedAt.toISOString();
-  const location = this.metadata.buildLocation(baseUrl, 'Users', String(user.scimId));
+    const location = this.metadata.buildLocation(baseUrl, 'Users', String(user.scimId));
 
     return {
       resourceType: 'User',
       created: createdAt,
       lastModified,
       location,
-  version: `W/"${user.updatedAt.toISOString()}"`
+      version: `W/"${user.updatedAt.toISOString()}"`
     };
   }
 
