@@ -34,7 +34,7 @@ function Get-ExistingAppCandidates {
 
 	$candidates = @()
 	try {
-		$appsJson = az containerapp list --resource-group $ResourceGroupName --query "[].name" --output json 2>$null
+		$appsJson = az resource list --resource-group $ResourceGroupName --resource-type "Microsoft.App/containerApps" --query "[].name" --output json --only-show-errors 2>$null
 		if ($LASTEXITCODE -eq 0 -and $appsJson) {
 			try { $candidates += ($appsJson | ConvertFrom-Json) } catch {}
 		}
@@ -42,7 +42,7 @@ function Get-ExistingAppCandidates {
 
 	if ($candidates.Count -eq 0) {
 		try {
-			$envJson = az containerapp env list --resource-group $ResourceGroupName --query "[].name" --output json 2>$null
+			$envJson = az resource list --resource-group $ResourceGroupName --resource-type "Microsoft.App/managedEnvironments" --query "[].name" --output json --only-show-errors 2>$null
 			if ($LASTEXITCODE -eq 0 -and $envJson) {
 				try {
 					$envNames = $envJson | ConvertFrom-Json
@@ -59,7 +59,9 @@ function Get-ExistingAppCandidates {
 		} catch {}
 	}
 
-	return ($candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+	$filtered = $candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+	if (-not $filtered) { return @() }
+	return @($filtered | Sort-Object -Unique)
 }
 
 if ($env:SCIMTOOL_RG -and $env:SCIMTOOL_RG.Trim().Length -gt 0) {
@@ -108,12 +110,13 @@ if ($interactive) {
 	} catch { Write-Host 'Subscription check skipped (az CLI not ready).' -ForegroundColor Yellow }
 
 	$ResourceGroup = Get-DefaultValue 'Resource Group' $ResourceGroup
-	$existingAppCandidates = Get-ExistingAppCandidates -ResourceGroupName $ResourceGroup
+	$existingAppCandidates = @(Get-ExistingAppCandidates -ResourceGroupName $ResourceGroup)
 	if ($existingAppCandidates.Count -gt 0) {
 		Write-Host "Existing Container Apps detected in '$ResourceGroup':" -ForegroundColor Gray
 		$existingAppCandidates | ForEach-Object { Write-Host "  • $_" -ForegroundColor Gray }
-		# Prefer the single candidate as the default for reuse when applicable
-		if ($existingAppCandidates.Count -eq 1 -or $AppName -like 'scimtool-app-*') {
+		if ($existingAppCandidates.Count -eq 1) {
+			$AppName = $existingAppCandidates[0]
+		} elseif ($AppName -like 'scimtool-app-*') {
 			$AppName = $existingAppCandidates[0]
 		}
 	}

@@ -60,13 +60,13 @@ function Get-ExistingContainerApps {
     if (-not $RgName) { return @() }
     $candidates = @()
 
-    $appsJson = az containerapp list --resource-group $RgName --query "[].name" --output json 2>$null
+    $appsJson = az resource list --resource-group $RgName --resource-type "Microsoft.App/containerApps" --query "[].name" --output json --only-show-errors 2>$null
     if ($LASTEXITCODE -eq 0 -and $appsJson) {
         try { $candidates += ($appsJson | ConvertFrom-Json) } catch {}
     }
 
     if ($candidates.Count -eq 0) {
-        $envJson = az containerapp env list --resource-group $RgName --query "[].name" --output json 2>$null
+        $envJson = az resource list --resource-group $RgName --resource-type "Microsoft.App/managedEnvironments" --query "[].name" --output json --only-show-errors 2>$null
         if ($LASTEXITCODE -eq 0 -and $envJson) {
             try {
                 $envs = $envJson | ConvertFrom-Json
@@ -82,17 +82,21 @@ function Get-ExistingContainerApps {
         }
     }
 
-    return ($candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+    $filtered = $candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    if (-not $filtered) { return @() }
+    return @($filtered | Sort-Object -Unique)
 }
 
 if (-not $AppName) {
-    $existingApps = Get-ExistingContainerApps -RgName $ResourceGroup
+    $existingApps = @(Get-ExistingContainerApps -RgName $ResourceGroup)
     $defaultAppName = $null
 
     if ($existingApps.Count -gt 0) {
         Write-Host "Existing container apps in '$ResourceGroup':" -ForegroundColor Gray
         $existingApps | ForEach-Object { Write-Host "   • $_" -ForegroundColor Gray }
         if ($existingApps.Count -eq 1) {
+            $defaultAppName = $existingApps[0]
+        } elseif ($AppName -like 'scimtool-app-*') {
             $defaultAppName = $existingApps[0]
         }
     }
