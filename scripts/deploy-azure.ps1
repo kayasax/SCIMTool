@@ -9,6 +9,26 @@
 )
 
 if (-not $Location -or $Location -eq '') { $Location = 'eastus' }
+$requiredProviders = @('Microsoft.App','Microsoft.ContainerService')
+
+function Ensure-AzProvider {
+    param([string]$Namespace)
+
+    $state = az provider show --namespace $Namespace --query "registrationState" -o tsv 2>$null
+    if ($LASTEXITCODE -ne 0) { $state = '' }
+
+    if ($state -ne 'Registered') {
+        Write-Host "🔁 Registering resource provider $Namespace..." -ForegroundColor Yellow
+        az provider register --namespace $Namespace --wait -o none 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   ❌ Failed to register $Namespace" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "   ✅ $Namespace registered" -ForegroundColor Green
+    }
+    return $true
+}
+
 if (-not $ImageTag -or $ImageTag -eq '') { $ImageTag = 'latest' }
 if (-not $BlobBackupAccount) { $BlobBackupAccount = "$($AppName.ToLower())backup" }
 # Sanitize blob backup storage account name (must be 3-24 chars, lowercase/numbers only)
@@ -78,6 +98,11 @@ try {
     Write-Host "Azure CLI not authenticated" -ForegroundColor Red
     Write-Host "   Run: az login" -ForegroundColor Yellow
     return
+}
+
+# Ensure required resource providers are registered
+foreach ($ns in $requiredProviders) {
+    if (-not (Ensure-AzProvider -Namespace $ns)) { return }
 }
 
 # Generate resource names
