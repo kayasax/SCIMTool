@@ -16,6 +16,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-05 | Bootstrap setup script auto-detects existing app/env names per resource group |
 | 2025-10-05 | Resource discovery now uses az resource list to avoid extension noise and ensure reuse |
 | 2025-10-05 | Web footer fallback version synced with package.json (0.8.3) |
+| 2025-10-05 | Manual provisioning console (UI + admin API) for SCIM collision testing |
 | 2025-10-05 | Version bumped to v0.8.6 (blob restore bootstrap + duplicate guardrails prep) |
 | 2025-10-05 | Version bumped to v0.8.5 across API + Web + docs |
 | 2025-10-05 | Version bumped to v0.8.4 across web assets |

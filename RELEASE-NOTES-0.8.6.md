@@ -4,6 +4,7 @@
 - **Blob restore bootstrap:** Container entrypoint now hydrates `/tmp/local-data/scim.db` from the latest blob snapshot when Azure Files backup is absent, preventing data loss on cold starts.
 - **Duplicate handling groundwork:** Service-layer helpers land alongside schema uniqueness to enforce SCIM user identifiers and prepare for expanded RFC coverage.
 - **Version alignment:** API, web UI, documentation, and workflows all reference `v0.8.6`, keeping upgrade helpers and banners in sync.
+- **Manual provisioning console:** Web UI adds a Manual Provision tab for crafting SCIM Users/Groups on demand, perfect for collision troubleshooting without leaving the admin portal.
 
 ## Upgrade Notes
 - Deployments using blob backups should redeploy to pick up the new entrypoint logic; restart after deployment to verify snapshot hydration.

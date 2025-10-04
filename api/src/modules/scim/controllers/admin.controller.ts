@@ -1,6 +1,27 @@
-﻿import { Controller, Get, HttpCode, Post, Query, Param, NotFoundException } from '@nestjs/common';
+﻿import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Post,
+  Query,
+  Param,
+  NotFoundException,
+  Req
+} from '@nestjs/common';
+import type { Request } from 'express';
 
 import { LoggingService } from '../../logging/logging.service';
+import { buildBaseUrl } from '../common/base-url.util';
+import { SCIM_CORE_GROUP_SCHEMA, SCIM_CORE_USER_SCHEMA } from '../common/scim-constants';
+import type { ScimGroupResource, ScimUserResource } from '../common/scim-types';
+import type { CreateGroupDto } from '../dto/create-group.dto';
+import type { CreateUserDto } from '../dto/create-user.dto';
+import { ManualGroupDto } from '../dto/manual-group.dto';
+import { ManualUserDto } from '../dto/manual-user.dto';
+import { ScimGroupsService } from '../services/scim-groups.service';
+import { ScimUsersService } from '../services/scim-users.service';
 
 interface VersionInfo {
   version: string;
@@ -23,7 +44,11 @@ interface VersionInfo {
 
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly loggingService: LoggingService) {}
+  constructor(
+    private readonly loggingService: LoggingService,
+    private readonly usersService: ScimUsersService,
+    private readonly groupsService: ScimGroupsService
+  ) {}
 
   @Post('logs/clear')
   @HttpCode(204)
@@ -63,6 +88,109 @@ export class AdminController {
     const log = await this.loggingService.getLog(id);
     if (!log) throw new NotFoundException('Log not found');
     return log;
+  }
+
+  @Post('users/manual')
+  @Header('Content-Type', 'application/scim+json')
+  async createManualUser(
+    @Body() dto: ManualUserDto,
+    @Req() request: Request
+  ): Promise<ScimUserResource> {
+    const baseUrl = buildBaseUrl(request);
+    const userName = dto.userName.trim();
+    const payload: CreateUserDto = {
+      schemas: [SCIM_CORE_USER_SCHEMA],
+      userName,
+      active: dto.active ?? true
+    };
+
+    const externalId = dto.externalId?.trim();
+    if (externalId) {
+      payload.externalId = externalId;
+    }
+
+    const extras: Record<string, unknown> = {};
+
+    const displayName = dto.displayName?.trim();
+    if (displayName) {
+      extras.displayName = displayName;
+    }
+
+    const name: Record<string, string> = {};
+    if (dto.givenName) {
+      name.givenName = dto.givenName.trim();
+    }
+    if (dto.familyName) {
+      name.familyName = dto.familyName.trim();
+    }
+    if (displayName) {
+      name.formatted = displayName;
+    }
+    if (Object.keys(name).length > 0) {
+      extras.name = name;
+    }
+
+    const email = dto.email?.trim();
+    if (email) {
+      extras.emails = [
+        {
+          value: email,
+          type: 'work',
+          primary: true
+        }
+      ];
+    }
+
+    const phoneNumber = dto.phoneNumber?.trim();
+    if (phoneNumber) {
+      extras.phoneNumbers = [
+        {
+          value: phoneNumber,
+          type: 'work'
+        }
+      ];
+    }
+
+    const department = dto.department?.trim();
+    if (department) {
+      extras['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'] = {
+        department
+      };
+    }
+
+    const mergedPayload = {
+      ...payload,
+      ...extras
+    } as CreateUserDto;
+
+    return this.usersService.createUser(mergedPayload, baseUrl);
+  }
+
+  @Post('groups/manual')
+  @Header('Content-Type', 'application/scim+json')
+  async createManualGroup(
+    @Body() dto: ManualGroupDto,
+    @Req() request: Request
+  ): Promise<ScimGroupResource> {
+    const baseUrl = buildBaseUrl(request);
+    const displayName = dto.displayName.trim();
+    const members = dto.memberIds
+      ?.map((member) => member.trim())
+      .filter((member) => member.length > 0)
+      .map((value) => ({ value }));
+
+    const payload: CreateGroupDto = {
+      schemas: [SCIM_CORE_GROUP_SCHEMA],
+      displayName,
+      ...(members && members.length > 0 ? { members } : {})
+    };
+
+    const scimId = dto.scimId?.trim();
+    if (scimId) {
+      (payload as Record<string, unknown>).id = scimId;
+    }
+
+    return this.groupsService.createGroup(payload, baseUrl);
   }
 
   @Get('version')

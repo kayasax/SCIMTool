@@ -7,6 +7,7 @@ import { LogFilters } from './components/LogFilters';
 import { Header } from './components/Header';
 import { DatabaseBrowser } from './components/database/DatabaseBrowser';
 import { ActivityFeed } from './components/activity/ActivityFeed';
+import { ManualProvision } from './components/manual/ManualProvision';
 import { ThemeProvider } from './hooks/useTheme';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import './theme.css';
@@ -29,7 +30,7 @@ const ENV_DEPLOYMENT_DEFAULTS: DeploymentInfo = {
   registry: envDefaultRegistry
 };
 
-type AppView = 'logs' | 'database' | 'activity';
+type AppView = 'logs' | 'database' | 'activity' | 'manual';
 
 const AppContent: React.FC = () => {
   const { token, setToken, clearToken } = useAuth();
@@ -524,6 +525,12 @@ const AppContent: React.FC = () => {
         >
           🗄️ Database Browser
         </button>
+        <button
+          className={`${styles.viewTab} ${currentView === 'manual' ? styles.active : ''}`}
+          onClick={() => setCurrentView('manual')}
+        >
+          🧪 Manual Provision
+        </button>
       </div>
 
       {currentView === 'activity' && (
@@ -532,6 +539,10 @@ const AppContent: React.FC = () => {
 
       {currentView === 'database' && (
         <DatabaseBrowser />
+      )}
+
+      {currentView === 'manual' && (
+        <ManualProvision />
       )}
 
       {currentView === 'logs' && (
