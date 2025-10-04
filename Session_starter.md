@@ -7,6 +7,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 |------|-------------|
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
 | 2025-10-04 | Upgrade command now auto-fills RG/App and acknowledges blob backups |
+| 2025-10-04 | Added manual GHCR publish workflow (publish-ghcr.yml) |
 | 2025-10-03 | v0.8.3 released: structured membership change data (addedMembers/removedMembers) & UI rendering; case-insensitive PATCH ops. |
 | 2025-10-02 | Unified image build (root Dockerfile ships API + Web) |
 | 2025-10-02 | Token resilience: frontend clears bearer on 401 + modal guidance |
@@ -66,7 +67,7 @@ AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when neede
 ---
 
 ## Current Focus
-Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, prepare rollback helper & CI guardrails.
+Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; prepare rollback helper & CI guardrails.
 
 ## Next Steps / Backlog
 - [ ] Validate copied direct upgrade command in production environment
