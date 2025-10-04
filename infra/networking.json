@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.37.4.10188",
-      "templateHash": "11108007337255892026"
+      "version": "0.38.5.1644",
+      "templateHash": "18037772167174746492"
     }
   },
   "parameters": {
@@ -137,6 +137,7 @@
       "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
       "apiVersion": "2020-06-01",
       "name": "[format('{0}/{1}', parameters('privateDnsZoneName'), format('{0}-link', parameters('vnetName')))]",
+      "location": "global",
       "properties": {
         "registrationEnabled": false,
         "virtualNetwork": {

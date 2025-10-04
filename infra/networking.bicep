@@ -94,6 +94,7 @@ resource dnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
 
 resource dnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
   name: '${vnet.name}-link'
+  location: 'global'
   parent: dnsZone
   properties: {
     registrationEnabled: false
