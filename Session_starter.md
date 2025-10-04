@@ -11,6 +11,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-05 | Networking template no longer pre-delegates subnets (consumption environment compatibility) |
 | 2025-10-05 | Deployment script can now reuse existing VNets/DNS by creating only missing sub-resources |
 | 2025-10-05 | Interactive prompt now defaults to existing Container App name to avoid accidental redeploys |
+| 2025-10-05 | Bootstrap setup script auto-detects existing app/env names per resource group |
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
 | 2025-10-04 | Upgrade command now auto-fills RG/App and acknowledges blob backups |
 | 2025-10-04 | Added manual GHCR publish workflow (publish-ghcr.yml) |

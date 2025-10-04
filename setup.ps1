@@ -27,6 +27,41 @@ function New-ScimSecret {
 }
 function New-Suffix { (Get-Random -Minimum 1000 -Maximum 9999) }
 
+function Get-ExistingAppCandidates {
+	param([string]$ResourceGroupName)
+
+	if ([string]::IsNullOrWhiteSpace($ResourceGroupName)) { return @() }
+
+	$candidates = @()
+	try {
+		$appsJson = az containerapp list --resource-group $ResourceGroupName --query "[].name" --output json 2>$null
+		if ($LASTEXITCODE -eq 0 -and $appsJson) {
+			try { $candidates += ($appsJson | ConvertFrom-Json) } catch {}
+		}
+	} catch {}
+
+	if ($candidates.Count -eq 0) {
+		try {
+			$envJson = az containerapp env list --resource-group $ResourceGroupName --query "[].name" --output json 2>$null
+			if ($LASTEXITCODE -eq 0 -and $envJson) {
+				try {
+					$envNames = $envJson | ConvertFrom-Json
+					foreach ($envName in $envNames) {
+						if ([string]::IsNullOrWhiteSpace($envName)) { continue }
+						if ($envName.EndsWith('-env')) {
+							$candidates += $envName.Substring(0, $envName.Length - 4)
+						} else {
+							$candidates += $envName
+						}
+					}
+				} catch {}
+			}
+		} catch {}
+	}
+
+	return ($candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+}
+
 if ($env:SCIMTOOL_RG -and $env:SCIMTOOL_RG.Trim().Length -gt 0) {
 	$ResourceGroup = $env:SCIMTOOL_RG
 } else {
@@ -73,6 +108,13 @@ if ($interactive) {
 	} catch { Write-Host 'Subscription check skipped (az CLI not ready).' -ForegroundColor Yellow }
 
 	$ResourceGroup = Get-DefaultValue 'Resource Group' $ResourceGroup
+	$existingAppCandidates = Get-ExistingAppCandidates -ResourceGroupName $ResourceGroup
+	if ($existingAppCandidates.Count -gt 0) {
+		Write-Host "Existing Container App resources in '$ResourceGroup':" -ForegroundColor Gray
+		$existingAppCandidates | ForEach-Object { Write-Host "  • $_" -ForegroundColor Gray }
+		# Prefer the first candidate as the default for reuse
+		$AppName = $existingAppCandidates[0]
+	}
 	$AppName       = Get-DefaultValue 'App Name'       $AppName
 	$Location      = Get-DefaultValue 'Location'       $Location
 	# Image Tag prompt removed: always using $ImageTag (default 'latest')
