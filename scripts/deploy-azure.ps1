@@ -152,32 +152,65 @@ Write-Host ""
 # Step 2: Private network + DNS linkage for Container Apps
 Write-Host "🌐 Step 2/6: Network & Private DNS" -ForegroundColor Cyan
 
-$networkDeploymentName = "network-$(Get-Date -Format 'yyyyMMddHHmmss')"
-Write-Host "   Deploying virtual network '$vnetName'..." -ForegroundColor Yellow
+$expectedInfraSubnetName = 'aca-infra'
+$expectedPeSubnetName = 'private-endpoints'
+$expectedDnsZoneName = 'privatelink.blob.core.windows.net'
+$dnsLinkName = "$vnetName-link"
 
-$networkDeployOutput = az deployment group create `
-    --resource-group $ResourceGroup `
-    --name $networkDeploymentName `
-    --template-file "$PSScriptRoot/../infra/networking.bicep" `
-    --parameters vnetName=$vnetName location=$Location `
-    --query properties.outputs `
-    --output json
+$existingVnetJson = az network vnet show --resource-group $ResourceGroup --name $vnetName --output json 2>$null
+$networkHealthy = $false
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "   ❌ Failed to provision network" -ForegroundColor Red
-    Write-Host $networkDeployOutput -ForegroundColor Red
-    return
+if ($LASTEXITCODE -eq 0 -and $existingVnetJson) {
+    $existingVnet = $existingVnetJson | ConvertFrom-Json
+    $infraSubnet = $existingVnet.subnets | Where-Object { $_.name -eq $expectedInfraSubnetName }
+    $peSubnet = $existingVnet.subnets | Where-Object { $_.name -eq $expectedPeSubnetName }
+
+    if ($infraSubnet -and $peSubnet) {
+        $privateDnsZoneJson = az network private-dns zone show --resource-group $ResourceGroup --name $expectedDnsZoneName --output json 2>$null
+        if ($LASTEXITCODE -eq 0 -and $privateDnsZoneJson) {
+            $dnsLinkJson = az network private-dns link vnet show --resource-group $ResourceGroup --zone-name $expectedDnsZoneName --name $dnsLinkName --output json 2>$null
+            if ($LASTEXITCODE -eq 0 -and $dnsLinkJson) {
+                $networkHealthy = $true
+                $infrastructureSubnetId = $infraSubnet.id
+                $privateEndpointSubnetId = $peSubnet.id
+                $privateDnsZoneName = $expectedDnsZoneName
+                Write-Host "   ✅ Network already configured" -ForegroundColor Green
+                Write-Host "      Infrastructure subnet: $infrastructureSubnetId" -ForegroundColor Gray
+                Write-Host "      Private endpoint subnet: $privateEndpointSubnetId" -ForegroundColor Gray
+                Write-Host "      Private DNS link: $dnsLinkName" -ForegroundColor Gray
+            }
+        }
+    }
 }
 
-$networkOutputs = $networkDeployOutput | ConvertFrom-Json
-$infrastructureSubnetId = $networkOutputs.infrastructureSubnetId.value
-$privateEndpointSubnetId = $networkOutputs.privateEndpointSubnetId.value
-$privateDnsZoneName = $networkOutputs.privateDnsZoneName.value
+if (-not $networkHealthy) {
+    $networkDeploymentName = "network-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    Write-Host "   Deploying virtual network '$vnetName'..." -ForegroundColor Yellow
 
-Write-Host "   ✅ Network deployed" -ForegroundColor Green
-Write-Host "      Infrastructure subnet: $infrastructureSubnetId" -ForegroundColor Gray
-Write-Host "      Private endpoint subnet: $privateEndpointSubnetId" -ForegroundColor Gray
-Write-Host "      Private DNS zone: $privateDnsZoneName" -ForegroundColor Gray
+    $networkDeployOutput = az deployment group create `
+        --resource-group $ResourceGroup `
+        --name $networkDeploymentName `
+        --template-file "$PSScriptRoot/../infra/networking.bicep" `
+        --parameters vnetName=$vnetName location=$Location `
+        --query properties.outputs `
+        --output json
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ❌ Failed to provision network" -ForegroundColor Red
+        Write-Host $networkDeployOutput -ForegroundColor Red
+        return
+    }
+
+    $networkOutputs = $networkDeployOutput | ConvertFrom-Json
+    $infrastructureSubnetId = $networkOutputs.infrastructureSubnetId.value
+    $privateEndpointSubnetId = $networkOutputs.privateEndpointSubnetId.value
+    $privateDnsZoneName = $networkOutputs.privateDnsZoneName.value
+
+    Write-Host "   ✅ Network deployed" -ForegroundColor Green
+    Write-Host "      Infrastructure subnet: $infrastructureSubnetId" -ForegroundColor Gray
+    Write-Host "      Private endpoint subnet: $privateEndpointSubnetId" -ForegroundColor Gray
+    Write-Host "      Private DNS zone: $privateDnsZoneName" -ForegroundColor Gray
+}
 Write-Host ""
 
 # Step 3: Blob Storage (private endpoint snapshots)
