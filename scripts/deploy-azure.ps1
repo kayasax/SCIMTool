@@ -108,6 +108,8 @@ if ($storageName.Length -gt 24) {
     Write-Host "   Truncated to: $storageName" -ForegroundColor Green
 }
 
+$vnetName = "$AppName-vnet"
+
 $envName = "$AppName-env"
 $lawName = "$AppName-logs"
 
@@ -117,6 +119,7 @@ Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
 Write-Host "   Location: $Location" -ForegroundColor White
 Write-Host "   Container App: $AppName" -ForegroundColor White
 Write-Host "   Environment: $envName" -ForegroundColor White
+Write-Host "   Virtual Network: $vnetName" -ForegroundColor White
 Write-Host "   Storage Account: $storageName" -ForegroundColor White
 Write-Host "   Log Analytics: $lawName" -ForegroundColor White
 Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
@@ -126,7 +129,7 @@ Write-Host "   Persistence: Blob snapshots (Account=$BlobBackupAccount Container
 Write-Host ""
 
 # Step 1: Create or verify resource group
-Write-Host "📦 Step 1/5: Resource Group" -ForegroundColor Cyan
+Write-Host "📦 Step 1/6: Resource Group" -ForegroundColor Cyan
 $ErrorActionPreference = 'SilentlyContinue'
 $rgJson = az group show --name $ResourceGroup --output json 2>$null
 $rgExitCode = $LASTEXITCODE
@@ -146,50 +149,66 @@ if ($rgExitCode -ne 0 -or -not $rgJson) {
 Write-Host ""
 
 
-# Step 2: Blob Storage (for snapshot persistence)
-Write-Host "💾 Step 2/5: Blob Storage (snapshot persistence)" -ForegroundColor Cyan
+# Step 2: Private network + DNS linkage for Container Apps
+Write-Host "🌐 Step 2/6: Network & Private DNS" -ForegroundColor Cyan
 
-# Check if storage account exists
-$blobExists = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query name -o tsv 2>$null
-if (-not $blobExists) {
-    Write-Host "   Creating storage account $BlobBackupAccount" -ForegroundColor Yellow
-    $createOut = az storage account create -n $BlobBackupAccount -g $ResourceGroup -l $Location --sku Standard_LRS --kind StorageV2 --allow-blob-public-access false --output none 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ Failed to create storage account" -ForegroundColor Red
-        Write-Host $createOut -ForegroundColor Red
-        return
-    }
-    # Poll provisioning state
-    $maxWait = 90; $waited = 0; $ready = $false
-    while ($waited -lt $maxWait) {
-        $state = az storage account show -n $BlobBackupAccount -g $ResourceGroup --query provisioningState -o tsv 2>$null
-        if ($state -eq 'Succeeded') { $ready = $true; break }
-        Start-Sleep -Seconds 5; $waited += 5
-        Write-Host "   Provisioning state: $state (waited ${waited}s)" -ForegroundColor Gray
-    }
-    if (-not $ready) {
-        Write-Host "   ❌ Storage account not ready after $maxWait seconds" -ForegroundColor Red
-        return
-    }
-    Write-Host "   ✅ Storage account ready" -ForegroundColor Green
-} else {
-    Write-Host "   ✅ Storage account exists: $BlobBackupAccount" -ForegroundColor Green
+$networkDeploymentName = "network-$(Get-Date -Format 'yyyyMMddHHmmss')"
+Write-Host "   Deploying virtual network '$vnetName'..." -ForegroundColor Yellow
+
+$networkDeployOutput = az deployment group create `
+    --resource-group $ResourceGroup `
+    --name $networkDeploymentName `
+    --template-file "$PSScriptRoot/../infra/networking.bicep" `
+    --parameters vnetName=$vnetName location=$Location `
+    --query properties.outputs `
+    --output json
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "   ❌ Failed to provision network" -ForegroundColor Red
+    Write-Host $networkDeployOutput -ForegroundColor Red
+    return
 }
 
-# Ensure container exists (using --auth-mode login with MSI / user auth)
-$containerExists = az storage container exists --name $BlobBackupContainer --account-name $BlobBackupAccount --auth-mode login --query exists -o tsv 2>$null
-if ($containerExists -ne 'true') {
-    Write-Host "   Creating container $BlobBackupContainer" -ForegroundColor Yellow
-    $cOut = az storage container create --name $BlobBackupContainer --account-name $BlobBackupAccount --auth-mode login -o none 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ⚠️  Container creation failed (may still succeed later via app)." -ForegroundColor Yellow
-        Write-Host $cOut -ForegroundColor DarkYellow
-    } else { Write-Host "   ✅ Container created" -ForegroundColor Green }
-} else { Write-Host "   ✅ Container exists: $BlobBackupContainer" -ForegroundColor Green }
+$networkOutputs = $networkDeployOutput | ConvertFrom-Json
+$infrastructureSubnetId = $networkOutputs.infrastructureSubnetId.value
+$privateEndpointSubnetId = $networkOutputs.privateEndpointSubnetId.value
+$privateDnsZoneName = $networkOutputs.privateDnsZoneName.value
+
+Write-Host "   ✅ Network deployed" -ForegroundColor Green
+Write-Host "      Infrastructure subnet: $infrastructureSubnetId" -ForegroundColor Gray
+Write-Host "      Private endpoint subnet: $privateEndpointSubnetId" -ForegroundColor Gray
+Write-Host "      Private DNS zone: $privateDnsZoneName" -ForegroundColor Gray
 Write-Host ""
 
-# Step 3: Deploy Container App Environment
-Write-Host "🌐 Step 3/5: Container App Environment" -ForegroundColor Cyan
+# Step 3: Blob Storage (private endpoint snapshots)
+Write-Host "💾 Step 3/6: Blob Storage (private endpoint)" -ForegroundColor Cyan
+
+$storageDeploymentName = "blob-$(Get-Date -Format 'yyyyMMddHHmmss')"
+$storageDeployOutput = az deployment group create `
+    --resource-group $ResourceGroup `
+    --name $storageDeploymentName `
+    --template-file "$PSScriptRoot/../infra/blob-storage.bicep" `
+    --parameters storageAccountName=$BlobBackupAccount containerName=$BlobBackupContainer privateEndpointSubnetId=$privateEndpointSubnetId location=$Location `
+    --query properties.outputs `
+    --output json
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "   ❌ Failed to deploy blob storage" -ForegroundColor Red
+    Write-Host $storageDeployOutput -ForegroundColor Red
+    return
+}
+
+$storageOutputs = $storageDeployOutput | ConvertFrom-Json
+$storageAccountId = $storageOutputs.storageAccountId.value
+$blobEndpoint = "https://$($storageOutputs.storageAccountName.value).blob.core.windows.net/"
+
+Write-Host "   ✅ Storage account locked behind private endpoint" -ForegroundColor Green
+Write-Host "      Storage account ID: $storageAccountId" -ForegroundColor Gray
+Write-Host "      Blob endpoint (private): $blobEndpoint" -ForegroundColor Gray
+Write-Host ""
+
+# Step 4: Deploy Container App Environment
+Write-Host "🌐 Step 4/6: Container App Environment" -ForegroundColor Cyan
 
 # Check if environment exists
 $skipEnvDeployment = $false
@@ -198,6 +217,14 @@ $envExists = $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrEmpty($envCheck)
 
 if ($envExists) {
     Write-Host "   ✅ Environment already exists" -ForegroundColor Green
+    $existingEnv = az containerapp env show --name $envName --resource-group $ResourceGroup --output json | ConvertFrom-Json
+    $currentSubnet = $existingEnv.properties.vnetConfiguration.infrastructureSubnetId
+    if ([string]::IsNullOrWhiteSpace($currentSubnet)) {
+        Write-Host "   ⚠️  Existing environment isn't VNet-integrated. Delete or recreate the environment to enable private endpoints." -ForegroundColor Yellow
+    } elseif ($currentSubnet -ne $infrastructureSubnetId) {
+        Write-Host "   ⚠️  Environment bound to different subnet:`n      $currentSubnet" -ForegroundColor Yellow
+        Write-Host "      Desired subnet:`n      $infrastructureSubnetId" -ForegroundColor Yellow
+    }
     $skipEnvDeployment = $true
 }
 
@@ -212,6 +239,7 @@ if (-not $skipEnvDeployment) {
         --parameters caeName=$envName `
                      lawName=$lawName `
                      location=$Location `
+                     infrastructureSubnetId=$infrastructureSubnetId `
         --no-wait `
         --output json 2>&1
 
@@ -262,7 +290,7 @@ if (-not $skipEnvDeployment) {
 Write-Host ""
 
 # Step 4: Deploy Container App
-Write-Host "🐳 Step 4/5: Container App" -ForegroundColor Cyan
+Write-Host "🐳 Step 5/6: Container App" -ForegroundColor Cyan
 
 # Check if container app already exists
 $appCheck = az containerapp show --name $AppName --resource-group $ResourceGroup --query "name" --output tsv 2>$null
@@ -391,7 +419,7 @@ if (-not $skipAppDeployment) {
 Write-Host ""
 
 # Step 5: Get deployment details
-Write-Host "📊 Step 5/5: Finalizing" -ForegroundColor Cyan
+Write-Host "📊 Step 6/6: Finalizing" -ForegroundColor Cyan
 Write-Host "   Retrieving deployment details..." -ForegroundColor Yellow
 
 $appDetails = az containerapp show --name $AppName --resource-group $ResourceGroup --output json | ConvertFrom-Json

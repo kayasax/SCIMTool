@@ -1,0 +1,174 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "11108007337255892026"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Deployment location"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the virtual network created for Container Apps + private endpoints"
+      }
+    },
+    "addressPrefix": {
+      "type": "string",
+      "defaultValue": "10.40.0.0/16",
+      "metadata": {
+        "description": "Address prefix for the virtual network"
+      }
+    },
+    "infrastructureSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.40.0.0/21",
+      "metadata": {
+        "description": "Subnet prefix for Container Apps infrastructure components (delegated to Microsoft.App/environments)"
+      }
+    },
+    "workloadSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.40.8.0/21",
+      "metadata": {
+        "description": "Subnet prefix for Container Apps workloads (delegated to Microsoft.App/environments)"
+      }
+    },
+    "privateEndpointSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.40.16.0/24",
+      "metadata": {
+        "description": "Subnet prefix dedicated to private endpoints such as Storage"
+      }
+    },
+    "privateDnsZoneName": {
+      "type": "string",
+      "defaultValue": "[format('privatelink.blob.{0}', environment().suffixes.storage)]",
+      "metadata": {
+        "description": "Private DNS zone name used for blob private endpoints"
+      }
+    }
+  },
+  "variables": {
+    "infrastructureSubnetName": "aca-infra",
+    "workloadSubnetName": "aca-runtime",
+    "privateEndpointSubnetName": "private-endpoints"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('vnetName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('infrastructureSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('infrastructureSubnetPrefix')]",
+              "delegations": [
+                {
+                  "name": "aca-infra-delegation",
+                  "properties": {
+                    "serviceName": "Microsoft.App/environments"
+                  }
+                }
+              ],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Disabled"
+            }
+          },
+          {
+            "name": "[variables('workloadSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('workloadSubnetPrefix')]",
+              "delegations": [
+                {
+                  "name": "aca-runtime-delegation",
+                  "properties": {
+                    "serviceName": "Microsoft.App/environments"
+                  }
+                }
+              ],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Disabled"
+            }
+          },
+          {
+            "name": "[variables('privateEndpointSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('privateEndpointSubnetPrefix')]",
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Disabled"
+            }
+          }
+        ]
+      },
+      "tags": {
+        "project": "scimtool",
+        "component": "networking"
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[parameters('privateDnsZoneName')]",
+      "location": "global",
+      "tags": {
+        "project": "scimtool",
+        "component": "private-dns"
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', parameters('privateDnsZoneName'), format('{0}-link', parameters('vnetName')))]",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "vnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+    },
+    "infrastructureSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('infrastructureSubnetName'))]"
+    },
+    "workloadSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('workloadSubnetName'))]"
+    },
+    "privateEndpointSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), variables('privateEndpointSubnetName'))]"
+    },
+    "privateDnsZoneName": {
+      "type": "string",
+      "value": "[parameters('privateDnsZoneName')]"
+    }
+  }
+}

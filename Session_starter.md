@@ -5,6 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-05 | Private storage endpoint rollout: VNet + DNS automation baked into deploy-azure.ps1 |
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
 | 2025-10-04 | Upgrade command now auto-fills RG/App and acknowledges blob backups |
 | 2025-10-04 | Added manual GHCR publish workflow (publish-ghcr.yml) |
@@ -67,7 +68,7 @@ AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when neede
 ---
 
 ## Current Focus
-Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; prepare rollback helper & CI guardrails.
+Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; prepare rollback helper & CI guardrails. Rollout private network baseline (ensure customers recreate Container Apps environment for VNet support).
 
 ## Next Steps / Backlog
 - [ ] Validate copied direct upgrade command in production environment
@@ -76,6 +77,7 @@ Validate blob snapshot build fixes, confirm direct upgrade command copy includes
 - [ ] CI checks: version/tag sync, BOM detection, lockfile sync
 - [ ] Parameterize backup interval & retention (env + doc)
 - [ ] Add release automation (GitHub Action) for drafts on tag push
+- [ ] Provide migration helper to rebuild the Container Apps environment when moving to the private VNet baseline
 ## 🏗️ Architecture
 
 **SCIM 2.0 Server:**

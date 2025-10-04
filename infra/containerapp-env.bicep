@@ -5,6 +5,9 @@ param location string = resourceGroup().location
 param caeName string
 @description('Log Analytics workspace name (created if not existing)')
 param lawName string
+
+@description('Resource ID of the subnet delegated for Container Apps infrastructure and workloads')
+param infrastructureSubnetId string
 // (Removed daprInstrumentationEnabled until needed)
 
 resource law 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
@@ -29,6 +32,9 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
         // Obtain shared key via resource function for dependency clarity
         sharedKey: law.listKeys().primarySharedKey
       }
+    }
+    vnetConfiguration: {
+      infrastructureSubnetId: infrastructureSubnetId
     }
     // Workload profiles omitted - environment uses default consumption model
     // Dapr instrumentation key intentionally omitted

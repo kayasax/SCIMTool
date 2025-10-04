@@ -13,6 +13,12 @@ param containerName string = 'scimtool-backups'
 ])
 param sku string = 'Standard_LRS'
 
+@description('Resource ID of the subnet that will host the private endpoint for blob access')
+param privateEndpointSubnetId string
+
+@description('Private DNS zone name used for blob private endpoints (must exist in the resource group)')
+param privateDnsZoneName string = format('privatelink.blob.{0}', environment().suffixes.storage)
+
 resource account 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
   location: location
@@ -23,9 +29,10 @@ resource account 'Microsoft.Storage/storageAccounts@2023-01-01' = {
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     networkAcls: {
-      defaultAction: 'Allow'
+      defaultAction: 'Deny'
       bypass: 'AzureServices'
     }
+    publicNetworkAccess: 'Disabled'
     encryption: {
       services: {
         file: { enabled: true }
@@ -45,6 +52,50 @@ resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@20
   name: '${storageAccountName}/default/${containerName}'
   properties: {
     publicAccess: 'None'
+  }
+}
+
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' existing = {
+  name: privateDnsZoneName
+}
+
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-09-01' = {
+  name: '${storageAccountName}-blob-pe'
+  location: location
+  properties: {
+    subnet: {
+      id: privateEndpointSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'blob-connection'
+        properties: {
+          privateLinkServiceId: account.id
+          groupIds: [
+            'blob'
+          ]
+        }
+      }
+    ]
+  }
+  tags: {
+    project: 'scimtool'
+    component: 'blob-pe'
+  }
+}
+
+resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = {
+  name: 'blob-zone'
+  parent: privateEndpoint
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'blob-zone-config'
+        properties: {
+          privateDnsZoneId: privateDnsZone.id
+        }
+      }
+    ]
   }
 }
 

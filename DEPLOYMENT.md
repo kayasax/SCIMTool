@@ -18,11 +18,13 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 ```
 
 **Benefits:**
-- **🔒 Enterprise Security**: Automatic HTTPS, managed certificates, secure secrets
+- **🔒 Enterprise Security**: Automatic HTTPS, managed certificates, secure secrets, and private storage endpoints by default
 - **📈 Smart Scaling**: Automatically scales from 0 to handle any load
-- **� Cost Efficient**: Pay only when active - perfect for testing and production
+- **💰 Cost Efficient**: Pay only when active - perfect for testing and production
 - **🌐 Global Reach**: Deploy to any Azure region worldwide
 - **🔧 Zero Maintenance**: Automatic updates, monitoring, and health checks
+
+> ℹ️ **New in v0.8.4+:** `deploy-azure.ps1` now provisions an isolated virtual network, private DNS zone, and blob storage private endpoint so the snapshot container never requires public access. If you're upgrading an older deployment, recreate the Container Apps environment to pick up the VNet integration.
 
 ### **Docker Compose** (Self-Hosted)
 For on-premises or custom cloud deployments:
