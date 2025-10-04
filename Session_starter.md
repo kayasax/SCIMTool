@@ -14,10 +14,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-05 | Bootstrap setup script auto-detects existing app/env names per resource group |
 | 2025-10-05 | Resource discovery now uses az resource list to avoid extension noise and ensure reuse |
 | 2025-10-05 | Web footer fallback version synced with package.json (0.8.3) |
+| 2025-10-05 | Version bumped to v0.8.5 across API + Web + docs |
+| 2025-10-05 | Version bumped to v0.8.4 across web assets |
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
 | 2025-10-04 | Upgrade command now auto-fills RG/App and acknowledges blob backups |
 | 2025-10-04 | Added manual GHCR publish workflow (publish-ghcr.yml) |
-| 2025-10-03 | v0.8.3 released: structured membership change data (addedMembers/removedMembers) & UI rendering; case-insensitive PATCH ops. |
+| 2025-10-03 | v0.8.4 released: structured membership change data (addedMembers/removedMembers) & UI rendering; case-insensitive PATCH ops. |
 | 2025-10-02 | Unified image build (root Dockerfile ships API + Web) |
 | 2025-10-02 | Token resilience: frontend clears bearer on 401 + modal guidance |
 | 2025-10-01 | Runtime token enforcement (no build-time secrets) |
@@ -28,12 +30,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.4 (blob snapshot dependency fix + structured membership arrays)
+Current Version: v0.8.5 (blob snapshot dependency fix + structured membership arrays)
 
 ---
 
 ## Status
-Production Ready (v0.8.3) – Adds structured membership change data to feed; plus blob snapshots + direct update flow + observability.
+Production Ready (v0.8.5) – Adds structured membership change data to feed; plus blob snapshots + direct update flow + observability.
 
 ## Quick Commands
 ```powershell
@@ -41,7 +43,7 @@ Production Ready (v0.8.3) – Adds structured membership change data to feed; pl
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.3 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.5 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
