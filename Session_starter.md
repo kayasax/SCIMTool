@@ -8,6 +8,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-05 | Private storage endpoint rollout: VNet + DNS automation baked into deploy-azure.ps1 |
 | 2025-10-05 | Deploy script now reuses existing ACA virtual network & DNS when already configured |
 | 2025-10-05 | Setup auto-registers Microsoft.App & Microsoft.ContainerService providers before deployment |
+| 2025-10-05 | Networking template no longer pre-delegates subnets (consumption environment compatibility) |
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
 | 2025-10-04 | Upgrade command now auto-fills RG/App and acknowledges blob backups |
 | 2025-10-04 | Added manual GHCR publish workflow (publish-ghcr.yml) |

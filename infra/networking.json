@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "18037772167174746492"
+      "templateHash": "9377570355821537246"
     }
   },
   "parameters": {
@@ -80,14 +80,7 @@
             "name": "[variables('infrastructureSubnetName')]",
             "properties": {
               "addressPrefix": "[parameters('infrastructureSubnetPrefix')]",
-              "delegations": [
-                {
-                  "name": "aca-infra-delegation",
-                  "properties": {
-                    "serviceName": "Microsoft.App/environments"
-                  }
-                }
-              ],
+              "delegations": [],
               "privateEndpointNetworkPolicies": "Disabled",
               "privateLinkServiceNetworkPolicies": "Disabled"
             }
@@ -96,14 +89,7 @@
             "name": "[variables('workloadSubnetName')]",
             "properties": {
               "addressPrefix": "[parameters('workloadSubnetPrefix')]",
-              "delegations": [
-                {
-                  "name": "aca-runtime-delegation",
-                  "properties": {
-                    "serviceName": "Microsoft.App/environments"
-                  }
-                }
-              ],
+              "delegations": [],
               "privateEndpointNetworkPolicies": "Disabled",
               "privateLinkServiceNetworkPolicies": "Disabled"
             }
