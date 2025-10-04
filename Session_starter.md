@@ -16,7 +16,8 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-05 | Bootstrap setup script auto-detects existing app/env names per resource group |
 | 2025-10-05 | Resource discovery now uses az resource list to avoid extension noise and ensure reuse |
 | 2025-10-05 | Web footer fallback version synced with package.json (0.8.3) |
-| 2025-10-05 | Version bumped to v0.8.6 (blob restore bootstrap + duplicate guardrails prep) |
+| 2025-10-05 | Manual provisioning console (UI + admin API) for SCIM collision testing |
+| 2025-10-05 | Version bumped to v0.8.7 (manual provisioning console + duplicate guardrails prep) |
 | 2025-10-05 | Version bumped to v0.8.5 across API + Web + docs |
 | 2025-10-05 | Version bumped to v0.8.4 across web assets |
 | 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
@@ -33,12 +34,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.6 (blob restore bootstrap + SCIM duplicate enforcement groundwork)
+Current Version: v0.8.7 (manual provisioning console + SCIM duplicate enforcement groundwork)
 
 ---
 
 ## Status
-Production Ready (v0.8.6) – Adds structured membership change data to feed, blob restore bootstrap, and duplicate guardrails groundwork.
+Production Ready (v0.8.7) – Adds structured membership change data to feed, blob restore bootstrap, duplicate guardrails groundwork, and manual provisioning console.
 
 ## Quick Commands
 ```powershell
@@ -46,7 +47,7 @@ Production Ready (v0.8.6) – Adds structured membership change data to feed, bl
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.6 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.7 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```

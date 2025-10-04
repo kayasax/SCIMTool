@@ -571,7 +571,7 @@ const AppContent: React.FC = () => {
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <span>Made by <strong>Loïc MICHEL</strong></span>
-          <span>v{localVersion?.version || '0.8.6'}</span>
+          <span>v{localVersion?.version || '0.8.7'}</span>
           <a
             href="https://github.com/kayasax/SCIMTool"
             target="_blank"
