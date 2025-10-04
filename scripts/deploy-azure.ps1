@@ -58,11 +58,31 @@ function Get-ExistingContainerApps {
     param([string]$RgName)
 
     if (-not $RgName) { return @() }
+    $candidates = @()
+
     $appsJson = az containerapp list --resource-group $RgName --query "[].name" --output json 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $appsJson) { return @() }
-    try {
-        return $appsJson | ConvertFrom-Json
-    } catch { return @() }
+    if ($LASTEXITCODE -eq 0 -and $appsJson) {
+        try { $candidates += ($appsJson | ConvertFrom-Json) } catch {}
+    }
+
+    if ($candidates.Count -eq 0) {
+        $envJson = az containerapp env list --resource-group $RgName --query "[].name" --output json 2>$null
+        if ($LASTEXITCODE -eq 0 -and $envJson) {
+            try {
+                $envs = $envJson | ConvertFrom-Json
+                foreach ($envName in $envs) {
+                    if ([string]::IsNullOrWhiteSpace($envName)) { continue }
+                    if ($envName.EndsWith('-env')) {
+                        $candidates += $envName.Substring(0, $envName.Length - 4)
+                    } else {
+                        $candidates += $envName
+                    }
+                }
+            } catch {}
+        }
+    }
+
+    return ($candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
 }
 
 if (-not $AppName) {
@@ -146,8 +166,6 @@ foreach ($ns in $requiredProviders) {
 $rgSuffix = $ResourceGroup.Replace("-", "").Replace("_", "").ToLower()
 $appPrefix = $AppName.Replace("-", "").Replace("_", "").ToLower()
 $storageName = $appPrefix + $rgSuffix + "stor"
-$fileShareName = 'scimtool-data'
-
 # Truncate to 24 characters if too long
 if ($storageName.Length -gt 24) {
     # Keep app prefix + truncated RG suffix + "stor"
@@ -183,8 +201,6 @@ Write-Host "   Virtual Network: $vnetName" -ForegroundColor White
 Write-Host "   Storage Account: $storageName" -ForegroundColor White
 Write-Host "   Log Analytics: $lawName" -ForegroundColor White
 Write-Host "   Image: ghcr.io/kayasax/scimtool:$ImageTag" -ForegroundColor White
-$storageStatus = if($EnablePersistentStorage){'Enabled'}else{'Disabled'}
-$storageColor = if($EnablePersistentStorage){'Green'}else{'Yellow'}
 Write-Host "   Persistence: Blob snapshots (Account=$BlobBackupAccount Container=$BlobBackupContainer)" -ForegroundColor Green
 Write-Host ""
 
@@ -212,7 +228,7 @@ Write-Host ""
 # Step 2: Private network + DNS linkage for Container Apps
 Write-Host "🌐 Step 2/6: Network & Private DNS" -ForegroundColor Cyan
 
-function Ensure-VnetSubnetId {
+function GetOrCreate-VnetSubnetId {
     param(
         [string]$ResourceGroupName,
         [string]$VirtualNetworkName,
@@ -234,7 +250,7 @@ function Ensure-VnetSubnetId {
     }
 
     Write-Host "   ➕ Creating subnet '$SubnetName' on existing VNet..." -ForegroundColor Yellow
-    $args = @(
+    $subnetArgs = @(
         'network','vnet','subnet','create',
         '--resource-group',$ResourceGroupName,
         '--vnet-name',$VirtualNetworkName,
@@ -243,13 +259,13 @@ function Ensure-VnetSubnetId {
         '--output','json'
     )
     if ($DisablePrivateEndpointPolicies) {
-        $args += @('--disable-private-endpoint-network-policies','true')
+        $subnetArgs += @('--disable-private-endpoint-network-policies','true')
     }
     if ($DisablePrivateLinkServicePolicies) {
-        $args += @('--disable-private-link-service-network-policies','true')
+        $subnetArgs += @('--disable-private-link-service-network-policies','true')
     }
 
-    $createJson = az @args 2>$null
+    $createJson = az @subnetArgs 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $createJson) {
         Write-Host "   ❌ Failed to create subnet $SubnetName" -ForegroundColor Red
         return $null
@@ -279,9 +295,9 @@ if ($LASTEXITCODE -eq 0 -and $existingVnetJson) {
     $existingVnet = $existingVnetJson | ConvertFrom-Json
     Write-Host "   🔁 Reusing existing virtual network '$vnetName'" -ForegroundColor Green
 
-    $infrastructureSubnetId = Ensure-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $expectedInfraSubnetName -AddressPrefix $infraPrefix
-    $workloadSubnetId = Ensure-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $runtimeSubnetName -AddressPrefix $runtimePrefix
-    $privateEndpointSubnetId = Ensure-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $expectedPeSubnetName -AddressPrefix $privateEndpointPrefix
+    $infrastructureSubnetId = GetOrCreate-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $expectedInfraSubnetName -AddressPrefix $infraPrefix
+    $workloadSubnetId = GetOrCreate-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $runtimeSubnetName -AddressPrefix $runtimePrefix
+    $privateEndpointSubnetId = GetOrCreate-VnetSubnetId -ResourceGroupName $ResourceGroup -VirtualNetworkName $vnetName -SubnetName $expectedPeSubnetName -AddressPrefix $privateEndpointPrefix
 
     if (-not $infrastructureSubnetId -or -not $privateEndpointSubnetId) {
         Write-Host "   ❌ Unable to ensure required subnets exist" -ForegroundColor Red
