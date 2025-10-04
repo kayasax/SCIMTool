@@ -126,6 +126,7 @@ export class BackupService implements OnModuleInit {
         // Legacy Azure Files copy
         try {
           await copyFile(this.localDbPath, this.azureFilesBackupPath);
+          this.hasSnapshots = true;
         } catch (e) {
           // If no persistence layer this will fail; mark explicitly
           const msg = e instanceof Error ? e.message : String(e);
@@ -140,6 +141,7 @@ export class BackupService implements OnModuleInit {
       this.backupCount++;
       this.lastBackupTime = new Date();
       this.lastBackupSucceeded = true;
+      this.lastError = null;
 
       this.logger.log(`✓ Backup #${this.backupCount} completed (${fileSizeKB} KB) @ ${this.lastBackupTime.toISOString()}`);
     } catch (error) {
@@ -157,9 +159,21 @@ export class BackupService implements OnModuleInit {
    * Get backup statistics
    */
   getBackupStats() {
+    const mode: 'blob' | 'azureFiles' | 'none' = this.blobMode
+      ? 'blob'
+      : existsSync(this.azureFilesBackupPath)
+        ? 'azureFiles'
+        : 'none';
+
     return {
+      mode,
       backupCount: this.backupCount,
       lastBackupTime: this.lastBackupTime,
+      lastBackupSucceeded: this.lastBackupSucceeded,
+      lastError: this.lastError,
+      restoredFromSnapshot: this.restoredFromSnapshot,
+      initialRestoreAttempted: this.initialRestoreAttempted,
+      hasSnapshots: this.hasSnapshots,
       localDbPath: this.localDbPath,
       azureFilesBackupPath: this.azureFilesBackupPath,
       blobMode: this.blobMode,
@@ -191,26 +205,23 @@ export class BackupService implements OnModuleInit {
     const container = this.blobClient.getContainerClient(this.blobContainer);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const blobName = `scim-${timestamp}.db`;
-  const blockBlobUnknown = container.getBlockBlobClient(blobName);
-  // Minimal shape we rely on (type relaxed with unknown)
-  const blockBlob = blockBlobUnknown as { uploadStream: (s: NodeJS.ReadableStream, bufferSize: number, maxConcurrency: number, opts: unknown) => Promise<void> };
+    const blockBlobUnknown = container.getBlockBlobClient(blobName);
+    // Minimal shape we rely on (type relaxed with unknown)
+    const blockBlob = blockBlobUnknown as {
+      uploadStream: (s: NodeJS.ReadableStream, bufferSize: number, maxConcurrency: number, opts: unknown) => Promise<void>;
+    };
+
     if (!existsSync(this.localDbPath)) {
       this.logger.warn('Local DB disappeared before blob upload');
-      const mode: 'blob' | 'azureFiles' | 'none' = this.blobMode ? 'blob'
-        : existsSync(this.azureFilesBackupPath) ? 'azureFiles'
-        : 'none';
-      return;
+      throw new Error('Local DB missing before blob upload');
     }
+
     const stream = createReadStream(this.localDbPath);
-    await blockBlob.uploadStream(stream, 4 * 1024 * 1024, 5, { blobHTTPHeaders: { blobContentType: 'application/octet-stream' } });
+    await blockBlob.uploadStream(stream, 4 * 1024 * 1024, 5, {
+      blobHTTPHeaders: { blobContentType: 'application/octet-stream' },
+    });
     this.logger.log(`Uploaded blob snapshot: ${blobName}`);
-        mode,
-        blobMode: this.blobMode,
-        lastBackupSucceeded: this.lastBackupSucceeded,
-        lastError: this.lastError,
-        restoredFromSnapshot: this.restoredFromSnapshot,
-        initialRestoreAttempted: this.initialRestoreAttempted,
-        hasSnapshots: this.hasSnapshots,
+    this.hasSnapshots = true;
     await this.pruneOldBlobs(container);
   }
 
@@ -260,7 +271,8 @@ export class BackupService implements OnModuleInit {
     const latest = blobs[0];
     this.logger.log(`Restoring from snapshot: ${latest.name}`);
     // Dynamic import to keep types loose
-    const block = container.getBlockBlobClient(latest.name) as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const block = container.getBlockBlobClient(latest.name) as any;
     const fs = await import('fs');
     const writeStream = fs.createWriteStream(this.localDbPath);
     const download = await block.download();

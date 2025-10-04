@@ -5,6 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-04 | Backup service telemetry + blob snapshot compile fix |
 | 2025-10-03 | v0.8.3 released: structured membership change data (addedMembers/removedMembers) & UI rendering; case-insensitive PATCH ops. |
 | 2025-10-02 | Unified image build (root Dockerfile ships API + Web) |
 | 2025-10-02 | Token resilience: frontend clears bearer on 401 + modal guidance |
@@ -64,7 +65,7 @@ AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when neede
 ---
 
 ## Current Focus
-Finalize & validate direct upgrade command from UI; prepare rollback helper & CI guardrails; monitor blob snapshot cadence.
+Validate blob snapshot build fixes, then resume direct upgrade command validation; prepare rollback helper & CI guardrails.
 
 ## Next Steps / Backlog
 - [ ] Validate copied direct upgrade command in production environment
