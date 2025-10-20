@@ -5,6 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-20 | v0.8.9 tagged (activity feed keepalive pagination fix) |
 | 2025-10-20 | Activity feed pagination skips keepalive-only pages when hide toggle is on |
 | 2025-10-20 | publish-ghcr workflow description updated; YAML lint passing with version 0.8.8 example |
 | 2025-10-20 | v0.8.8 tagged (keepalive suppression across logs + activity metrics) |
@@ -41,12 +42,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.8 (keepalive suppression toggle + activity feed parity)
+Current Version: v0.8.9 (keepalive pagination improvements)
 
 ---
 
 ## Status
-Production Ready (v0.8.8) – Adds keepalive suppression toggle across raw logs + activity feed, plus blob restore bootstrap and duplicate guardrails groundwork.
+Production Ready (v0.8.9) – Adds keepalive suppression toggle + pagination auto-skip for keepalive-only activity feed pages, plus blob restore bootstrap and duplicate guardrails groundwork.
 
 ## Quick Commands
 ```powershell
@@ -54,7 +55,7 @@ Production Ready (v0.8.8) – Adds keepalive suppression toggle across raw logs 
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.8 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.9 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
