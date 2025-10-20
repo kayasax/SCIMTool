@@ -44,6 +44,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [newActivityCount, setNewActivityCount] = useState(0);
   const [lastActivityId, setLastActivityId] = useState<string>('');
+  const [pageDirection, setPageDirection] = useState<'forward' | 'backward' | 'none'>('none');
 
   // Store last activity ID in localStorage for persistence across component re-renders
   const storeLastActivityId = (id: string) => {
@@ -196,6 +197,20 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
       const allActivities: ActivitySummary[] = Array.isArray(data.activities) ? data.activities : [];
       const nonKeepaliveActivities = allActivities.filter((activity) => !isKeepaliveActivity(activity));
 
+      if (!silent && hideKeepalive && data.pagination.total > 0 && nonKeepaliveActivities.length === 0) {
+        const direction = pageDirection === 'none' ? 'forward' : pageDirection;
+
+        if (direction === 'forward' && data.pagination.page < data.pagination.pages) {
+          setPagination(prev => ({ ...prev, page: data.pagination.page + 1 }));
+          return;
+        }
+
+        if (direction === 'backward' && data.pagination.page > 1) {
+          setPagination(prev => ({ ...prev, page: data.pagination.page - 1 }));
+          return;
+        }
+      }
+
       if (silent) {
         if (nonKeepaliveActivities.length > 0) {
           const latestRelevant = nonKeepaliveActivities[0];
@@ -233,6 +248,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
+      if (!silent) {
+        setPageDirection('none');
+      }
       if (!silent) {
         setLoading(false);
       } else {
@@ -288,7 +306,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
 
       return () => clearInterval(interval);
     }
-  }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh, token]);
+  }, [pagination.page, filters.type, filters.severity, filters.search, autoRefresh, token, hideKeepalive]);
+
+  useEffect(() => {
+    if (hideKeepalive) {
+      setPageDirection('none');
+      setPagination(prev => (prev.page === 1 ? prev : { ...prev, page: 1 }));
+    }
+  }, [hideKeepalive]);
 
   // Clear badge when user focuses on the tab - but wait a moment to let them see it
   useEffect(() => {
@@ -323,10 +348,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPageDirection('none');
+    setPagination(prev => (prev.page === 1 ? prev : { ...prev, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
+    if (page === pagination.page) {
+      return;
+    }
+
+    const direction: 'forward' | 'backward' = page > pagination.page ? 'forward' : 'backward';
+    setPageDirection(direction);
     setPagination(prev => ({ ...prev, page }));
   };
 

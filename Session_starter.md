@@ -5,6 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-20 | Activity feed pagination skips keepalive-only pages when hide toggle is on |
 | 2025-10-20 | publish-ghcr workflow description updated; YAML lint passing with version 0.8.8 example |
 | 2025-10-20 | v0.8.8 tagged (keepalive suppression across logs + activity metrics) |
 | 2025-10-20 | Activity feed shares keepalive suppression toggle; summary metrics exclude Entra ping checks |
