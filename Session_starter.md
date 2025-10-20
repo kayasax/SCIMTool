@@ -5,6 +5,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-20 | publish-ghcr workflow description updated; YAML lint passing with version 0.8.8 example |
+| 2025-10-20 | v0.8.8 tagged (keepalive suppression across logs + activity metrics) |
+| 2025-10-20 | Activity feed shares keepalive suppression toggle; summary metrics exclude Entra ping checks |
+| 2025-10-20 | Raw log viewer can hide Entra keepalive GET pings (toggle + suppression banner) |
+| 2025-10-05 | Git tag v0.8.7 created and pushed to origin (manual provisioning release) |
+| 2025-10-05 | Web UI upgrade helper now strips leading 'v' from version parameter; GHCR image 0.8.7 published via workflow_dispatch |
 | 2025-10-05 | Blob snapshot bootstrap added to Docker entrypoint (restores /tmp DB before migrations) |
 | 2025-10-05 | Initiated SCIM duplicate handling refinement: schema uniqueness enforced & service helpers in progress |
 | 2025-10-05 | Private storage endpoint rollout: VNet + DNS automation baked into deploy-azure.ps1 |
@@ -34,12 +40,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.7 (manual provisioning console + SCIM duplicate enforcement groundwork)
+Current Version: v0.8.8 (keepalive suppression toggle + activity feed parity)
 
 ---
 
 ## Status
-Production Ready (v0.8.7) – Adds structured membership change data to feed, blob restore bootstrap, duplicate guardrails groundwork, and manual provisioning console.
+Production Ready (v0.8.8) – Adds keepalive suppression toggle across raw logs + activity feed, plus blob restore bootstrap and duplicate guardrails groundwork.
 
 ## Quick Commands
 ```powershell
@@ -47,7 +53,7 @@ Production Ready (v0.8.7) – Adds structured membership change data to feed, bl
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.7 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.8 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```

@@ -229,6 +229,44 @@
   animation: pulse 1s ease-in-out infinite;
 }
 
+.keepaliveToggle {
+  display: flex;
+  align-items: center;
+  color: var(--current-foreground-secondary);
+  font-size: 14px;
+}
+
+.keepaliveToggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.keepaliveToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.keepaliveInfo {
+  margin: -8px 0 16px;
+  padding: 10px 14px;
+  background: var(--current-surface);
+  border: 1px solid var(--current-border);
+  border-radius: 6px;
+  color: var(--current-foreground-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.keepaliveInfo::before {
+  content: 'ℹ️';
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import styles from './ActivityFeed.module.css';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -14,13 +14,17 @@ interface ActivitySummary {
   groupIdentifier?: string;
   addedMembers?: { id: string; name: string }[];
   removedMembers?: { id: string; name: string }[];
+  isKeepalive?: boolean;
 }
 
 interface ActivityFeedProps {
-  // Props will be added when integrated with main app
+  hideKeepalive: boolean;
+  onHideKeepaliveChange: (next: boolean) => void;
 }
 
-export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
+const isKeepaliveActivity = (activity: ActivitySummary | undefined): boolean => !!activity?.isKeepalive;
+
+export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHideKeepaliveChange }) => {
   const { token } = useAuth();
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -189,43 +193,42 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
       if (!response.ok) throw new Error('Failed to fetch activities');
 
       const data = await response.json();
+      const allActivities: ActivitySummary[] = Array.isArray(data.activities) ? data.activities : [];
+      const nonKeepaliveActivities = allActivities.filter((activity) => !isKeepaliveActivity(activity));
 
-      // Check for new activities when doing silent refresh
-      if (silent && data.activities?.length > 0) {
-        const latestActivity = data.activities[0];
-        const storedLastActivityId = getStoredLastActivityId();
+      if (silent) {
+        if (nonKeepaliveActivities.length > 0) {
+          const latestRelevant = nonKeepaliveActivities[0];
+          const storedLastActivityId = getStoredLastActivityId();
 
-        // If we have a last known activity ID and it's different from the latest
-        if (storedLastActivityId && latestActivity.id !== storedLastActivityId) {
-          // Count new activities since last known activity
-          const lastActivityIndex = data.activities.findIndex((activity: ActivitySummary) => activity.id === storedLastActivityId);
-          const newCount = lastActivityIndex === -1 ? data.activities.length : lastActivityIndex;
+          if (storedLastActivityId && latestRelevant.id !== storedLastActivityId) {
+            const lastActivityIndex = nonKeepaliveActivities.findIndex((activity) => activity.id === storedLastActivityId);
+            const newCount = lastActivityIndex === -1 ? nonKeepaliveActivities.length : lastActivityIndex;
 
-          if (newCount > 0) {
-            const updatedCount = newActivityCount + newCount;
-            setNewActivityCount(updatedCount);
-            updateTabTitle(updatedCount);
+            if (newCount > 0) {
+              const updatedCount = newActivityCount + newCount;
+              setNewActivityCount(updatedCount);
+              updateTabTitle(updatedCount);
+            }
+          } else if (!storedLastActivityId) {
+            storeLastActivityId(latestRelevant.id);
           }
-        } else if (!storedLastActivityId && data.activities.length > 0) {
-          // If no last activity ID is stored, this is first time - just set the baseline
-          storeLastActivityId(latestActivity.id);
-        }
 
-        // Always update last known activity ID for future comparisons
-        if (latestActivity && latestActivity.id !== storedLastActivityId) {
-          storeLastActivityId(latestActivity.id);
+          if (latestRelevant && latestRelevant.id !== storedLastActivityId) {
+            storeLastActivityId(latestRelevant.id);
+          }
         }
-      } else if (!silent && data.activities?.length > 0) {
-        // Initial load or manual refresh - set baseline but don't clear existing badge
-        storeLastActivityId(data.activities[0].id);
-        // Only clear badge count if this is truly the first load (no activities in state yet)
+      } else {
+        if (nonKeepaliveActivities.length > 0) {
+          storeLastActivityId(nonKeepaliveActivities[0].id);
+        }
         if (activities.length === 0) {
           setNewActivityCount(0);
           updateTabTitle(0);
         }
       }
 
-      setActivities(data.activities);
+      setActivities(allActivities);
       setPagination(data.pagination);
     } catch (error) {
       console.error('Error fetching activities:', error);
@@ -366,6 +369,12 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
     }
   };
 
+  const visibleActivities = useMemo(() => (
+    hideKeepalive ? activities.filter((activity) => !isKeepaliveActivity(activity)) : activities
+  ), [activities, hideKeepalive]);
+
+  const suppressedActivities = hideKeepalive ? activities.length - visibleActivities.length : 0;
+
   return (
     <div className={styles.activityFeed}>
       <div className={styles.header}>
@@ -455,21 +464,38 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = () => {
             Auto-refresh (10s)
           </label>
         </div>
+
+        <div className={styles.keepaliveToggle}>
+          <label>
+            <input
+              type="checkbox"
+              checked={hideKeepalive}
+              onChange={(e) => onHideKeepaliveChange(e.target.checked)}
+            />
+            Hide keepalive checks
+          </label>
+        </div>
       </div>
+
+      {hideKeepalive && suppressedActivities > 0 && (
+        <div className={styles.keepaliveInfo}>
+          Hiding {suppressedActivities} Entra keepalive check{suppressedActivities === 1 ? '' : 's'}. Uncheck "Hide keepalive checks" to view them.
+        </div>
+      )}
 
       {loading ? (
         <div className={styles.loading}>Loading activities...</div>
       ) : (
         <>
           <div className={styles.activitiesList}>
-            {activities.length === 0 ? (
+            {visibleActivities.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>📭</div>
                 <h3>No activities found</h3>
-                <p>SCIM activities will appear here as they happen</p>
+                <p>{hideKeepalive && suppressedActivities > 0 ? 'All recent activity items are Entra keepalive checks.' : 'SCIM activities will appear here as they happen'}</p>
               </div>
             ) : (
-              activities.map((activity) => (
+              visibleActivities.map((activity) => (
                 <div
                   key={activity.id}
                   className={`${styles.activityItem} ${getSeverityClass(activity.severity)} ${getTypeClass(activity.type)}`}

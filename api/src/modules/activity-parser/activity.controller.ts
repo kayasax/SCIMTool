@@ -118,23 +118,33 @@ export class ActivityController {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    const [last24Hours, lastWeek, userOperations, groupOperations, systemOperations] = await Promise.all([
-      this.prisma.requestLog.count({
+    const selectFields = {
+      method: true,
+      url: true,
+      status: true,
+      identifier: true as const,
+    };
+
+    const [recentDayLogs, recentWeekLogs, userLogs, groupOperations, systemOperations] = await Promise.all([
+      this.prisma.requestLog.findMany({
         where: {
           createdAt: { gte: oneDayAgo },
           url: { not: { contains: '/admin/' } },
         },
+        select: selectFields,
       }),
-      this.prisma.requestLog.count({
+      this.prisma.requestLog.findMany({
         where: {
           createdAt: { gte: oneWeekAgo },
           url: { not: { contains: '/admin/' } },
         },
+        select: selectFields,
       }),
-      this.prisma.requestLog.count({
+      this.prisma.requestLog.findMany({
         where: {
           url: { contains: '/Users' },
         },
+        select: selectFields,
       }),
       this.prisma.requestLog.count({
         where: {
@@ -148,6 +158,13 @@ export class ActivityController {
         },
       }),
     ]);
+
+    const removeKeepalive = (logs: Array<{ method: string; url: string; status: number | null; identifier: string | null }>) =>
+      logs.filter((log) => !this.activityParser.isKeepaliveLog(log)).length;
+
+    const last24Hours = removeKeepalive(recentDayLogs);
+    const lastWeek = removeKeepalive(recentWeekLogs);
+    const userOperations = removeKeepalive(userLogs);
 
     return {
       summary: {

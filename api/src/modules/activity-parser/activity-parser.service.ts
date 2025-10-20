@@ -14,6 +14,7 @@ export interface ActivitySummary {
   // Structured membership change data (optional; present for group membership PATCH operations)
   addedMembers?: { id: string; name: string }[];
   removedMembers?: { id: string; name: string }[];
+  isKeepalive?: boolean;
 }
 
 interface ScimPatchOperation {
@@ -87,6 +88,7 @@ export class ActivityParserService {
         userIdentifier,
         isListOperation,
         isGetOperation,
+        isKeepalive: this.isKeepaliveRequest({ method, url, identifier: log.identifier, status })
       });
     } else if (isGroupsOperation) {
       return await this.parseGroupActivity({
@@ -123,8 +125,9 @@ export class ActivityParserService {
     userIdentifier?: string;
     isListOperation: boolean;
     isGetOperation: boolean;
+    isKeepalive: boolean;
   }): Promise<ActivitySummary> {
-    const { id, timestamp, method, status, requestData, responseData, userIdentifier, isListOperation, isGetOperation } = params;
+    const { id, timestamp, method, status, requestData, responseData, userIdentifier, isListOperation, isGetOperation, isKeepalive } = params;
 
     // Resolve user name for better display
     const resolvedUserName = userIdentifier ? await this.resolveUserName(userIdentifier) : undefined;
@@ -141,6 +144,7 @@ export class ActivityParserService {
         type: 'user',
         severity: 'error',
         userIdentifier,
+        isKeepalive: false,
       };
     }
 
@@ -156,6 +160,7 @@ export class ActivityParserService {
           type: 'user',
           severity: 'success',
           userIdentifier,
+          isKeepalive: false,
         };
 
       case 'PUT':
@@ -168,6 +173,7 @@ export class ActivityParserService {
           type: 'user',
           severity: 'info',
           userIdentifier,
+          isKeepalive: false,
         };
 
       case 'PATCH': {
@@ -188,6 +194,7 @@ export class ActivityParserService {
             type: 'user',
             severity: 'warning',
             userIdentifier,
+            isKeepalive: false,
           };
         } else if (activateOp) {
           return {
@@ -198,6 +205,7 @@ export class ActivityParserService {
             type: 'user',
             severity: 'success',
             userIdentifier,
+            isKeepalive: false,
           };
         } else {
           // Parse specific changes for better details
@@ -211,6 +219,7 @@ export class ActivityParserService {
             type: 'user',
             severity: 'info',
             userIdentifier,
+            isKeepalive: false,
           };
         }
       }
@@ -224,6 +233,7 @@ export class ActivityParserService {
           type: 'user',
           severity: 'warning',
           userIdentifier,
+          isKeepalive: false,
         };
 
       case 'GET':
@@ -237,6 +247,7 @@ export class ActivityParserService {
             details: `${totalResults} user${totalResults !== 1 ? 's' : ''} found`,
             type: 'system',
             severity: 'info',
+            isKeepalive: false,
           };
         } else if (isGetOperation) {
           return {
@@ -247,6 +258,7 @@ export class ActivityParserService {
             type: 'user',
             severity: 'info',
             userIdentifier,
+            isKeepalive,
           };
         }
         break;
@@ -261,6 +273,7 @@ export class ActivityParserService {
       type: 'user',
       severity: 'info',
       userIdentifier,
+      isKeepalive: false,
     };
   }
 
@@ -290,6 +303,7 @@ export class ActivityParserService {
         type: 'group',
         severity: 'error',
         groupIdentifier,
+        isKeepalive: false,
       };
     }
 
@@ -306,6 +320,7 @@ export class ActivityParserService {
           type: 'group',
           severity: 'success',
           groupIdentifier,
+          isKeepalive: false,
         };
       }
 
@@ -320,6 +335,7 @@ export class ActivityParserService {
           type: 'group',
           severity: 'info',
           groupIdentifier,
+          isKeepalive: false,
         };
       }
 
@@ -423,6 +439,7 @@ export class ActivityParserService {
               severity: 'success',
               groupIdentifier,
               addedMembers,
+              isKeepalive: false,
             };
           } else if (removedMemberIds.length > 0 && addedMemberIds.length === 0) {
             // Only removals
@@ -436,6 +453,7 @@ export class ActivityParserService {
               severity: 'info',
               groupIdentifier,
               removedMembers,
+              isKeepalive: false,
             };
           } else if (addedMemberIds.length > 0 && removedMemberIds.length > 0) {
             // Both additions and removals
@@ -457,6 +475,7 @@ export class ActivityParserService {
               groupIdentifier,
               addedMembers: addedMembers.length ? addedMembers : undefined,
               removedMembers: removedMembers.length ? removedMembers : undefined,
+              isKeepalive: false,
             };
           } else {
             // Couldn't extract member info, show generic message
@@ -469,6 +488,7 @@ export class ActivityParserService {
               type: 'group',
               severity: 'info',
               groupIdentifier,
+              isKeepalive: false,
             };
           }
         } else {
@@ -481,6 +501,7 @@ export class ActivityParserService {
             type: 'group',
               severity: 'info',
             groupIdentifier,
+            isKeepalive: false,
           };
         }
         break;
@@ -496,6 +517,7 @@ export class ActivityParserService {
           type: 'group',
           severity: 'warning',
           groupIdentifier,
+          isKeepalive: false,
         };
       }
 
@@ -510,6 +532,7 @@ export class ActivityParserService {
             details: `${totalResults} group${totalResults !== 1 ? 's' : ''} found`,
             type: 'system',
             severity: 'info',
+            isKeepalive: false,
           };
         } else if (isGetOperation) {
           return {
@@ -520,6 +543,7 @@ export class ActivityParserService {
             type: 'group',
             severity: 'info',
             groupIdentifier,
+            isKeepalive: false,
           };
         }
         break;
@@ -534,6 +558,7 @@ export class ActivityParserService {
       type: 'group',
       severity: 'info',
       groupIdentifier,
+      isKeepalive: false,
     };
   }
 
@@ -554,6 +579,7 @@ export class ActivityParserService {
         message: 'Service configuration retrieved',
         type: 'system',
         severity: 'info',
+        isKeepalive: false,
       };
     }
 
@@ -565,6 +591,7 @@ export class ActivityParserService {
         message: 'SCIM schemas retrieved',
         type: 'system',
         severity: 'info',
+        isKeepalive: false,
       };
     }
 
@@ -576,6 +603,7 @@ export class ActivityParserService {
         message: 'Resource types retrieved',
         type: 'system',
         severity: 'info',
+        isKeepalive: false,
       };
     }
 
@@ -588,7 +616,50 @@ export class ActivityParserService {
       details: status >= 400 ? `HTTP ${status}` : undefined,
       type: 'system',
       severity: status >= 400 ? 'error' : 'info',
+      isKeepalive: false,
     };
+  }
+
+  private isKeepaliveRequest(params: { method: string; url: string; identifier?: string; status?: number }): boolean {
+    const { method, url, identifier, status } = params;
+    if (!method || !url) return false;
+    if (method.toUpperCase() !== 'GET') return false;
+    if (!/\/Users/i.test(url)) return false;
+    if (identifier && identifier.trim().length > 0) return false;
+    if (typeof status === 'number' && status >= 400) return false;
+
+    const queryStart = url.indexOf('?');
+    if (queryStart === -1) return false;
+    const query = url.slice(queryStart + 1);
+    let paramsObj: URLSearchParams;
+    try {
+      paramsObj = new URLSearchParams(query);
+    } catch {
+      return false;
+    }
+    const rawFilter = paramsObj.get('filter') ?? paramsObj.get('Filter') ?? paramsObj.get('FILTER');
+    if (!rawFilter) return false;
+    const withSpaces = rawFilter.replace(/\+/g, ' ');
+    let decoded = withSpaces;
+    try {
+      decoded = decodeURIComponent(withSpaces);
+    } catch {
+      // continue with original string if decoding fails
+    }
+    const match = decoded.match(/userName\s+eq\s+"?([^"\\]+)"?/i);
+    if (!match) return false;
+    const candidate = match[1].trim();
+    if (!candidate) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate);
+  }
+
+  isKeepaliveLog(log: { method: string; url: string; identifier?: string | null; status?: number | null }): boolean {
+    return this.isKeepaliveRequest({
+      method: log.method,
+      url: log.url,
+      identifier: log.identifier ?? undefined,
+      status: log.status ?? undefined
+    });
   }
 
   private extractUserIdentifier(requestData: any, responseData: any, logIdentifier?: string): string | undefined {

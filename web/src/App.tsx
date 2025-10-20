@@ -12,6 +12,7 @@ import { ThemeProvider } from './hooks/useTheme';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import './theme.css';
 import styles from './app.module.css';
+import { isKeepaliveLog } from './utils/keepalive';
 
 const envDefaultRegistry = (() => {
   if (import.meta.env.VITE_AZURE_REGISTRY) {
@@ -53,6 +54,12 @@ const AppContent: React.FC = () => {
   const [tokenInput, setTokenInput] = useState('');
   const [tokenMessage, setTokenMessage] = useState<string | null>(null);
   const [needsToken, setNeedsToken] = useState(() => !token);
+  const [hideKeepalive, setHideKeepalive] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('scimtool-hideKeepalive');
+    if (stored === null) return true;
+    return stored !== 'false';
+  });
 
   const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   // Hard-coded upstream GitHub repository for release discovery
@@ -105,7 +112,7 @@ const AppContent: React.FC = () => {
 
     const directUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1';
     const funcUrl = 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1';
-    const cleanTag = latestTag.startsWith('v') ? latestTag : `v${latestTag}`;
+  const cleanTag = latestTag.startsWith('v') ? latestTag.slice(1) : latestTag;
 
     const resourceGroup = effectiveDeployment.resourceGroup;
     const containerApp = effectiveDeployment.containerApp;
@@ -153,7 +160,7 @@ const AppContent: React.FC = () => {
       return `iex (irm '${directUrl}'); Update-SCIMToolDirect ${args.join(' ')}`;
     }
 
-    return `iex (irm '${funcUrl}'); Update-SCIMTool -Version ${cleanTag}`;
+  return `iex (irm '${funcUrl}'); Update-SCIMTool -Version ${cleanTag}`;
   }, [effectiveDeployment, latestTag, upgradeAvailable]);
 
   useEffect(() => {
@@ -330,6 +337,27 @@ const AppContent: React.FC = () => {
       load();
     }
   }, [currentView, load, token]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('scimtool-hideKeepalive', hideKeepalive ? 'true' : 'false');
+    }
+  }, [hideKeepalive]);
+
+  useEffect(() => {
+    if (hideKeepalive && selected && isKeepaliveLog(selected)) {
+      setSelected(null);
+    }
+  }, [hideKeepalive, selected]);
+
+  const visibleItems = useMemo(() => {
+    if (!hideKeepalive) return items;
+    return items.filter(item => !isKeepaliveLog(item));
+  }, [items, hideKeepalive]);
+
+  const suppressedCount = hideKeepalive ? items.length - visibleItems.length : 0;
+
+  const detailLog = hideKeepalive && selected && isKeepaliveLog(selected) ? null : selected;
 
   async function handleSelect(partial: RequestLogItem) {
     if (!token) {
@@ -534,7 +562,7 @@ const AppContent: React.FC = () => {
       </div>
 
       {currentView === 'activity' && (
-        <ActivityFeed />
+        <ActivityFeed hideKeepalive={hideKeepalive} onHideKeepaliveChange={setHideKeepalive} />
       )}
 
       {currentView === 'database' && (
@@ -566,6 +594,13 @@ const AppContent: React.FC = () => {
             <label className={styles.autoLabel}>
               <input type='checkbox' checked={auto} onChange={e => setAuto(e.target.checked)} /> Auto-refresh
             </label>
+            <label className={styles.autoLabel}>
+              <input
+                type='checkbox'
+                checked={hideKeepalive}
+                onChange={e => setHideKeepalive(e.target.checked)}
+              /> Hide keepalive checks
+            </label>
             <button onClick={handleClear} disabled={loading}>Clear Logs</button>
             {meta && <span className={styles.meta}>Total {meta.total} • Page {meta.page} / {Math.ceil(meta.total / meta.pageSize)}</span>}
             <div className={styles.pager}>
@@ -573,8 +608,13 @@ const AppContent: React.FC = () => {
               <button disabled={loading || !meta?.hasNext} onClick={() => { if (meta?.hasNext) { const next = { ...filters, page: (filters.page ?? 1) + 1 }; load(false, next); } }}>Next</button>
             </div>
           </div>
-          <LogList items={items} loading={loading} onSelect={handleSelect} />
-          <LogDetail log={selected} onClose={() => setSelected(null)} />
+          {hideKeepalive && suppressedCount > 0 && (
+            <div className={styles.info}>
+              Hiding {suppressedCount} Entra keepalive check{suppressedCount === 1 ? '' : 's'}. Uncheck "Hide keepalive checks" to view them.
+            </div>
+          )}
+          <LogList items={visibleItems} loading={loading} onSelect={handleSelect} selected={detailLog ?? undefined} />
+          <LogDetail log={detailLog} onClose={() => setSelected(null)} />
         </>
       )}
       </div>
@@ -582,7 +622,7 @@ const AppContent: React.FC = () => {
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <span>Made by <strong>Loïc MICHEL</strong></span>
-          <span>v{localVersion?.version || '0.8.7'}</span>
+          <span>v{localVersion?.version || '0.8.8'}</span>
           <a
             href="https://github.com/kayasax/SCIMTool"
             target="_blank"

@@ -35,6 +35,23 @@
   font-size: var(--font-size-400);
 }
 
+.info {
+  background: var(--current-surface-secondary);
+  color: var(--current-foreground-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--current-border);
+  font-size: var(--font-size-200);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.info::before {
+  content: "ℹ️";
+  font-size: var(--font-size-300);
+}
+
 .toolbar {
   display: flex;
   gap: var(--spacing-md);
