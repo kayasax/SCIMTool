@@ -5,6 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-20 | Activity feed aggregates multiple pages when hiding keepalive checks, keeping page numbering intuitive |
 | 2025-10-20 | v0.8.9 tagged (activity feed keepalive pagination fix) |
 | 2025-10-20 | Activity feed pagination skips keepalive-only pages when hide toggle is on |
 | 2025-10-20 | publish-ghcr workflow description updated; YAML lint passing with version 0.8.8 example |

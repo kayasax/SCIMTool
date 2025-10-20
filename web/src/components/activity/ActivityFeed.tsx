@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import styles from './ActivityFeed.module.css';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -27,6 +27,8 @@ const isKeepaliveActivity = (activity: ActivitySummary | undefined): boolean => 
 export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHideKeepaliveChange }) => {
   const { token } = useAuth();
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<ActivitySummary[]>([]);
+  const [suppressedCount, setSuppressedCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -44,7 +46,6 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [newActivityCount, setNewActivityCount] = useState(0);
   const [lastActivityId, setLastActivityId] = useState<string>('');
-  const [pageDirection, setPageDirection] = useState<'forward' | 'backward' | 'none'>('none');
 
   // Store last activity ID in localStorage for persistence across component re-renders
   const storeLastActivityId = (id: string) => {
@@ -178,47 +179,65 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
       if (!token) {
         return;
       }
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-      });
+      const targetPage = pagination.page;
+      const limit = pagination.limit;
 
-      if (filters.type) params.append('type', filters.type);
-      if (filters.severity) params.append('severity', filters.severity);
-      if (filters.search) params.append('search', filters.search);
+  const aggregatedActivities: ActivitySummary[] = [];
+  let aggregatedFiltered: ActivitySummary[] = [];
+  let keepaliveHidden = 0;
+      let currentPage = targetPage;
+      let lastPagination = pagination;
 
-      const response = await fetch(`/scim/admin/activity?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      for (let iteration = 0; iteration < 5; iteration += 1) {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: limit.toString(),
+        });
 
-      if (!response.ok) throw new Error('Failed to fetch activities');
+        if (filters.type) params.append('type', filters.type);
+        if (filters.severity) params.append('severity', filters.severity);
+        if (filters.search) params.append('search', filters.search);
 
-      const data = await response.json();
-      const allActivities: ActivitySummary[] = Array.isArray(data.activities) ? data.activities : [];
-      const nonKeepaliveActivities = allActivities.filter((activity) => !isKeepaliveActivity(activity));
+        const response = await fetch(`/scim/admin/activity?${params}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      if (!silent && hideKeepalive && data.pagination.total > 0 && nonKeepaliveActivities.length === 0) {
-        const direction = pageDirection === 'none' ? 'forward' : pageDirection;
+        if (!response.ok) throw new Error('Failed to fetch activities');
 
-        if (direction === 'forward' && data.pagination.page < data.pagination.pages) {
-          setPagination(prev => ({ ...prev, page: data.pagination.page + 1 }));
-          return;
+        const data = await response.json();
+        lastPagination = data.pagination;
+
+        const pageActivities: ActivitySummary[] = Array.isArray(data.activities) ? data.activities : [];
+        aggregatedActivities.push(...pageActivities);
+
+        aggregatedFiltered = hideKeepalive
+          ? aggregatedActivities.filter((activity) => !isKeepaliveActivity(activity))
+          : [...aggregatedActivities];
+
+        if (hideKeepalive) {
+          keepaliveHidden += pageActivities.reduce((count, activity) => count + (isKeepaliveActivity(activity) ? 1 : 0), 0);
         }
 
-        if (direction === 'backward' && data.pagination.page > 1) {
-          setPagination(prev => ({ ...prev, page: data.pagination.page - 1 }));
-          return;
+  const hasEnoughVisible = !hideKeepalive || aggregatedFiltered.length >= limit;
+        const reachedEnd = data.pagination.page >= data.pagination.pages;
+
+        if (hasEnoughVisible || reachedEnd) {
+          break;
         }
+
+        currentPage += 1;
       }
 
+  const trimmedVisible = aggregatedFiltered.slice(0, limit);
+
       if (silent) {
-        if (nonKeepaliveActivities.length > 0) {
-          const latestRelevant = nonKeepaliveActivities[0];
+        if (trimmedVisible.length > 0) {
+          const latestRelevant = trimmedVisible[0];
           const storedLastActivityId = getStoredLastActivityId();
 
           if (storedLastActivityId && latestRelevant.id !== storedLastActivityId) {
-            const lastActivityIndex = nonKeepaliveActivities.findIndex((activity) => activity.id === storedLastActivityId);
-            const newCount = lastActivityIndex === -1 ? nonKeepaliveActivities.length : lastActivityIndex;
+            const lastActivityIndex = trimmedVisible.findIndex((activity) => activity.id === storedLastActivityId);
+            const newCount = lastActivityIndex === -1 ? trimmedVisible.length : lastActivityIndex;
 
             if (newCount > 0) {
               const updatedCount = newActivityCount + newCount;
@@ -234,23 +253,22 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
           }
         }
       } else {
-        if (nonKeepaliveActivities.length > 0) {
-          storeLastActivityId(nonKeepaliveActivities[0].id);
+        if (trimmedVisible.length > 0) {
+          storeLastActivityId(trimmedVisible[0].id);
         }
-        if (activities.length === 0) {
+        if (filteredActivities.length === 0) {
           setNewActivityCount(0);
           updateTabTitle(0);
         }
       }
 
-      setActivities(allActivities);
-      setPagination(data.pagination);
+  setActivities(aggregatedActivities.slice(0, limit));
+  setFilteredActivities(trimmedVisible);
+  setSuppressedCount(keepaliveHidden);
+  setPagination(prev => ({ ...prev, ...lastPagination, page: targetPage }));
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
-      if (!silent) {
-        setPageDirection('none');
-      }
       if (!silent) {
         setLoading(false);
       } else {
@@ -290,6 +308,8 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
   useEffect(() => {
     if (!token) {
       setActivities([]);
+      setFilteredActivities([]);
+      setSuppressedCount(0);
       setSummary(null);
       return;
     }
@@ -310,7 +330,6 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
 
   useEffect(() => {
     if (hideKeepalive) {
-      setPageDirection('none');
       setPagination(prev => (prev.page === 1 ? prev : { ...prev, page: 1 }));
     }
   }, [hideKeepalive]);
@@ -348,17 +367,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
-    setPageDirection('none');
     setPagination(prev => (prev.page === 1 ? prev : { ...prev, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
-    if (page === pagination.page) {
-      return;
-    }
-
-    const direction: 'forward' | 'backward' = page > pagination.page ? 'forward' : 'backward';
-    setPageDirection(direction);
+    if (page === pagination.page) return;
     setPagination(prev => ({ ...prev, page }));
   };
 
@@ -401,11 +414,8 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
     }
   };
 
-  const visibleActivities = useMemo(() => (
-    hideKeepalive ? activities.filter((activity) => !isKeepaliveActivity(activity)) : activities
-  ), [activities, hideKeepalive]);
-
-  const suppressedActivities = hideKeepalive ? activities.length - visibleActivities.length : 0;
+  const visibleActivities = hideKeepalive ? filteredActivities : activities;
+  const suppressedActivities = hideKeepalive ? suppressedCount : 0;
 
   return (
     <div className={styles.activityFeed}>
@@ -577,7 +587,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
             )}
           </div>
 
-          {activities.length > 0 && (
+          {(activities.length > 0 || filteredActivities.length > 0) && (
             <div className={styles.pagination}>
               <div className={styles.paginationInfo}>
                 Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
