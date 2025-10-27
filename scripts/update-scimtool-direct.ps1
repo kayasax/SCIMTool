@@ -114,7 +114,7 @@ function Update-SCIMToolDirect {
 
     if (-not $hasScimSecret -and -not $ScimSecret) {
         if (-not $NoPrompt -and -not $Quiet) {
-            $ScimSecret = Read-Host 'Enter SCIM shared secret (leave blank to keep existing)' 
+            $ScimSecret = Read-Host 'Enter SCIM shared secret (leave blank to keep existing)'
         }
         if (-not $ScimSecret -or $ScimSecret -eq '<existing>') {
             Log 'SCIM secret not supplied; existing value will remain unchanged if present.' 'WARN' Yellow
