@@ -13,6 +13,12 @@ param image string
 @description('SCIM shared secret')
 @secure()
 param scimSharedSecret string
+@description('JWT signing secret used to issue OAuth tokens')
+@secure()
+param jwtSecret string
+@description('OAuth client secret required when requesting SCIMTool tokens')
+@secure()
+param oauthClientSecret string
 @description('Target port inside container')
 param targetPort int = 80
 @description('Min replicas')
@@ -64,6 +70,14 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'scim-shared-secret'
           value: scimSharedSecret
         }
+        {
+          name: 'jwt-secret'
+          value: jwtSecret
+        }
+        {
+          name: 'oauth-client-secret'
+          value: oauthClientSecret
+        }
       ]
     }
     template: {
@@ -75,6 +89,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
           image: '${acrLoginServer}/${image}'
           env: [
             { name: 'SCIM_SHARED_SECRET', secretRef: 'scim-shared-secret' }
+            { name: 'JWT_SECRET', secretRef: 'jwt-secret' }
+            { name: 'OAUTH_CLIENT_SECRET', secretRef: 'oauth-client-secret' }
             { name: 'NODE_ENV', value: 'production' }
             { name: 'PORT', value: string(targetPort) }
             { name: 'DATABASE_URL', value: 'file:/tmp/local-data/scim.db' }

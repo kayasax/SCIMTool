@@ -5,7 +5,10 @@
     [string]$ScimSecret,
     [string]$ImageTag,
     [string]$BlobBackupAccount,
-    [string]$BlobBackupContainer
+    [string]$BlobBackupContainer,
+    [string]$JwtSecret,
+    [string]$OauthClientSecret,
+    [switch]$EnablePersistentStorage
 )
 
 if (-not $Location -or $Location -eq '') { $Location = 'eastus' }
@@ -48,6 +51,16 @@ if (-not $BlobBackupContainer) { $BlobBackupContainer = 'scimtool-backups' }
 # the raw GitHub one-liner.
 
 function New-RandomScimSecret { "SCIM-$(Get-Random -Minimum 10000 -Maximum 99999)-$(Get-Date -Format 'yyyyMMdd')" }
+
+function New-RandomSecret {
+    param([int]$length = 64)
+
+    $builder = ''
+    while ($builder.Length -lt $length) {
+        $builder += [Guid]::NewGuid().ToString('N')
+    }
+    return $builder.Substring(0, $length)
+}
 
 if (-not $ResourceGroup) {
     $ResourceGroup = Read-Host "Enter Resource Group name (will be created if missing)"
@@ -122,10 +135,38 @@ if (-not $ScimSecret) {
     $inputSecret = Read-Host "Enter SCIM shared secret (press Enter to auto-generate)"
     if ([string]::IsNullOrWhiteSpace($inputSecret)) {
         $ScimSecret = New-RandomScimSecret
-    Write-Host "Generated secret: $ScimSecret" -ForegroundColor Yellow
+        Write-Host "Generated secret: $ScimSecret" -ForegroundColor Yellow
     } else {
         $ScimSecret = $inputSecret
     }
+}
+
+if (-not $JwtSecret -and $env:JWT_SECRET) { $JwtSecret = $env:JWT_SECRET }
+if (-not $OauthClientSecret -and $env:OAUTH_CLIENT_SECRET) { $OauthClientSecret = $env:OAUTH_CLIENT_SECRET }
+
+if (-not $JwtSecret) {
+    $jwtInput = Read-Host "Enter JWT signing secret (press Enter to auto-generate secure value)"
+    if ([string]::IsNullOrWhiteSpace($jwtInput)) {
+        $JwtSecret = New-RandomSecret 64
+        Write-Host "Generated JWT secret (store securely): $JwtSecret" -ForegroundColor Yellow
+    } else {
+        $JwtSecret = $jwtInput
+    }
+}
+
+if (-not $OauthClientSecret) {
+    $oauthInput = Read-Host "Enter OAuth client secret (press Enter to auto-generate secure value)"
+    if ([string]::IsNullOrWhiteSpace($oauthInput)) {
+        $OauthClientSecret = New-RandomSecret 64
+        Write-Host "Generated OAuth client secret (store securely): $OauthClientSecret" -ForegroundColor Yellow
+    } else {
+        $OauthClientSecret = $oauthInput
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($JwtSecret) -or [string]::IsNullOrWhiteSpace($OauthClientSecret)) {
+    Write-Host "JWT and OAuth client secrets are required." -ForegroundColor Red
+    return
 }
 
 if (-not $ImageTag) { $ImageTag = "latest" }
@@ -138,6 +179,8 @@ Write-Host "  Image Tag      : $ImageTag" -ForegroundColor White
 Write-Host "  Blob Backup Acct : $BlobBackupAccount" -ForegroundColor White
 Write-Host "  Blob Container   : $BlobBackupContainer" -ForegroundColor White
 Write-Host "  SCIM Secret    : $ScimSecret" -ForegroundColor Yellow
+Write-Host "  JWT Secret     : (set)" -ForegroundColor Yellow
+Write-Host "  OAuth Secret   : (set)" -ForegroundColor Yellow
 Write-Host ""
 Start-Sleep -Milliseconds 300
 
@@ -548,6 +591,8 @@ if (-not $skipAppDeployment) {
         acrLoginServer = "ghcr.io"
         image = "kayasax/scimtool:$ImageTag"
         scimSharedSecret = $ScimSecret
+        jwtSecret = $JwtSecret
+        oauthClientSecret = $OauthClientSecret
     }
 
     # Pass blob backup parameters
@@ -666,6 +711,8 @@ Write-Host "   Resource Group: $ResourceGroup" -ForegroundColor White
 $secretEcho = $ScimSecret
 if (-not $secretEcho -and $env:SCIM_SHARED_SECRET) { $secretEcho = $env:SCIM_SHARED_SECRET }
 if ($secretEcho) { Write-Host "   SCIM Shared Secret: $secretEcho" -ForegroundColor Yellow }
+Write-Host "   JWT Secret: $JwtSecret" -ForegroundColor Yellow
+Write-Host "   OAuth Client Secret: $OauthClientSecret" -ForegroundColor Yellow
 Write-Host "   Persistence: Blob snapshot backups (enabled)" -ForegroundColor Green
 Write-Host ""
 

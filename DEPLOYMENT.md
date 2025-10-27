@@ -17,6 +17,8 @@ Deploy to Azure Container Apps for production use with automatic scaling and ent
 iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/deploy.ps1')
 ```
 
+> The deployment script prints three secrets at the end (SCIM bearer, JWT signing, OAuth client). Store each value securely—you'll need them for future updates or to regenerate tokens.
+
 **Benefits:**
 - **🔒 Enterprise Security**: Automatic HTTPS, managed certificates, secure secrets, and private storage endpoints by default
 - **📈 Smart Scaling**: Automatically scales from 0 to handle any load
@@ -38,6 +40,8 @@ services:
       - "3000:3000"
     environment:
       - SCIM_SHARED_SECRET=your-secret-here
+      - JWT_SECRET=your-jwt-secret
+      - OAUTH_CLIENT_SECRET=your-oauth-client-secret
       - DATABASE_URL=file:/app/data/scim.db
     volumes:
       - ./data:/app/data
@@ -55,6 +59,8 @@ Simple Docker deployment:
 # Pull and run the container
 docker run -d -p 3000:3000 \
   -e SCIM_SHARED_SECRET=your-secret \
+  -e JWT_SECRET=your-jwt-secret \
+  -e OAUTH_CLIENT_SECRET=your-oauth-client-secret \
   -v scim-data:/app/data \
   ghcr.io/kayasax/scimtool:latest
 ```
@@ -113,6 +119,8 @@ npm run dev
 Create `api/.env`:
 ```env
 SCIM_SHARED_SECRET=changeme
+JWT_SECRET=changeme-jwt
+OAUTH_CLIENT_SECRET=changeme-oauth
 PORT=3000
 DATABASE_URL=file:./dev.db
 CORS_ORIGINS=http://localhost:5173

@@ -2,7 +2,8 @@
 $ErrorActionPreference = 'Stop'
 
 # Optional deterministic overrides via environment variables:
-#   SCIMTOOL_RG, SCIMTOOL_APP, SCIMTOOL_SECRET, SCIMTOOL_LOCATION, SCIMTOOL_IMAGETAG
+#   SCIMTOOL_RG, SCIMTOOL_APP, SCIMTOOL_SECRET, SCIMTOOL_LOCATION, SCIMTOOL_IMAGETAG,
+#   SCIMTOOL_JWTSECRET, SCIMTOOL_OAUTHSECRET
 # If provided, random generation is skipped.
 
 # Auto values (no prompts to avoid hanging under iex)
@@ -24,6 +25,15 @@ function New-ScimSecret {
 	$s = [Convert]::ToBase64String($b)
 	$s = $s -replace '\+','-' -replace '/','_' -replace '='''
 	if ($s.Length -gt 48) { return $s.Substring(0,48) } else { return $s }
+}
+function New-AppSecret {
+	param([int]$length = 64)
+
+	$builder = ''
+	while ($builder.Length -lt $length) {
+		$builder += [Guid]::NewGuid().ToString('N')
+	}
+	return $builder.Substring(0, $length)
 }
 function New-Suffix { (Get-Random -Minimum 1000 -Maximum 9999) }
 
@@ -79,6 +89,16 @@ if ($env:SCIMTOOL_SECRET -and $env:SCIMTOOL_SECRET.Trim().Length -gt 0) {
 } else {
 	$ScimSecret = New-ScimSecret
 }
+if ($env:SCIMTOOL_JWTSECRET -and $env:SCIMTOOL_JWTSECRET.Trim().Length -gt 0) {
+	$JwtSecret = $env:SCIMTOOL_JWTSECRET
+} else {
+	$JwtSecret = New-AppSecret
+}
+if ($env:SCIMTOOL_OAUTHSECRET -and $env:SCIMTOOL_OAUTHSECRET.Trim().Length -gt 0) {
+	$OauthClientSecret = $env:SCIMTOOL_OAUTHSECRET
+} else {
+	$OauthClientSecret = New-AppSecret
+}
 
 # Interactive prompting (unless explicitly disabled)
 $interactive = $true
@@ -125,6 +145,10 @@ if ($interactive) {
 	# Image Tag prompt removed: always using $ImageTag (default 'latest')
 	$secretInput = Read-Host 'SCIM Shared Secret (leave blank to keep generated)'
 	if (-not [string]::IsNullOrWhiteSpace($secretInput)) { $ScimSecret = $secretInput }
+	$jwtInput = Read-Host 'JWT Signing Secret (leave blank to keep generated)'
+	if (-not [string]::IsNullOrWhiteSpace($jwtInput)) { $JwtSecret = $jwtInput }
+	$oauthInput = Read-Host 'OAuth Client Secret (leave blank to keep generated)'
+	if (-not [string]::IsNullOrWhiteSpace($oauthInput)) { $OauthClientSecret = $oauthInput }
 	# Persistent storage now always enabled via blob snapshots (no user choice)
 	$persistentEnabled = $true
 }
@@ -136,6 +160,8 @@ Write-Host "  Location      : $Location" -ForegroundColor White
 Write-Host "  ImageTag      : $ImageTag" -ForegroundColor White
 Write-Host "  Persistence   : Blob snapshots (always on)" -ForegroundColor White
 Write-Host "  Secret        : $ScimSecret" -ForegroundColor Yellow
+Write-Host "  JWT Secret    : $JwtSecret" -ForegroundColor Yellow
+Write-Host "  OAuth Secret  : $OauthClientSecret" -ForegroundColor Yellow
 
 <#
 Stage a temporary directory structure so the deployment script's relative
@@ -176,9 +202,9 @@ try { az account show -o none 2>$null } catch { Write-Host 'Not logged in. Run: 
 Write-Host 'Starting deployment...' -ForegroundColor Cyan
 # Prefer pwsh if available, otherwise fall back to current powershell
 if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-    & pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$true
+	& pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret -EnablePersistentStorage:$true
 } else {
-    & powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -EnablePersistentStorage:$true
+	& powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret -EnablePersistentStorage:$true
 }
 if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (code $LASTEXITCODE). Shell left open for inspection." -ForegroundColor Red; return }
 
@@ -199,4 +225,6 @@ if ($fqdn) {
 	Write-Host 'FINAL URL: <unavailable - check portal>' -ForegroundColor Yellow
 }
 Write-Host "Bearer Secret: $ScimSecret" -ForegroundColor Green
+	Write-Host "JWT Secret: $JwtSecret" -ForegroundColor Green
+	Write-Host "OAuth Client Secret: $OauthClientSecret" -ForegroundColor Green
 

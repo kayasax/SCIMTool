@@ -33,6 +33,8 @@ Outputs (copy these, we will need them to configure the Entra app) :
 * Public URL (web UI root)
 * SCIM Base URL
 * Generated / provided shared secret (reprinted at end)
+* JWT signing secret (store securely for future redeploys)
+* OAuth client secret for token requests
 
 Example:
 <img width="1144" height="111" alt="image" src="https://github.com/user-attachments/assets/fe47af5a-2e1f-451b-a9e4-492ae704646f" />
@@ -56,7 +58,7 @@ For information these resource types will be deployed
 4. Turn provisioning ON & assign users / groups
 
 Open the root URL (same host, no /scim) to watch events in near real-time. ex https://scimtool-app-1839.purplestone-a06f6cdf.eastus.azurecontainerapps.io/
->Note: you will have to copy the SCIM secret at first opening
+>Note: copy the SCIM, JWT, and OAuth secrets shown at deployment time and keep them safe. They are not stored anywhere else.
 ---
 
 ## 🔄 Updating to a New Version
@@ -65,11 +67,11 @@ You will be notified when a new version is available and a powershell command wi
 Use the lightweight update function (auto-discovery if you omit names):
 ```powershell
 iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1); \
-	Update-SCIMTool -Version v0.8.9
+	Update-SCIMTool -Version v0.8.10
 ```
 Specify RG/App explicitly if you have multiple deployments:
 ```powershell
-Update-SCIMTool -Version v0.8.9 -ResourceGroup scimtool-rg -AppName scimtool-prod
+Update-SCIMTool -Version v0.8.10 -ResourceGroup scimtool-rg -AppName scimtool-prod
 ```
 Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using the bootstrap one‑liner (it will pull latest `setup.ps1`).
 

@@ -75,6 +75,36 @@ if ([string]::IsNullOrWhiteSpace($UserSecret)) {
 }
 Write-Host ""
 
+function New-RandomAppSecret {
+    param([int]$length = 64)
+
+    $builder = ''
+    while ($builder.Length -lt $length) {
+        $builder += [Guid]::NewGuid().ToString('N')
+    }
+    return $builder.Substring(0, $length)
+}
+
+Write-Host "🔑 OAuth + JWT Secrets" -ForegroundColor Yellow
+$jwtInput = Read-Host -Prompt "JWT signing secret (press Enter to auto-generate)"
+if ([string]::IsNullOrWhiteSpace($jwtInput)) {
+    $JwtSecret = New-RandomAppSecret
+    Write-Host "✅ Generated JWT secret: $JwtSecret" -ForegroundColor Green
+} else {
+    $JwtSecret = $jwtInput
+    Write-Host "✅ Using provided JWT secret" -ForegroundColor Green
+}
+
+$oauthInput = Read-Host -Prompt "OAuth client secret (press Enter to auto-generate)"
+if ([string]::IsNullOrWhiteSpace($oauthInput)) {
+    $OauthClientSecret = New-RandomAppSecret
+    Write-Host "✅ Generated OAuth client secret: $OauthClientSecret" -ForegroundColor Green
+} else {
+    $OauthClientSecret = $oauthInput
+    Write-Host "✅ Using provided OAuth client secret" -ForegroundColor Green
+}
+Write-Host ""
+
 # Helper function to suggest valid Container App name
 function Get-ValidContainerAppName {
     param([string]$inputName)
@@ -204,7 +234,7 @@ try {
     Write-Host ""
 
     # Use the deploy-azure.ps1 script from the SCIMTool project
-    $deployResult = .\scripts\deploy-azure.ps1 -ResourceGroup $ResourceGroup -AppName $AppName -ScimSecret $ScimSecret -Location $Location
+    $deployResult = .\scripts\deploy-azure.ps1 -ResourceGroup $ResourceGroup -AppName $AppName -ScimSecret $ScimSecret -Location $Location -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret
     $result = $deployResult
 
     if ($LASTEXITCODE -eq 0) {
@@ -218,6 +248,8 @@ try {
             Write-Host "🌐 Your SCIMTool is ready!" -ForegroundColor Green
             Write-Host "   URL: $AppUrl" -ForegroundColor Cyan
             Write-Host "   Secret Token: $ScimSecret" -ForegroundColor Cyan
+            Write-Host "   JWT Secret: $JwtSecret" -ForegroundColor Cyan
+            Write-Host "   OAuth Client Secret: $OauthClientSecret" -ForegroundColor Cyan
             Write-Host "   Monitoring: $AppUrl (web UI embedded)" -ForegroundColor Cyan
             Write-Host ""
             Write-Host "📋 Next Steps:" -ForegroundColor Yellow

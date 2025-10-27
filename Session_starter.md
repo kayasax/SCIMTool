@@ -5,6 +5,9 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-27 | v0.8.10 tagged (runtime secret enforcement + deployment script updates) |
+| 2025-10-20 | OAuth module now requires JWT/OAuth secrets from environment; dev auto-generation logs warnings |
+| 2025-10-20 | Azure deploy/setup scripts emit JWT & OAuth secrets and pass to Container Apps template |
 | 2025-10-20 | Activity feed aggregates multiple pages when hiding keepalive checks, keeping page numbering intuitive |
 | 2025-10-20 | v0.8.9 tagged (activity feed keepalive pagination fix) |
 | 2025-10-20 | Activity feed pagination skips keepalive-only pages when hide toggle is on |
@@ -43,12 +46,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.9 (keepalive pagination improvements)
+Current Version: v0.8.10 (runtime-secret hardened release)
 
 ---
 
 ## Status
-Production Ready (v0.8.9) – Adds keepalive suppression toggle + pagination auto-skip for keepalive-only activity feed pages, plus blob restore bootstrap and duplicate guardrails groundwork.
+Production Ready (v0.8.10) – Adds keepalive suppression toggle + pagination auto-skip for keepalive-only activity feed pages, plus blob restore bootstrap and duplicate guardrails groundwork. OAuth tokens now enforced via unique runtime JWT/OAuth secrets (no baked-in credentials).
 
 ## Quick Commands
 ```powershell
@@ -56,7 +59,7 @@ Production Ready (v0.8.9) – Adds keepalive suppression toggle + pagination aut
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.9 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.10 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
@@ -91,10 +94,11 @@ AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when neede
 ---
 
 ## Current Focus
-Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; prepare rollback helper & CI guardrails. Rollout private network baseline (ensure customers recreate Container Apps environment for VNet support). Finish SCIM duplicate detection flow (uniqueness guardrails + regression coverage).
+Validate blob snapshot build fixes, confirm direct upgrade command copy includes deployment metadata, run GHCR publish workflow for tagged releases; ensure runtime secrets (SCIM/JWT/OAuth) configured per deployment. Rollout private network baseline (ensure customers recreate Container Apps environment for VNet support). Finish SCIM duplicate detection flow (uniqueness guardrails + regression coverage).
 
 ## Next Steps / Backlog
 - [ ] Validate copied direct upgrade command in production environment
+- [ ] Send guidance to existing customers on setting JWT_SECRET and OAUTH_CLIENT_SECRET before updating (post v0.8.10 announcement)
 - [ ] Add rollback command generation (capture previous image tag)
 - [ ] Expose deployment metadata via API endpoint (optional runtime flexibility)
 - [ ] CI checks: version/tag sync, BOM detection, lockfile sync

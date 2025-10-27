@@ -1,5 +1,7 @@
 ﻿import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 export interface AccessToken {
   accessToken: string;
@@ -13,26 +15,52 @@ export interface ClientCredentials {
   scopes: string[];
 }
 
+interface TokenPayload {
+  sub: string;
+  client_id: string;
+  scope?: string;
+  token_type: string;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class OAuthService {
-  // In production, store these securely (database, Azure Key Vault, etc.)
-  private readonly validClients: Map<string, ClientCredentials> = new Map([
-    ['scimtool-client', {
-      clientId: 'scimtool-client',
-      clientSecret: 'scimtool-secret-2025',
-      scopes: ['scim.read', 'scim.write', 'scim.manage']
-    }],
-    // Add OAuth clients here if needed
-    // ['your-client-id', {
-    //   clientId: 'your-client-id',
-    //   clientSecret: 'your-client-secret',
-    //   scopes: ['scim.provision', 'scim.read', 'scim.write']
-    // }]
-  ]);
+  private readonly validClients: Map<string, ClientCredentials>;
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService
+  ) {
+    const defaultClientId = this.config.get<string>('OAUTH_CLIENT_ID') || 'scimtool-client';
+    const configuredSecret = this.config.get<string>('OAUTH_CLIENT_SECRET');
+    const configuredScopes = this.config.get<string>('OAUTH_CLIENT_SCOPES');
 
-  async generateAccessToken(
+    let clientSecret = configuredSecret;
+
+    if (!clientSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('OAUTH_CLIENT_SECRET is required in production to secure OAuth access.');
+      }
+
+      clientSecret = crypto.randomBytes(32).toString('hex');
+      // eslint-disable-next-line no-console
+      console.warn(`[OAuth] Auto-generated development client secret for "${defaultClientId}". Configure OAUTH_CLIENT_SECRET for production.`);
+    }
+
+    const scopes = configuredScopes
+      ? configuredScopes.split(',').map(scope => scope.trim()).filter(Boolean)
+      : ['scim.read', 'scim.write', 'scim.manage'];
+
+    this.validClients = new Map([
+      [defaultClientId, {
+        clientId: defaultClientId,
+        clientSecret,
+        scopes,
+      }],
+    ]);
+  }
+
+  generateAccessToken(
     clientId: string,
     clientSecret: string,
     requestedScope?: string
@@ -82,28 +110,28 @@ export class OAuthService {
       expiresIn: `${expiresIn}s`
     });
 
-    return {
+    return Promise.resolve({
       accessToken,
       expiresIn,
       scope: grantedScopes.join(' ')
-    };
+    });
   }
 
-  async validateAccessToken(token: string): Promise<any> {
+  validateAccessToken(token: string): Promise<TokenPayload> {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify<TokenPayload>(token);
       console.log('✅ Token Validation Success:', {
         clientId: payload.client_id,
         scope: payload.scope
       });
-      return payload;
+      return Promise.resolve(payload);
     } catch (error) {
       console.error('❌ Token Validation Failed:', error instanceof Error ? error.message : String(error));
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
 
-  hasScope(payload: any, requiredScope: string): boolean {
+  hasScope(payload: TokenPayload, requiredScope: string): boolean {
     const scopes = payload.scope ? payload.scope.split(' ') : [];
     return scopes.includes(requiredScope);
   }
