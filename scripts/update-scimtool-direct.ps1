@@ -59,8 +59,6 @@ function Update-SCIMToolDirect {
     } catch { Log 'Could not fetch current app details (continuing)' 'WARN' Yellow }
     if($ShowCurrent -and $currentImage){ Log "Current image: $currentImage" 'INFO' Gray }
 
-    if($currentImage -eq $imageRef){ Log 'Target image matches current image (no change)' 'OK' Green; if(-not $Force){ return } }
-
     $existingSecrets = @()
     try {
         $existingSecrets = az containerapp secret list -n $AppName -g $ResourceGroup -o json 2>$null | ConvertFrom-Json
@@ -69,6 +67,7 @@ function Update-SCIMToolDirect {
     $hasScimSecret = $false
     $hasJwtSecret = $false
     $hasOauthSecret = $false
+    $secretsChanged = $false
     foreach ($secret in $existingSecrets) {
         switch ($secret.name) {
             'scim-shared-secret' { $hasScimSecret = $true }
@@ -132,6 +131,7 @@ function Update-SCIMToolDirect {
             Log 'Failed to set required secrets.' 'ERROR' Red
             return
         }
+        $secretsChanged = $true
         if (-not $Quiet -and $secretValues.Keys.Count -gt 0) {
             Log 'Secret values updated (store securely):' 'INFO' Cyan
             foreach ($key in $secretValues.Keys) {
@@ -166,6 +166,21 @@ function Update-SCIMToolDirect {
     $envJson = $null
     if ($envList) {
         $envJson = ($envList | ConvertTo-Json -Compress)
+    }
+
+    if($currentImage -eq $imageRef -and -not $envUpdated -and -not $Force){
+        if ($secretsChanged) {
+            Log 'Secrets updated; restarting container app revisions to apply changes.' 'INFO' Cyan
+            az containerapp revision restart -n $AppName -g $ResourceGroup --all --only-show-errors | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Log 'Restart triggered successfully.' 'OK' Green
+            } else {
+                Log 'Failed to restart container revisions. Please restart manually.' 'ERROR' Red
+            }
+        } else {
+            Log 'Target image matches current image (no change).' 'OK' Green
+        }
+        return
     }
 
     if(-not $NoPrompt -and -not $Force){
