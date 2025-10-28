@@ -194,8 +194,8 @@ function Update-SCIMToolDirect {
     $setArgs = @()
     if ($envUpdated -and $envJson) {
         $setArgs += '--set'
-        $setArgs += "template.containers[0].env=$envJson"
-        $cmd += " --set template.containers[0].env=$envJson"
+        $setArgs += "properties.template.containers[0].env=$envJson"
+        $cmd += " --set properties.template.containers[0].env=$envJson"
     }
     if(-not $Quiet){ Write-Host $cmd -ForegroundColor Yellow }
 

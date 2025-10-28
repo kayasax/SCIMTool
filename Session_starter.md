@@ -5,6 +5,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-10-28 | v0.8.12 tagged (direct update script env fix) |
 | 2025-10-27 | v0.8.11 tagged (direct update script auto-secrets + restart) |
 | 2025-10-27 | v0.8.10 tagged (runtime secret enforcement + deployment script updates) |
 | 2025-10-20 | OAuth module now requires JWT/OAuth secrets from environment; dev auto-generation logs warnings |
@@ -47,12 +48,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.11 (direct-update automation + runtime-secret enforcement)
+Current Version: v0.8.12 (direct-update automation + env binding fix)
 
 ---
 
 ## Status
-Production Ready (v0.8.11) – Adds keepalive suppression toggle + pagination auto-skip for keepalive-only activity feed pages, plus blob restore bootstrap and duplicate guardrails groundwork. OAuth tokens now enforced via unique runtime JWT/OAuth secrets (no baked-in credentials); direct upgrade script now provisions JWT/OAuth secrets automatically and restarts revisions when needed.
+Production Ready (v0.8.12) – Adds keepalive suppression toggle + pagination auto-skip for keepalive-only activity feed pages, plus blob restore bootstrap and duplicate guardrails groundwork. OAuth tokens now enforced via unique runtime JWT/OAuth secrets (no baked-in credentials); direct upgrade script now provisions JWT/OAuth secrets automatically, fixes env binding updates, and restarts revisions when needed.
 
 ## Quick Commands
 ```powershell
@@ -60,7 +61,7 @@ Production Ready (v0.8.11) – Adds keepalive suppression toggle + pagination au
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.11 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.12 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
@@ -99,7 +100,7 @@ Validate blob snapshot build fixes, confirm direct upgrade command copy includes
 
 ## Next Steps / Backlog
 - [ ] Validate copied direct upgrade command in production environment
-- [ ] Send guidance to existing customers on the v0.8.11 direct-update changes and the need to store generated JWT/OAuth secrets
+- [ ] Send guidance to existing customers on the v0.8.12 direct-update changes and the need to store generated JWT/OAuth secrets
 - [ ] Add rollback command generation (capture previous image tag)
 - [ ] Expose deployment metadata via API endpoint (optional runtime flexibility)
 - [ ] CI checks: version/tag sync, BOM detection, lockfile sync
