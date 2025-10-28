@@ -67,13 +67,13 @@ You will be notified when a new version is available and a powershell command wi
 Use the lightweight update function (auto-discovery if you omit names):
 ```powershell
 iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1); \
-	Update-SCIMTool -Version v0.8.12
+	Update-SCIMTool -Version v0.8.13
 ```
 Specify RG/App explicitly if you have multiple deployments:
 ```powershell
-Update-SCIMTool -Version v0.8.12 -ResourceGroup scimtool-rg -AppName scimtool-prod
+Update-SCIMTool -Version v0.8.13 -ResourceGroup scimtool-rg -AppName scimtool-prod
 ```
-> v0.8.12 note: the direct-update script now auto-generates `JWT_SECRET` and `OAUTH_CLIENT_SECRET` if they are missing, updates Container App environment bindings, and restarts revisions when only secrets change.
+> v0.8.13 note: the direct-update script now auto-generates `JWT_SECRET` and `OAUTH_CLIENT_SECRET` if they are missing, applies them via `--set-env-vars`, and restarts revisions when only secrets change.
 Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using the bootstrap one‑liner (it will pull latest `setup.ps1`).
 
 ---

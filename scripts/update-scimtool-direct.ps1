@@ -154,19 +154,11 @@ function Update-SCIMToolDirect {
 
     if (-not $envList) { $envList = @() }
 
-    if (-not ($envList | Where-Object { $_.name -eq 'JWT_SECRET' })) {
-        $envList += [pscustomobject]@{ name = 'JWT_SECRET'; secretRef = 'jwt-secret' }
-        $envUpdated = $true
-    }
-    if (-not ($envList | Where-Object { $_.name -eq 'OAUTH_CLIENT_SECRET' })) {
-        $envList += [pscustomobject]@{ name = 'OAUTH_CLIENT_SECRET'; secretRef = 'oauth-client-secret' }
-        $envUpdated = $true
-    }
+    $hasJwtEnv = $envList | Where-Object { $_.name -eq 'JWT_SECRET' }
+    $hasOauthEnv = $envList | Where-Object { $_.name -eq 'OAUTH_CLIENT_SECRET' }
 
-    $envJson = $null
-    if ($envList) {
-        $envJson = ($envList | ConvertTo-Json -Compress)
-    }
+    if (-not $hasJwtEnv) { $envUpdated = $true }
+    if (-not $hasOauthEnv) { $envUpdated = $true }
 
     if($currentImage -eq $imageRef -and -not $envUpdated -and -not $Force){
         if ($secretsChanged) {
@@ -192,10 +184,11 @@ function Update-SCIMToolDirect {
 
     $cmd = "az containerapp update -n `"$AppName`" -g `"$ResourceGroup`" --image `"$imageRef`""
     $setArgs = @()
-    if ($envUpdated -and $envJson) {
-        $setArgs += '--set'
-        $setArgs += "properties.template.containers[0].env=$envJson"
-        $cmd += " --set properties.template.containers[0].env=$envJson"
+    if ($envUpdated) {
+        $setArgs += '--set-env-vars'
+        $setArgs += "JWT_SECRET=secretref:jwt-secret"
+        $setArgs += "OAUTH_CLIENT_SECRET=secretref:oauth-client-secret"
+        $cmd += " --set-env-vars JWT_SECRET=secretref:jwt-secret OAUTH_CLIENT_SECRET=secretref:oauth-client-secret"
     }
     if(-not $Quiet){ Write-Host $cmd -ForegroundColor Yellow }
 
