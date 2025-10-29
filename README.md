@@ -47,7 +47,8 @@ For information these resource types will be deployed
 
 ## 🔧 Configure Microsoft Entra Provisioning (Right After Deploy)
 1. Entra Portal → Enterprise Applications → Create new Enterprise App (non-gallery)
-<img width="1680" height="709" alt="image" src="https://github.com/user-attachments/assets/5c0f6fb2-f063-4fbb-9ff1-6c370ade9e0b" />
+<img width="1678" height="704" alt="image" src="https://github.com/user-attachments/assets/4cd0c21b-a637-4886-a787-ab932b900bcc" />
+
 
 
 2.Open your app and create a new configuration, paste the SCIM endpoint and secret from the powershell output, ex:
