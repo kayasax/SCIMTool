@@ -600,7 +600,7 @@ if (-not $skipAppDeployment) {
     $containerParams.blobBackupContainerName = $BlobBackupContainer
 
     # Create a temporary parameters file to avoid escaping issues with special characters
-    $paramsFile = "$env:TEMP\scimtool-params-$(Get-Date -Format 'yyyyMMddHHmmss').json"
+    $paramsFile = Join-Path ([System.IO.Path]::GetTempPath()) "scimtool-params-$(Get-Date -Format 'yyyyMMddHHmmss').json"
     $paramsJson = @{
         '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
         contentVersion = '1.0.0.0'

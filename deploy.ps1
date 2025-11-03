@@ -207,7 +207,7 @@ Write-Host "✅ Will deploy to: $ResourceGroup / $AppName in $Location" -Foregro
 Write-Host ""
 
 # Create temp directory
-$TempDir = Join-Path $env:TEMP "SCIMTool-$(Get-Random)"
+$TempDir = Join-Path ([System.IO.Path]::GetTempPath()) "SCIMTool-$(Get-Random)"
 New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
 Push-Location $TempDir
 
