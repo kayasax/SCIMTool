@@ -167,7 +167,7 @@ Write-Host "  OAuth Secret  : $OauthClientSecret" -ForegroundColor Yellow
 Stage a temporary directory structure so the deployment script's relative
 references to ../infra/*.bicep resolve even when fetched remotely.
 #>
-$tempRoot = Join-Path $env:TEMP ("scimtool-" + ([guid]::NewGuid().ToString('N')))
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("scimtool-" + ([guid]::NewGuid().ToString('N')))
 $scriptsDir = Join-Path $tempRoot 'scripts'
 $infraDir   = Join-Path $tempRoot 'infra'
 New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
