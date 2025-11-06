@@ -202,9 +202,9 @@ try { az account show -o none 2>$null } catch { Write-Host 'Not logged in. Run: 
 Write-Host 'Starting deployment...' -ForegroundColor Cyan
 # Prefer pwsh if available, otherwise fall back to current powershell
 if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-	& pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret -EnablePersistentStorage:$true
+	& pwsh -NoLogo -NoProfile -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret -EnablePersistentStorage
 } else {
-	& powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret -EnablePersistentStorage:$true
+	& powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $deployScript -ResourceGroup $ResourceGroup -AppName $AppName -Location $Location -ScimSecret $ScimSecret -ImageTag $ImageTag -JwtSecret $JwtSecret -OauthClientSecret $OauthClientSecret -EnablePersistentStorage
 }
 if ($LASTEXITCODE -ne 0) { Write-Host "Deployment failed (code $LASTEXITCODE). Shell left open for inspection." -ForegroundColor Red; return }
 

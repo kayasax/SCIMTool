@@ -8,6 +8,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-10-28 | v0.8.13 tagged (direct update script envvars fix) |
 | 2025-10-28 | v0.8.12 tagged (direct update script env fix) |
 | 2025-10-27 | v0.8.11 tagged (direct update script auto-secrets + restart) |
+| 2025-10-28 | Diagnosed prod SQLite corruption; initiated blob snapshot restore workflow |
 | 2025-10-27 | v0.8.10 tagged (runtime secret enforcement + deployment script updates) |
 | 2025-10-20 | OAuth module now requires JWT/OAuth secrets from environment; dev auto-generation logs warnings |
 | 2025-10-20 | Azure deploy/setup scripts emit JWT & OAuth secrets and pass to Container Apps template |
