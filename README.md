@@ -42,7 +42,8 @@ Example:
 Cost: scale‑to‑zero + storage (low idle spend).
 
 For information these resource types will be deployed
-<img width="527" height="157" alt="image" src="https://github.com/user-attachments/assets/f0f65069-5345-492e-b01a-6dc206754228" />
+<img width="468" height="328" alt="image" src="https://github.com/user-attachments/assets/6d99026d-7ba2-4ea1-b9bd-bea037ec6001" />
+
 
 
 ## 🔧 Configure Microsoft Entra Provisioning (Right After Deploy)
