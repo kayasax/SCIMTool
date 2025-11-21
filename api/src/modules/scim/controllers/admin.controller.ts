@@ -67,7 +67,8 @@ export class AdminController {
     @Query('since') since?: string,
     @Query('until') until?: string,
     @Query('search') search?: string,
-    @Query('includeAdmin') includeAdmin?: string
+    @Query('includeAdmin') includeAdmin?: string,
+    @Query('hideKeepalive') hideKeepalive?: string
   ) {
     return this.loggingService.listLogs({
       page: page ? Number(page) : undefined,
@@ -79,7 +80,8 @@ export class AdminController {
       since: since ? new Date(since) : undefined,
       until: until ? new Date(until) : undefined,
       search: search || undefined,
-      includeAdmin: includeAdmin === 'true'
+      includeAdmin: includeAdmin === 'true',
+      hideKeepalive: hideKeepalive === 'true'
     });
   }
 

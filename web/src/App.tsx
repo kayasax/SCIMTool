@@ -208,8 +208,8 @@ const AppContent: React.FC = () => {
       const q = override
         ? override
         : applyPageReset
-          ? { ...filters, page:1 }
-          : filters;
+          ? { ...filters, page:1, hideKeepalive }
+          : { ...filters, hideKeepalive };
       const data = await fetchLogs(q);
       const filteredItems = data.items.filter(item => !item.url?.includes('/scim/admin/logs'));
       const removedThisPage = data.items.length - filteredItems.length;
@@ -237,7 +237,7 @@ const AppContent: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, token]);
+  }, [filters, token, hideKeepalive]);
 
   async function handleClear() {
     if (!token) {
@@ -350,12 +350,9 @@ const AppContent: React.FC = () => {
     }
   }, [hideKeepalive, selected]);
 
-  const visibleItems = useMemo(() => {
-    if (!hideKeepalive) return items;
-    return items.filter(item => !isKeepaliveLog(item));
-  }, [items, hideKeepalive]);
-
-  const suppressedCount = hideKeepalive ? items.length - visibleItems.length : 0;
+  // Backend now handles keepalive filtering - no frontend filtering needed
+  const visibleItems = items;
+  const suppressedCount = 0; // Backend handles filtering, no suppressed count
 
   const detailLog = hideKeepalive && selected && isKeepaliveLog(selected) ? null : selected;
 

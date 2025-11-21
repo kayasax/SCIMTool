@@ -91,6 +91,7 @@ export class LoggingService {
     until?: Date;
     search?: string;
     includeAdmin?: boolean;
+    hideKeepalive?: boolean;
   } = {}) {
     const pageSize = Math.min(Math.max(filters.pageSize ?? 50, 1), 200);
     const page = Math.max(filters.page ?? 1, 1);
@@ -116,6 +117,29 @@ export class LoggingService {
         where.AND = [where.AND, ...nonScimFilters];
       } else {
         where.AND = nonScimFilters;
+      }
+    }
+
+    // Add keepalive filtering if requested
+    // Keepalive requests are: GET /Users with no identifier and status < 400 and filter param with userName eq UUID
+    // To exclude them: method != GET OR url not contains /Users OR identifier not null OR status >= 400 OR no filter param
+    if (filters.hideKeepalive) {
+      const keepaliveExclusionFilters: any = {
+        OR: [
+          { method: { not: 'GET' } },                           // Not a GET request
+          { NOT: { url: { contains: '/Users' } } },             // Not a Users endpoint
+          { identifier: { not: null } },                        // Has an identifier
+          { status: { gte: 400 } },                             // Error status
+          { NOT: { url: { contains: '?filter=' } } },           // No filter parameter
+        ]
+      };
+
+      if (Array.isArray(where.AND)) {
+        where.AND.push(keepaliveExclusionFilters);
+      } else if (where.AND) {
+        where.AND = [where.AND, keepaliveExclusionFilters];
+      } else {
+        where.AND = [keepaliveExclusionFilters];
       }
     }
 

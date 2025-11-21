@@ -5,6 +5,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-11-21 | 🎯 **PAGINATION FIX:** Backend-driven keepalive filtering (TDD implementation) - accurate counts, no empty pages when hideKeepalive enabled |
+| 2025-11-21 | Extended executive/technical wiki created (`wiki.md`) for management evaluation |
+| 2025-11-21 | Added beginner quickstart & Azure CLI prerequisites to wiki (`wiki.md`) |
+| 2025-11-21 | Relocated prerequisites to top of wiki and renumbered sections for clarity |
+| 2025-11-21 | Added legacy self-hosted lab reference + GitHub issues guidance to wiki (`wiki.md`) |
+| 2025-11-21 | Added emoji heading refresh + optional Bicep CLI prerequisite & note to wiki (`wiki.md`) |
 | 2025-10-28 | v0.8.13 tagged (direct update script envvars fix) |
 | 2025-10-28 | v0.8.12 tagged (direct update script env fix) |
 | 2025-10-27 | v0.8.11 tagged (direct update script auto-secrets + restart) |
@@ -50,7 +56,7 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.13 (direct-update automation + envvars fix)
+Current Version: v0.8.14 (pagination fix - backend-driven keepalive filtering)
 
 ---
 
@@ -94,6 +100,47 @@ iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/upda
 - Docker (local/dev) & Azure Container Apps (deployment target)
 
 AI Assist Notes: Microsoft Docs MCP consulted for SCIM spec alignment when needed.
+
+---
+
+## 🔧 Technical Implementation Notes
+
+### Pagination Fix (2025-11-21)
+**Problem:** When `hideKeepalive` toggle was enabled, pagination showed incorrect counts and empty pages. Frontend filtered keepalive requests post-fetch, but backend counted all logs including keepalive, causing mismatch (e.g., "Total 1444 • Page 2 / 29" with empty visible results).
+
+**Root Cause:** Backend `count()` included all logs; frontend filtered keepalive after pagination, resulting in:
+- Inaccurate `pagination.total` and `pagination.pages`
+- Empty pages when all fetched logs were keepalive requests
+- Complex frontend workaround with multi-page aggregation (lines 185-230 in ActivityFeed.tsx)
+
+**Solution (Backend-Driven Filtering):**
+Implemented TDD approach with comprehensive test coverage:
+1. ✅ **Tests First:** Created 9 test scenarios in `activity.controller.spec.ts`
+2. ✅ **Backend Implementation:** Added `hideKeepalive` query param to:
+   - `activity.controller.ts` - `/admin/activity` endpoint
+   - `admin.controller.ts` - `/admin/logs` endpoint
+   - `logging.service.ts` - Core logging service
+3. ✅ **Prisma WHERE Clause:** Exclude keepalive using inverse logic:
+   ```typescript
+   OR: [
+     { method: { not: 'GET' } },           // Not a GET request
+     { identifier: { not: null } },        // Has an identifier
+     { status: { gte: 400 } },             // Error status
+     { NOT: { url: { contains: '?filter=' } } }  // No filter parameter
+   ]
+   ```
+4. ✅ **Frontend Simplification:**
+   - Removed multi-page aggregation workaround from `ActivityFeed.tsx`
+   - Removed `visibleItems` useMemo filtering from `App.tsx`
+   - Trust backend pagination metadata completely
+   - Simplified code by ~50 lines
+
+**Result:**
+- ✅ Accurate pagination counts when `hideKeepalive=true`
+- ✅ No empty pages - backend returns only non-keepalive logs
+- ✅ Cleaner frontend code - trusts backend pagination
+- ✅ All 9 tests passing with TDD green phase
+- ✅ Works for both Activity Feed and Raw Logs views
 
 ---
 
