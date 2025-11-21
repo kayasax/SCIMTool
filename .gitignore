@@ -45,3 +45,4 @@ temp/
 Dockerfile.dockerignore# Version sync: Ensure image contains v0.4.8
 
 admin.md
+wiki.md

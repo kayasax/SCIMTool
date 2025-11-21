@@ -182,62 +182,37 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
       const targetPage = pagination.page;
       const limit = pagination.limit;
 
-  const aggregatedActivities: ActivitySummary[] = [];
-  let aggregatedFiltered: ActivitySummary[] = [];
-  let keepaliveHidden = 0;
-      let currentPage = targetPage;
-      let lastPagination = pagination;
+      // Build query parameters with hideKeepalive support
+      const params = new URLSearchParams({
+        page: targetPage.toString(),
+        limit: limit.toString(),
+      });
 
-      for (let iteration = 0; iteration < 5; iteration += 1) {
-        const params = new URLSearchParams({
-          page: currentPage.toString(),
-          limit: limit.toString(),
-        });
+      if (filters.type) params.append('type', filters.type);
+      if (filters.severity) params.append('severity', filters.severity);
+      if (filters.search) params.append('search', filters.search);
+      
+      // Pass hideKeepalive to backend for accurate filtering and pagination
+      if (hideKeepalive) params.append('hideKeepalive', 'true');
 
-        if (filters.type) params.append('type', filters.type);
-        if (filters.severity) params.append('severity', filters.severity);
-        if (filters.search) params.append('search', filters.search);
+      const response = await fetch(`/scim/admin/activity?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-        const response = await fetch(`/scim/admin/activity?${params}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      if (!response.ok) throw new Error('Failed to fetch activities');
 
-        if (!response.ok) throw new Error('Failed to fetch activities');
+      const data = await response.json();
+      const pageActivities: ActivitySummary[] = Array.isArray(data.activities) ? data.activities : [];
 
-        const data = await response.json();
-        lastPagination = data.pagination;
-
-        const pageActivities: ActivitySummary[] = Array.isArray(data.activities) ? data.activities : [];
-        aggregatedActivities.push(...pageActivities);
-
-        aggregatedFiltered = hideKeepalive
-          ? aggregatedActivities.filter((activity) => !isKeepaliveActivity(activity))
-          : [...aggregatedActivities];
-
-        if (hideKeepalive) {
-          keepaliveHidden += pageActivities.reduce((count, activity) => count + (isKeepaliveActivity(activity) ? 1 : 0), 0);
-        }
-
-  const hasEnoughVisible = !hideKeepalive || aggregatedFiltered.length >= limit;
-        const reachedEnd = data.pagination.page >= data.pagination.pages;
-
-        if (hasEnoughVisible || reachedEnd) {
-          break;
-        }
-
-        currentPage += 1;
-      }
-
-  const trimmedVisible = aggregatedFiltered.slice(0, limit);
-
+      // Update new activity badge for silent refreshes
       if (silent) {
-        if (trimmedVisible.length > 0) {
-          const latestRelevant = trimmedVisible[0];
+        if (pageActivities.length > 0) {
+          const latestRelevant = pageActivities[0];
           const storedLastActivityId = getStoredLastActivityId();
 
           if (storedLastActivityId && latestRelevant.id !== storedLastActivityId) {
-            const lastActivityIndex = trimmedVisible.findIndex((activity) => activity.id === storedLastActivityId);
-            const newCount = lastActivityIndex === -1 ? trimmedVisible.length : lastActivityIndex;
+            const lastActivityIndex = pageActivities.findIndex((activity) => activity.id === storedLastActivityId);
+            const newCount = lastActivityIndex === -1 ? pageActivities.length : lastActivityIndex;
 
             if (newCount > 0) {
               const updatedCount = newActivityCount + newCount;
@@ -253,19 +228,20 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ hideKeepalive, onHid
           }
         }
       } else {
-        if (trimmedVisible.length > 0) {
-          storeLastActivityId(trimmedVisible[0].id);
+        if (pageActivities.length > 0) {
+          storeLastActivityId(pageActivities[0].id);
         }
-        if (filteredActivities.length === 0) {
+        if (pageActivities.length === 0) {
           setNewActivityCount(0);
           updateTabTitle(0);
         }
       }
 
-  setActivities(aggregatedActivities.slice(0, limit));
-  setFilteredActivities(trimmedVisible);
-  setSuppressedCount(keepaliveHidden);
-  setPagination(prev => ({ ...prev, ...lastPagination, page: targetPage }));
+      // Trust backend pagination - no frontend filtering needed
+      setActivities(pageActivities);
+      setFilteredActivities(pageActivities);
+      setSuppressedCount(0); // Backend handles filtering, no suppressed count needed
+      setPagination(prev => ({ ...prev, ...data.pagination }));
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {

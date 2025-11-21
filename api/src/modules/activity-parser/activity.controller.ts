@@ -16,14 +16,16 @@ export class ActivityController {
     @Query('type') type?: string,
     @Query('severity') severity?: string,
     @Query('search') search?: string,
+    @Query('hideKeepalive') hideKeepalive?: string,
   ) {
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
+    const shouldHideKeepalive = hideKeepalive === 'true';
 
     // Build where clause for filtering logs
     // Include both legacy (/scim/Users) and versioned (/scim/v2/Users) plus any SCIM base rewrite variants
-    const baseConditions = {
+    const baseConditions: any = {
       AND: [
         {
           OR: [
@@ -37,19 +39,52 @@ export class ActivityController {
       ]
     };
 
-    const where = search ? {
-      AND: [
-        ...baseConditions.AND,
-        {
-          OR: [
-            { url: { contains: search } },
-            { identifier: { contains: search } },
-            { requestBody: { contains: search } },
-            { responseBody: { contains: search } },
-          ],
-        },
-      ],
-    } : baseConditions;
+    // Build WHERE clause with keepalive filtering if requested
+    // Keepalive detection logic from isKeepaliveRequest:
+    // - method === 'GET'
+    // - url contains '/Users'
+    // - identifier is null or empty
+    // - status < 400
+    // - filter contains 'userName eq <UUID>'
+    //
+    // To EXCLUDE keepalive (inverse logic), we need:
+    // - method !== 'GET' OR
+    // - url not contains '/Users' (but we need /Users for baseConditions, so this is complex) OR
+    // - identifier is not null OR
+    // - status >= 400 OR status is null OR
+    // - no userName eq filter (URL parsing would be needed, omitted for now)
+    //
+    // Simplified approach: Exclude requests that match all of these conditions:
+    // - method = 'GET' AND url contains '/Users' AND identifier IS NULL AND (status IS NULL OR status < 400)
+    const keepaliveExclusionConditions: any = shouldHideKeepalive ? {
+      OR: [
+        { method: { not: 'GET' } },                      // Not a GET request
+        { identifier: { not: null } },                   // Has an identifier
+        { status: { gte: 400 } },                        // Error status
+        { AND: [{ url: { contains: '/Users' } }, { NOT: { url: { contains: '?filter=' } } }] }, // /Users but no filter param
+      ]
+    } : undefined;
+
+    let whereConditions: any[] = [...baseConditions.AND];
+
+    // Add keepalive exclusion if requested
+    if (keepaliveExclusionConditions) {
+      whereConditions.push(keepaliveExclusionConditions);
+    }
+
+    // Add search conditions if present
+    if (search) {
+      whereConditions.push({
+        OR: [
+          { url: { contains: search } },
+          { identifier: { contains: search } },
+          { requestBody: { contains: search } },
+          { responseBody: { contains: search } },
+        ],
+      });
+    }
+
+    const where: any = { AND: whereConditions };
 
     // Fetch logs from database
     const [logs, total] = await Promise.all([

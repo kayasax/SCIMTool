@@ -51,6 +51,7 @@ export interface LogQuery {
   until?: string; // ISO
   search?: string;
   includeAdmin?: boolean;
+  hideKeepalive?: boolean;
 }
 
 export interface LogListResponse {
