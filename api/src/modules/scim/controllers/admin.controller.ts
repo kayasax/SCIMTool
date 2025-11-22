@@ -225,11 +225,12 @@ export class AdminController {
       if (rg && app && subId) {
         const credential = new DefaultAzureCredential();
         const client = new ContainerAppsAPIClient(credential, subId);
-        const containerApp = await client.containerApps.get(rg, app);
+        const response = await client.containerApps.get(rg, app);
         
-        // Get the active revision's image (handle optional chaining properly)
+        // Get the active revision's image from the response
+        const containerApp = response as any; // Type safety bypass for Azure SDK
         const containers = containerApp?.properties?.template?.containers;
-        if (containers && containers.length > 0 && containers[0].image) {
+        if (containers && Array.isArray(containers) && containers.length > 0 && containers[0]?.image) {
           currentImage = containers[0].image;
         }
       }
