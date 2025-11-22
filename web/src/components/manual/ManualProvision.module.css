@@ -176,6 +176,101 @@
   overflow: auto;
 }
 
+.infoBox {
+  background: rgba(0, 120, 212, 0.1);
+  border: 1px solid rgba(0, 120, 212, 0.3);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  font-size: var(--font-size-200);
+  color: var(--current-foreground);
+}
+
+.infoBox h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+}
+
+.infoBox p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.infoBox code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9em;
+}
+
+.helpDetails {
+  margin-top: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.helpDetails summary {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  padding: var(--spacing-xs);
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.helpDetails summary:hover {
+  color: var(--color-primary-hover);
+}
+
+.helpContent {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--current-surface-secondary);
+  border-radius: var(--border-radius-sm);
+  line-height: 1.6;
+}
+
+.helpContent h4 {
+  margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--current-foreground);
+}
+
+.helpContent h4:first-child {
+  margin-top: 0;
+}
+
+.helpContent ol,
+.helpContent ul {
+  margin: var(--spacing-xs) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.helpContent li {
+  margin: var(--spacing-xs) 0;
+}
+
+.helpContent strong {
+  color: var(--current-foreground);
+}
+
+.helpContent a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.helpContent a:hover {
+  text-decoration: underline;
+}
+
+.fieldHint {
+  color: var(--current-foreground-secondary);
+  font-size: var(--font-size-100);
+  font-style: italic;
+  margin-top: 2px;
+}
+
 @media (max-width: 768px) {
   .section {
     padding: var(--spacing-lg);
@@ -183,5 +278,13 @@
 
   .fieldGrid {
     grid-template-columns: 1fr;
+  }
+  
+  .infoBox {
+    padding: var(--spacing-sm);
+  }
+  
+  .helpContent {
+    padding: var(--spacing-sm);
   }
 }
