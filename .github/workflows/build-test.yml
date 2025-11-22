@@ -1,0 +1,85 @@
+name: Build Test Image
+
+on:
+  push:
+    branches:
+      - 'test/**'
+      - 'dev/**'
+      - 'feature/**'
+  workflow_dispatch:
+    inputs:
+      test_tag:
+        description: 'Test tag suffix (e.g., "collision-ui" creates test-collision-ui)'
+        required: false
+        default: 'latest'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: kayasax/scimtool
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine test tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="test-${{ inputs.test_tag }}"
+          else
+            # Extract branch name and sanitize for Docker tag
+            BRANCH="${GITHUB_REF#refs/heads/}"
+            BRANCH_CLEAN=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
+            TAG="test-${BRANCH_CLEAN}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Building test image with tag: ${TAG}"
+
+      - name: Build and push test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      - name: Summary
+        run: |
+          echo "## 🧪 Test Image Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test this image:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`powershell" >> $GITHUB_STEP_SUMMARY
+          echo "az containerapp update \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -n YOUR-APP-NAME \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -g YOUR-RESOURCE-GROUP \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note:** This is a test image - not tagged as \`latest\` and won't trigger update notifications for other users." >> $GITHUB_STEP_SUMMARY
