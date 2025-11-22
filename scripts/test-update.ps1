@@ -216,8 +216,7 @@ try {
         Write-Info "Creating new revision with suffix: $timestamp"
         Write-Info "Deploying image: $imageRef"
         
-        # Update image only - DO NOT touch env vars (preserves secrets)
-        # Use separate command to set SCIM_CURRENT_IMAGE after deployment
+        # Update image only - DO NOT touch env vars (Azure CLI breaks secrets)
         Write-Info "Updating container image..."
         $output = az containerapp update `
             -n $AppName `
@@ -225,16 +224,6 @@ try {
             --image $imageRef `
             --revision-suffix $timestamp `
             2>&1
-        
-        if ($LASTEXITCODE -eq 0) {
-            # Now set SCIM_CURRENT_IMAGE as an additional env var (non-destructive)
-            Write-Info "Setting SCIM_CURRENT_IMAGE environment variable..."
-            az containerapp update `
-                -n $AppName `
-                -g $ResourceGroup `
-                --replace-env-vars "SCIM_CURRENT_IMAGE=$imageRef" `
-                2>&1 | Out-Null
-        }
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
