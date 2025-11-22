@@ -320,15 +320,8 @@ export const DatabaseBrowser: React.FC = () => {
             <div className={styles.modalHeader}>
               <h3>User Details</h3>
               <button className={styles.closeButton} onClick={closeUserModal}>×</button>
-            </div>            <div className={styles.modalActions}>
-              <button 
-                className={styles.deleteButton}
-                onClick={() => handleDeleteUser(selectedUser)}
-                title="Delete user (useful for testing collision detection from Entra)"
-              >
-                🗑️ Delete User
-              </button>
-            </div>            <div className={styles.modalActions}>
+            </div>
+            <div className={styles.modalActions}>
               <button 
                 className={styles.deleteButton}
                 onClick={() => handleDeleteUser(selectedUser)}
