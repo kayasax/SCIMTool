@@ -140,7 +140,19 @@ if ($currentImage) {
 }
 
 # Build full image reference
-$imageRef = "ghcr.io/kayasax/scimtool:$TestTag"
+# Construct image reference
+$registry = "ghcr.io"
+$imageName = "kayasax/scimtool"
+$imageRef = "${registry}/${imageName}:${TestTag}"
+
+# Check if tag looks like a branch name and provide helpful hint
+if ($TestTag -match '^test-[^-]+-') {
+    Write-Host ""
+    Write-Host "💡 Tip: Branch 'test/xyz' creates tag 'test-test-xyz' (not 'test-xyz')" -ForegroundColor Cyan
+    Write-Host "   If deploying from branch test/collision-ui-improvements, use:" -ForegroundColor Cyan
+    Write-Host "   -TestTag test-test-collision-ui-improvements" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 # Confirm
 Write-Host "`n📦 Deployment Plan:" -ForegroundColor Cyan
@@ -169,19 +181,29 @@ try {
     if ($CreateRevision) {
         # Create new revision without deactivating old one
         Write-Info "Creating new revision..."
-        az containerapp update `
+        $output = az containerapp update `
             -n $AppName `
             -g $ResourceGroup `
             --image $imageRef `
             --revision-suffix "test-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
-            2>&1 | Out-Null
+            2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
+            Write-Host $output -ForegroundColor Red
+        }
     } else {
         # Standard update (replaces current revision)
-        az containerapp update `
+        $output = az containerapp update `
             -n $AppName `
             -g $ResourceGroup `
             --image $imageRef `
-            2>&1 | Out-Null
+            2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
+            Write-Host $output -ForegroundColor Red
+        }
     }
     
     if ($LASTEXITCODE -ne 0) {
