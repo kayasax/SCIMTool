@@ -216,12 +216,13 @@ try {
         Write-Info "Creating new revision with suffix: $timestamp"
         Write-Info "Deploying image: $imageRef"
         
-        # Simple update - env vars handled by backend auto-detection
+        # Simple approach: set SCIM_CURRENT_IMAGE as regular env var
         $output = az containerapp update `
             -n $AppName `
             -g $ResourceGroup `
             --image $imageRef `
             --revision-suffix $timestamp `
+            --set-env-vars "SCIM_CURRENT_IMAGE=$imageRef" `
             2>&1
         
         if ($LASTEXITCODE -ne 0) {

@@ -23,8 +23,6 @@ import { ManualGroupDto } from '../dto/manual-group.dto';
 import { ManualUserDto } from '../dto/manual-user.dto';
 import { ScimGroupsService } from '../services/scim-groups.service';
 import { ScimUsersService } from '../services/scim-users.service';
-import { DefaultAzureCredential } from '@azure/identity';
-import { ContainerAppsAPIClient } from '@azure/arm-appcontainers';
 
 interface VersionInfo {
   version: string;
@@ -215,31 +213,8 @@ export class AdminController {
     const blobContainer = process.env.BLOB_BACKUP_CONTAINER;
     const backupMode: 'blob' | 'azureFiles' | 'none' = blobAccount ? 'blob' : 'none';
 
-    // Auto-detect current image from Azure Container Apps
-    let currentImage = process.env.SCIM_CURRENT_IMAGE; // Fallback to env var
-    try {
-      const rg = process.env.SCIM_RG;
-      const app = process.env.SCIM_APP;
-      const subId = process.env.AZURE_SUBSCRIPTION_ID;
-      
-      if (rg && app && subId) {
-        // Use DefaultAzureCredential without options - it will try ManagedIdentity first in Azure environment
-        const credential = new DefaultAzureCredential();
-        
-        const client = new ContainerAppsAPIClient(credential, subId);
-        const response = await client.containerApps.get(rg, app);
-        
-        // Get the active revision's image from the response
-        const containerApp = response as any; // Type safety bypass for Azure SDK
-        const containers = containerApp?.properties?.template?.containers;
-        if (containers && Array.isArray(containers) && containers.length > 0 && containers[0]?.image) {
-          currentImage = containers[0].image;
-        }
-      }
-    } catch (error: any) {
-      this.logger.warn(`Failed to auto-detect image: ${error?.message || 'Unknown error'}`);
-      // Fall back to env var
-    }
+    // Read current image from env var (set by deployment script)
+    const currentImage = process.env.SCIM_CURRENT_IMAGE;
 
     return {
       version,

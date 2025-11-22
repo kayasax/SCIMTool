@@ -17,8 +17,6 @@
     "prisma:migrate": "prisma migrate dev --name init"
   },
   "dependencies": {
-    "@azure/arm-appcontainers": "^3.0.0",
-    "@azure/identity": "^4.13.0",
     "@azure/storage-blob": "^12.18.0",
     "@nestjs/common": "10.3.8",
     "@nestjs/config": "3.2.1",
