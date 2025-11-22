@@ -22,6 +22,9 @@
     If specified, creates a new revision without deactivating the old one.
     Useful for A/B testing or quick rollback.
 
+.PARAMETER Force
+    Skip confirmation prompt and proceed immediately with deployment.
+
 .EXAMPLE
     # Deploy from current branch (if build-test.yml workflow ran)
     .\scripts\test-update.ps1
@@ -29,6 +32,10 @@
 .EXAMPLE
     # Deploy specific test tag
     .\scripts\test-update.ps1 -TestTag "test-collision-ui"
+
+.EXAMPLE
+    # Deploy without confirmation prompt
+    .\scripts\test-update.ps1 -TestTag "test-collision-ui" -Force
 
 .EXAMPLE
     # Deploy to specific app with revision mode
@@ -44,7 +51,8 @@ param(
     [string]$TestTag = "test-latest",
     [string]$ResourceGroup,
     [string]$AppName,
-    [switch]$CreateRevision
+    [switch]$CreateRevision,
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -169,10 +177,14 @@ if ($TestTag -like "test-*") {
     Write-Warning "Non-standard tag: $TestTag"
 }
 
-$confirm = Read-Host "`nProceed? (y/N)"
-if ($confirm -notmatch '^[Yy]$') {
-    Write-Host "Cancelled." -ForegroundColor Yellow
-    exit 0
+if (-not $Force) {
+    $confirm = Read-Host "`nProceed? (y/N)"
+    if ($confirm -notmatch '^[Yy]$') {
+        Write-Host "Cancelled." -ForegroundColor Yellow
+        exit 0
+    }
+} else {
+    Write-Info "Force mode enabled - skipping confirmation"
 }
 
 # Update Container App
