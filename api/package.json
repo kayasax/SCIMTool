@@ -17,6 +17,7 @@
     "prisma:migrate": "prisma migrate dev --name init"
   },
   "dependencies": {
+    "@azure/identity": "^4.0.1",
     "@azure/storage-blob": "^12.18.0",
     "@nestjs/common": "10.3.8",
     "@nestjs/config": "3.2.1",
