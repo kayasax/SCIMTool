@@ -212,8 +212,8 @@ try {
         
         # Get current env vars to preserve them (except SCIM_CURRENT_IMAGE which we'll update)
         Write-Info "Fetching current environment variables..."
-        $currentEnvJson = az containerapp show -n $AppName -g $ResourceGroup --query "properties.template.containers[0].env" -o json 2>&1 | Out-String
-        if ($LASTEXITCODE -eq 0) {
+        $currentEnvJson = az containerapp show -n $AppName -g $ResourceGroup --query "properties.template.containers[0].env" -o json 2>$null
+        if ($LASTEXITCODE -eq 0 -and $currentEnvJson) {
             $currentEnv = $currentEnvJson | ConvertFrom-Json
             
             # Build env var arguments, updating SCIM_CURRENT_IMAGE
