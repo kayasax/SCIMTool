@@ -197,14 +197,51 @@ try {
         # Always use revision suffix to force new revision creation
         $timestamp = Get-Date -Format 'HHmmss'
         Write-Info "Creating new revision with suffix: $timestamp"
-        # NOTE: Not updating SCIM_CURRENT_IMAGE env var to avoid overwriting other vars
-        # Test banner detection will be added in future version
-        $output = az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            --revision-suffix $timestamp `
-            2>&1
+        
+        # Get current env vars to preserve them (except SCIM_CURRENT_IMAGE which we'll update)
+        Write-Info "Fetching current environment variables..."
+        $currentEnvJson = az containerapp show -n $AppName -g $ResourceGroup --query "properties.template.containers[0].env" -o json 2>&1 | Out-String
+        if ($LASTEXITCODE -eq 0) {
+            $currentEnv = $currentEnvJson | ConvertFrom-Json
+            
+            # Build env var arguments, updating SCIM_CURRENT_IMAGE
+            $envArgs = @()
+            foreach ($env in $currentEnv) {
+                if ($env.name -eq "SCIM_CURRENT_IMAGE") {
+                    # Update with new image
+                    $envArgs += "$($env.name)=$imageRef"
+                } elseif ($env.secretRef) {
+                    # Preserve secret reference
+                    $envArgs += "$($env.name)=secretref:$($env.secretRef)"
+                } elseif ($env.value) {
+                    # Preserve regular value
+                    $envArgs += "$($env.name)=$($env.value)"
+                }
+            }
+            
+            # If SCIM_CURRENT_IMAGE wasn't in the list, add it
+            if (-not ($currentEnv | Where-Object { $_.name -eq "SCIM_CURRENT_IMAGE" })) {
+                $envArgs += "SCIM_CURRENT_IMAGE=$imageRef"
+            }
+            
+            Write-Info "Updating SCIM_CURRENT_IMAGE to: $imageRef"
+            $output = az containerapp update `
+                -n $AppName `
+                -g $ResourceGroup `
+                --image $imageRef `
+                --revision-suffix $timestamp `
+                --set-env-vars ($envArgs -join ' ') `
+                2>&1
+        } else {
+            # Fallback if we can't get env vars
+            Write-Warning "Could not fetch current env vars, updating without env var changes"
+            $output = az containerapp update `
+                -n $AppName `
+                -g $ResourceGroup `
+                --image $imageRef `
+                --revision-suffix $timestamp `
+                2>&1
+        }
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
