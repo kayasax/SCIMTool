@@ -210,7 +210,11 @@ export const DatabaseBrowser: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      if (!response.ok) throw new Error('Failed to delete user');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Delete failed:', response.status, errorText);
+        throw new Error(`Failed to delete user: ${response.status} ${errorText}`);
+      }
       
       setShowUserModal(false);
       setSelectedUser(null);
@@ -218,7 +222,7 @@ export const DatabaseBrowser: React.FC = () => {
       await fetchStatistics();
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Failed to delete user. Please try again.');
+      alert(`Failed to delete user. Please try again.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
