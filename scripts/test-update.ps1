@@ -124,7 +124,7 @@ if (-not $AppName) {
         $AppName = $apps[0]
         Write-Info "Found: $AppName"
     } else {
-        Write-Host "`nMultiple apps in $ResourceGroup:" -ForegroundColor Yellow
+        Write-Host "`nMultiple apps in ${ResourceGroup}:" -ForegroundColor Yellow
         $apps | ForEach-Object { Write-Host "  • $_" -ForegroundColor Gray }
         $AppName = Read-Host "`nEnter App name"
     }
