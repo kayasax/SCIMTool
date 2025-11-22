@@ -194,10 +194,14 @@ try {
         }
     } else {
         # Standard update (replaces current revision)
+        # Always use revision suffix to force new revision creation
+        $timestamp = Get-Date -Format 'HHmmss'
+        Write-Info "Creating new revision with suffix: $timestamp"
         $output = az containerapp update `
             -n $AppName `
             -g $ResourceGroup `
             --image $imageRef `
+            --revision-suffix $timestamp `
             2>&1
         
         if ($LASTEXITCODE -ne 0) {
