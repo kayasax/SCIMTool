@@ -223,16 +223,8 @@ export class AdminController {
       const subId = process.env.AZURE_SUBSCRIPTION_ID;
       
       if (rg && app && subId) {
-        const credential = new DefaultAzureCredential({
-          // Explicitly use managed identity only, with timeout
-          managedIdentityClientId: undefined, // Use system-assigned
-          excludeEnvironmentCredential: true,
-          excludeManagedIdentityCredential: false,
-          excludeSharedTokenCacheCredential: true,
-          excludeVisualStudioCodeCredential: true,
-          excludeAzureCliCredential: true,
-          excludeAzurePowerShellCredential: true,
-        });
+        // Use DefaultAzureCredential without options - it will try ManagedIdentity first in Azure environment
+        const credential = new DefaultAzureCredential();
         
         const client = new ContainerAppsAPIClient(credential, subId);
         const response = await client.containerApps.get(rg, app);
