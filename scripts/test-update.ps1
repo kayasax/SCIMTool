@@ -195,16 +195,15 @@ try {
     } else {
         # Standard update (replaces current revision)
         # Always use revision suffix to force new revision creation
-        # Also update SCIM_CURRENT_IMAGE env var for test version banner
         $timestamp = Get-Date -Format 'HHmmss'
         Write-Info "Creating new revision with suffix: $timestamp"
-        Write-Info "Updating SCIM_CURRENT_IMAGE env var: $imageRef"
+        # NOTE: Not updating SCIM_CURRENT_IMAGE env var to avoid overwriting other vars
+        # Test banner detection will be added in future version
         $output = az containerapp update `
             -n $AppName `
             -g $ResourceGroup `
             --image $imageRef `
             --revision-suffix $timestamp `
-            --set-env-vars "SCIM_CURRENT_IMAGE=$imageRef" `
             2>&1
         
         if ($LASTEXITCODE -ne 0) {
