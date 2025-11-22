@@ -200,7 +200,10 @@ export class AdminController {
   @Post('users/:id/delete')
   @HttpCode(204)
   async deleteUser(@Param('id') id: string): Promise<void> {
-    await this.usersService.deleteUser(id);
+    const deleted = await this.usersService.deleteUserByIdentifier(id);
+    if (!deleted) {
+      throw new NotFoundException('User not found');
+    }
   }
 
   @Get('version')
@@ -213,8 +216,8 @@ export class AdminController {
     const blobContainer = process.env.BLOB_BACKUP_CONTAINER;
     const backupMode: 'blob' | 'azureFiles' | 'none' = blobAccount ? 'blob' : 'none';
 
-    // Read current image from env var (set by deployment script)
-    const currentImage = process.env.SCIM_CURRENT_IMAGE;
+    // Image tag detection moved to frontend (see web build in Dockerfile)
+    const currentImage = undefined;
 
     return {
       version,

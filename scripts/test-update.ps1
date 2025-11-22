@@ -77,6 +77,55 @@ function Write-Info {
     Write-Host "ℹ️  $Message" -ForegroundColor Gray
 }
 
+function Get-ContainerEnvArgs {
+    param(
+        [string]$ResourceGroup,
+        [string]$AppName,
+        [string]$ImageRef
+    )
+
+    Write-Step "Capturing environment variables"
+
+    $appDetailsJson = az containerapp show -n $AppName -g $ResourceGroup 2>$null
+    if (-not $appDetailsJson) {
+        throw "Failed to read Container App details for $AppName"
+    }
+
+    $appDetails = $appDetailsJson | ConvertFrom-Json
+    $revisionName = $appDetails.properties.latestReadyRevisionName
+    $envRecords = $null
+
+    if ($revisionName) {
+        Write-Info "Using baseline revision: $revisionName"
+        $envJson = az containerapp revision show -n $AppName -g $ResourceGroup --revision $revisionName --query "properties.template.containers[0].env" 2>$null
+        if ($envJson) {
+            $envRecords = $envJson | ConvertFrom-Json
+        }
+    }
+
+    if (-not $envRecords) {
+        Write-Warning "Falling back to template definition on the app"
+        $envRecords = $appDetails.properties.template.containers[0].env
+    }
+
+    if (-not $envRecords) {
+        throw "Unable to retrieve environment variables for $AppName"
+    }
+
+    $envArgs = @()
+    foreach ($entry in $envRecords) {
+        if ($entry.name -eq "SCIM_CURRENT_IMAGE") {
+            $envArgs += "$($entry.name)=$ImageRef"
+        } elseif ($entry.secretRef) {
+            $envArgs += "$($entry.name)=secretref:$($entry.secretRef)"
+        } elseif ($entry.value -ne $null -and $entry.value -ne "") {
+            $envArgs += "$($entry.name)=$($entry.value)"
+        }
+    }
+
+    return $envArgs
+}
+
 # Check Azure CLI
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Azure CLI not found. Install from: https://aka.ms/InstallAzureCLI" -ForegroundColor Red
@@ -195,43 +244,41 @@ if (-not $Force) {
 # Update Container App
 Write-Step "Updating Container App"
 try {
+    $envArgs = Get-ContainerEnvArgs -ResourceGroup $ResourceGroup -AppName $AppName -ImageRef $imageRef
+
     if ($CreateRevision) {
-        # Create new revision without deactivating old one
-        Write-Info "Creating new revision..."
-        $output = az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            --revision-suffix "test-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
-            2>&1
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
-            Write-Host $output -ForegroundColor Red
-        }
+        $revisionSuffix = "test-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        Write-Info "Creating parallel revision: $revisionSuffix"
     } else {
-        # Standard update (replaces current revision)
-        # Always use revision suffix to force new revision creation
-        $timestamp = Get-Date -Format 'HHmmss'
-        Write-Info "Creating new revision with suffix: $timestamp"
-        Write-Info "Deploying image: $imageRef"
-        
-        # Update image only - DO NOT touch env vars (Azure CLI breaks secrets)
-        Write-Info "Updating container image..."
-        $output = az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            --revision-suffix $timestamp `
-            2>&1
-        
-        if ($LASTEXITCODE -ne 0) {
+        $revisionSuffix = Get-Date -Format 'HHmmss'
+        Write-Info "Creating new revision with suffix: $revisionSuffix"
+    }
+
+    Write-Info "Deploying image: $imageRef"
+    if ($envArgs.Count -gt 0) {
+        Write-Info "Reapplying $($envArgs.Count) environment variables"
+    }
+
+    $arguments = @(
+        "containerapp", "update",
+        "-n", $AppName,
+        "-g", $ResourceGroup,
+        "--image", $imageRef,
+        "--revision-suffix", $revisionSuffix
+    )
+
+    if ($envArgs.Count -gt 0) {
+        $arguments += "--set-env-vars"
+        $arguments += $envArgs
+    }
+
+    $output = & az @arguments 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        if ($output) {
             Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
             Write-Host $output -ForegroundColor Red
         }
-    }
-    
-    if ($LASTEXITCODE -ne 0) {
         throw "Update command failed with exit code $LASTEXITCODE"
     }
 } catch {
