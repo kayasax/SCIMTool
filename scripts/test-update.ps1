@@ -128,7 +128,12 @@ if (-not $AppName) {
         exit 1
     }
     
-    if ($apps.Count -eq 1) {
+    if ($apps -is [string]) {
+        # Single app returned as string
+        $AppName = $apps
+        Write-Info "Found: $AppName"
+    } elseif ($apps.Count -eq 1) {
+        # Single app returned as array
         $AppName = $apps[0]
         Write-Info "Found: $AppName"
     } else {

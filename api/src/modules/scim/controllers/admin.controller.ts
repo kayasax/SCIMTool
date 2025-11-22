@@ -8,7 +8,8 @@
   Query,
   Param,
   NotFoundException,
-  Req
+  Req,
+  Logger
 } from '@nestjs/common';
 import type { Request } from 'express';
 
@@ -46,6 +47,7 @@ interface VersionInfo {
 
 @Controller('admin')
 export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
   constructor(
     private readonly loggingService: LoggingService,
     private readonly usersService: ScimUsersService,
@@ -225,13 +227,14 @@ export class AdminController {
         const client = new ContainerAppsAPIClient(credential, subId);
         const containerApp = await client.containerApps.get(rg, app);
         
-        // Get the active revision's image
-        if (containerApp.properties?.template?.containers?.[0]?.image) {
-          currentImage = containerApp.properties.template.containers[0].image;
+        // Get the active revision's image (handle optional chaining properly)
+        const containers = containerApp?.properties?.template?.containers;
+        if (containers && containers.length > 0 && containers[0].image) {
+          currentImage = containers[0].image;
         }
       }
-    } catch (error) {
-      this.logger.warn(`Failed to auto-detect image: ${error.message}`);
+    } catch (error: any) {
+      this.logger.warn(`Failed to auto-detect image: ${error?.message || 'Unknown error'}`);
       // Fall back to env var
     }
 
