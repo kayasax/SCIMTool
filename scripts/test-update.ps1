@@ -209,14 +209,52 @@ try {
         # Always use revision suffix to force new revision creation
         $timestamp = Get-Date -Format 'HHmmss'
         Write-Info "Creating new revision with suffix: $timestamp"
-        # NOTE: Not updating env vars - Azure CLI --set-env-vars is unreliable and removes other vars
-        # The test banner won't show, but functionality is preserved
-        $output = az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            --revision-suffix $timestamp `
-            2>&1
+        
+        # Fetch current app configuration
+        Write-Info "Fetching current configuration..."
+        $appConfig = az containerapp show -n $AppName -g $ResourceGroup -o json 2>$null | ConvertFrom-Json
+        
+        if ($appConfig) {
+            # Update the image and SCIM_CURRENT_IMAGE env var in the config
+            $appConfig.properties.template.containers[0].image = $imageRef
+            
+            # Find and update SCIM_CURRENT_IMAGE, or add it if missing
+            $envVars = $appConfig.properties.template.containers[0].env
+            $foundScimImage = $false
+            for ($i = 0; $i -lt $envVars.Count; $i++) {
+                if ($envVars[$i].name -eq "SCIM_CURRENT_IMAGE") {
+                    $envVars[$i].value = $imageRef
+                    $foundScimImage = $true
+                    break
+                }
+            }
+            if (-not $foundScimImage) {
+                $envVars += @{ name = "SCIM_CURRENT_IMAGE"; value = $imageRef }
+            }
+            
+            $appConfig.properties.template.revisionSuffix = $timestamp
+            
+            # Save to temp file
+            $tempFile = [System.IO.Path]::GetTempFileName()
+            $appConfig | ConvertTo-Json -Depth 100 | Set-Content -Path $tempFile
+            
+            Write-Info "Updating with preserved env vars and SCIM_CURRENT_IMAGE=$imageRef"
+            $output = az containerapp update `
+                -n $AppName `
+                -g $ResourceGroup `
+                --yaml $tempFile `
+                2>&1
+            
+            Remove-Item $tempFile -ErrorAction SilentlyContinue
+        } else {
+            Write-Warning "Could not fetch config, using simple update"
+            $output = az containerapp update `
+                -n $AppName `
+                -g $ResourceGroup `
+                --image $imageRef `
+                --revision-suffix $timestamp `
+                2>&1
+        }
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
