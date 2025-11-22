@@ -216,14 +216,50 @@ try {
         Write-Info "Creating new revision with suffix: $timestamp"
         Write-Info "Deploying image: $imageRef"
         
-        # Simple approach: set SCIM_CURRENT_IMAGE as regular env var
-        $output = az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            --revision-suffix $timestamp `
-            --set-env-vars "SCIM_CURRENT_IMAGE=$imageRef" `
-            2>&1
+        # Get current env vars to preserve them
+        Write-Info "Preserving existing environment variables..."
+        $envVarsJson = az containerapp show -n $AppName -g $ResourceGroup --query "properties.template.containers[0].env" -o json 2>$null
+        
+        if ($envVarsJson) {
+            $envVars = $envVarsJson | ConvertFrom-Json
+            $envVarArgs = @()
+            
+            # Preserve all existing env vars
+            foreach ($var in $envVars) {
+                if ($var.name -eq 'SCIM_CURRENT_IMAGE') {
+                    # Skip - we'll set it fresh
+                    continue
+                }
+                if ($var.secretRef) {
+                    $envVarArgs += "$($var.name)=secretref:$($var.secretRef)"
+                } else {
+                    $envVarArgs += "$($var.name)=$($var.value)"
+                }
+            }
+            
+            # Add the new SCIM_CURRENT_IMAGE value
+            $envVarArgs += "SCIM_CURRENT_IMAGE=$imageRef"
+            
+            $envVarString = $envVarArgs -join " "
+            
+            Write-Info "Updating with preserved environment variables..."
+            $output = az containerapp update `
+                -n $AppName `
+                -g $ResourceGroup `
+                --image $imageRef `
+                --revision-suffix $timestamp `
+                --set-env-vars $envVarString `
+                2>&1
+        } else {
+            # Fallback if we can't read env vars
+            Write-Warning "Could not read existing env vars, proceeding with image update only"
+            $output = az containerapp update `
+                -n $AppName `
+                -g $ResourceGroup `
+                --image $imageRef `
+                --revision-suffix $timestamp `
+                2>&1
+        }
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
