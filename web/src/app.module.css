@@ -52,6 +52,44 @@
   font-size: var(--font-size-300);
 }
 
+/* Test Version Banner */
+.testBanner {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  border: 2px solid #ff8c42;
+  animation: testPulse 2s ease-in-out infinite;
+}
+
+.testBanner code {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.testWarning {
+  font-size: 0.9em;
+  font-style: italic;
+  opacity: 0.95;
+  margin-top: 4px;
+}
+
+@keyframes testPulse {
+  0%, 100% {
+    border-color: #ff8c42;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  }
+  50% {
+    border-color: #ffcc00;
+    box-shadow: 0 2px 16px rgba(255, 204, 0, 0.5);
+  }
+}
+
 .toolbar {
   display: flex;
   gap: var(--spacing-md);

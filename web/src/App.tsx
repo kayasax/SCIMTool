@@ -62,6 +62,7 @@ const AppContent: React.FC = () => {
   });
 
   const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
+  const [isTestVersion, setIsTestVersion] = useState(false);
   // Hard-coded upstream GitHub repository for release discovery
   const githubRepo = 'kayasax/SCIMTool';
 
@@ -272,8 +273,17 @@ const AppContent: React.FC = () => {
         const info = await fetchLocalVersion();
         setLocalVersion(info);
         setDeploymentInfo(info.deployment ?? null);
+        // Detect test version from Docker image tag (only test-* images, not sha-*)
+        const currentImage = info?.deployment?.currentImage;
+        if (currentImage) {
+          const imageTag = currentImage.split(':')[1] || '';
+          setIsTestVersion(imageTag.startsWith('test-'));
+        } else {
+          setIsTestVersion(false);
+        }
       } catch (err: any) {
         setDeploymentInfo(null);
+        setIsTestVersion(false);
         const message = err?.message ?? '';
         if (typeof message === 'string' && message.includes('401')) {
           setNeedsToken(true);
@@ -527,6 +537,14 @@ const AppContent: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Test Version Banner */}
+      {isTestVersion && deploymentInfo?.currentImage && (
+        <div className={styles.testBanner}>
+          🧪 <strong>TEST VERSION</strong> - Running: <code>{deploymentInfo.currentImage.split(':')[1]}</code>
+          <span className={styles.testWarning}>Not for production use • Changes not yet released</span>
         </div>
       )}
 

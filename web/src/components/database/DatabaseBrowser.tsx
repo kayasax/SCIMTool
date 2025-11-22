@@ -195,6 +195,33 @@ export const DatabaseBrowser: React.FC = () => {
     setShowGroupModal(true);
   };
 
+  const handleDeleteUser = async (user: User) => {
+    if (!token) return;
+    
+    const confirmed = window.confirm(
+      `Delete user "${user.userName}"?\n\nThis will remove the user from the database. You can then retry provisioning from Entra to test collision detection.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const response = await fetch(`/scim/admin/users/${user.id}/delete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete user');
+      
+      setShowUserModal(false);
+      setSelectedUser(null);
+      await fetchUsers();
+      await fetchStatistics();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user. Please try again.');
+    }
+  };
+
   const closeUserModal = () => {
     setShowUserModal(false);
     setSelectedUser(null);
@@ -293,6 +320,22 @@ export const DatabaseBrowser: React.FC = () => {
             <div className={styles.modalHeader}>
               <h3>User Details</h3>
               <button className={styles.closeButton} onClick={closeUserModal}>×</button>
+            </div>            <div className={styles.modalActions}>
+              <button 
+                className={styles.deleteButton}
+                onClick={() => handleDeleteUser(selectedUser)}
+                title="Delete user (useful for testing collision detection from Entra)"
+              >
+                🗑️ Delete User
+              </button>
+            </div>            <div className={styles.modalActions}>
+              <button 
+                className={styles.deleteButton}
+                onClick={() => handleDeleteUser(selectedUser)}
+                title="Delete user (useful for testing collision detection from Entra)"
+              >
+                🗑️ Delete User
+              </button>
             </div>
             <div className={styles.modalContent}>
               <div className={styles.detailsGrid}>

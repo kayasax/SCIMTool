@@ -195,6 +195,12 @@ export class AdminController {
     return this.groupsService.createGroup(payload, baseUrl);
   }
 
+  @Post('users/:id/delete')
+  @HttpCode(204)
+  async deleteUser(@Param('id') id: string): Promise<void> {
+    await this.usersService.deleteUser(id);
+  }
+
   @Get('version')
   getVersion(): VersionInfo {
     // Prefer explicit env vars injected at build/deploy time
