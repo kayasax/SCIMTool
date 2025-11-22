@@ -22,6 +22,8 @@ import { ManualGroupDto } from '../dto/manual-group.dto';
 import { ManualUserDto } from '../dto/manual-user.dto';
 import { ScimGroupsService } from '../services/scim-groups.service';
 import { ScimUsersService } from '../services/scim-users.service';
+import { DefaultAzureCredential } from '@azure/identity';
+import { ContainerAppsAPIClient } from '@azure/arm-appcontainers';
 
 interface VersionInfo {
   version: string;
@@ -202,7 +204,7 @@ export class AdminController {
   }
 
   @Get('version')
-  getVersion(): VersionInfo {
+  async getVersion(): Promise<VersionInfo> {
     // Prefer explicit env vars injected at build/deploy time
     const version = process.env.APP_VERSION || this.readPackageVersion();
     const commit = process.env.GIT_COMMIT;
@@ -210,6 +212,28 @@ export class AdminController {
     const blobAccount = process.env.BLOB_BACKUP_ACCOUNT;
     const blobContainer = process.env.BLOB_BACKUP_CONTAINER;
     const backupMode: 'blob' | 'azureFiles' | 'none' = blobAccount ? 'blob' : 'none';
+
+    // Auto-detect current image from Azure Container Apps
+    let currentImage = process.env.SCIM_CURRENT_IMAGE; // Fallback to env var
+    try {
+      const rg = process.env.SCIM_RG;
+      const app = process.env.SCIM_APP;
+      const subId = process.env.AZURE_SUBSCRIPTION_ID;
+      
+      if (rg && app && subId) {
+        const credential = new DefaultAzureCredential();
+        const client = new ContainerAppsAPIClient(credential, subId);
+        const containerApp = await client.containerApps.get(rg, app);
+        
+        // Get the active revision's image
+        if (containerApp.properties?.template?.containers?.[0]?.image) {
+          currentImage = containerApp.properties.template.containers[0].image;
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to auto-detect image: ${error.message}`);
+      // Fall back to env var
+    }
 
     return {
       version,
@@ -223,7 +247,7 @@ export class AdminController {
         resourceGroup: process.env.SCIM_RG,
         containerApp: process.env.SCIM_APP,
         registry: process.env.SCIM_REGISTRY,
-        currentImage: process.env.SCIM_CURRENT_IMAGE,
+        currentImage,
         backupMode,
         blobAccount,
         blobContainer
