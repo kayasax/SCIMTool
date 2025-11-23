@@ -156,7 +156,7 @@ az containerapp revision deactivate -n scimtool-app -g scimtool-rg --revision <t
 
 Or specific version:
 ```powershell
-.\scripts\test-update.ps1 -TestTag "0.8.14"
+.\scripts\test-update.ps1 -TestTag "0.8.15"
 ```
 
 ---
@@ -206,7 +206,7 @@ Or specific version:
 - [ ] Database operations verified
 
 ### Version Bumping
-- **Patch** (0.8.14 → 0.8.15): Bug fixes, small improvements
+- **Patch** (0.8.15 → 0.8.16): Bug fixes, small improvements
 - **Minor** (0.8.15 → 0.9.0): New features, non-breaking changes
 - **Major** (0.9.0 → 1.0.0): Breaking changes, major redesign
 
@@ -260,4 +260,4 @@ az containerapp revision list -n <app-name> -g <rg> -o table
 
 ---
 
-**Last Updated:** November 2025 | **Version:** 0.8.14
+**Last Updated:** November 2025 | **Version:** 0.8.15

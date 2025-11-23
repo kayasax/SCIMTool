@@ -1,7 +1,7 @@
 # ✨ SCIMTool
 **Provisioning visibility & SCIM 2.0 monitor for Microsoft Entra — deploy in minutes, understand events instantly.**
 
-[![Version 0.8.14](https://img.shields.io/badge/version-0.8.14-2ea043?style=flat-square)](https://github.com/kayasax/SCIMTool/releases/latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
+[![Version 0.8.15](https://img.shields.io/badge/version-0.8.15-2ea043?style=flat-square)](https://github.com/kayasax/SCIMTool/releases/latest) [![SCIM 2.0](https://img.shields.io/badge/SCIM-2.0-00a1f1?style=flat-square)](https://scim.cloud/) [![Microsoft Entra](https://img.shields.io/badge/Microsoft-Entra_ID-ff6b35?style=flat-square)](https://entra.microsoft.com/)
 
 Stop scrolling walls of JSON. SCIMTool turns raw provisioning calls into clean, human messages plus a fast searchable UI (users, groups, diffs, backup state).
 <img width="1224" height="995" alt="image" src="https://github.com/user-attachments/assets/2ec5a4f2-1e23-4440-a317-6562e0961a5a" />
@@ -69,13 +69,13 @@ You will be notified when a new version is available and a powershell command wi
 Use the lightweight update function (auto-discovery if you omit names):
 ```powershell
 iex (irm https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-func.ps1); \
-	Update-SCIMTool -Version v0.8.13
+	Update-SCIMTool -Version v0.8.15
 ```
 Specify RG/App explicitly if you have multiple deployments:
 ```powershell
-Update-SCIMTool -Version v0.8.13 -ResourceGroup scimtool-rg -AppName scimtool-prod
+Update-SCIMTool -Version v0.8.15 -ResourceGroup scimtool-rg -AppName scimtool-prod
 ```
-> v0.8.13 note: the direct-update script now auto-generates `JWT_SECRET` and `OAUTH_CLIENT_SECRET` if they are missing, applies them via `--set-env-vars`, and restarts revisions when only secrets change.
+> Since v0.8.13 the direct-update script auto-generates `JWT_SECRET` and `OAUTH_CLIENT_SECRET` if they are missing, applies them via `--set-env-vars`, and restarts revisions when only secrets change.
 Rotate secret? Redeploy with a new `SCIMTOOL_SECRET` using the bootstrap one‑liner (it will pull latest `setup.ps1`).
 
 ---

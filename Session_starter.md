@@ -5,6 +5,8 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 ### Recent Key Achievements (Chronological)
 | Date | Achievement |
 |------|-------------|
+| 2025-11-22 | 🧩 **UI Fallback Sync:** Updated bundled footer fallback to display v0.8.15 |
+| 2025-11-22 | 📘 **Collision Guide Refresh:** Added quick-start workflow + force re-POST instructions for reliable 409 testing |
 | 2025-11-21 | 🎯 **PAGINATION FIX:** Backend-driven keepalive filtering (TDD implementation) - accurate counts, no empty pages when hideKeepalive enabled |
 | 2025-11-21 | Extended executive/technical wiki created (`wiki.md`) for management evaluation |
 | 2025-11-21 | Added beginner quickstart & Azure CLI prerequisites to wiki (`wiki.md`) |
@@ -56,12 +58,12 @@ This file intentionally trimmed for clarity. Full historic log kept in git histo
 | 2025-09-28 | PATCH Add operation fix (Entra compatibility) |
 | 2025-09-27 | v0.3.0: Full SCIM 2.0 compliance baseline |
 
-Current Version: v0.8.14 (pagination fix - backend-driven keepalive filtering)
+Current Version: v0.8.15 (collision testing quick-start + force re-POST guidance)
 
 ---
 
 ## Status
-Production Ready (v0.8.13) – Adds keepalive suppression toggle + pagination auto-skip for keepalive-only activity feed pages, plus blob restore bootstrap and duplicate guardrails groundwork. OAuth tokens now enforced via unique runtime JWT/OAuth secrets (no baked-in credentials); direct upgrade script now provisions JWT/OAuth secrets automatically, applies env bindings via `--set-env-vars`, and restarts revisions when needed.
+Production Ready (v0.8.15) – Includes collision testing quick-start documentation with enforced force re-POST workflow, bundled footer fallback aligned to 0.8.15, alongside prior keepalive pagination fixes, runtime secret enforcement, and deployment script enhancements. Direct upgrade script continues to provision JWT/OAuth secrets automatically, applies env bindings via `--set-env-vars`, and restarts revisions when needed.
 
 ## Quick Commands
 ```powershell
@@ -69,7 +71,7 @@ Production Ready (v0.8.13) – Adds keepalive suppression toggle + pagination au
 pwsh ./scripts/publish-acr.ps1 -Registry scimtoolpublic -ResourceGroup scimtool-rg -Latest
 
 # Customer update to latest (example)
-iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.13 -ResourceGroup <rg> -AppName <app> -NoPrompt
+iex (irm 'https://raw.githubusercontent.com/kayasax/SCIMTool/master/scripts/update-scimtool-direct.ps1'); Update-SCIMToolDirect -Version v0.8.15 -ResourceGroup <rg> -AppName <app> -NoPrompt
 
 > NOTE: Direct upgrade one‑liner integrated into UI copy button; user has not yet tested the copied command end‑to‑end.
 ```
