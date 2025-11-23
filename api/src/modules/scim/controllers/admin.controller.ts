@@ -216,8 +216,20 @@ export class AdminController {
     const blobContainer = process.env.BLOB_BACKUP_CONTAINER;
     const backupMode: 'blob' | 'azureFiles' | 'none' = blobAccount ? 'blob' : 'none';
 
-    // Image tag detection moved to frontend (see web build in Dockerfile)
-    const currentImage = undefined;
+    // Read current image tag from file (written at build time in Dockerfile)
+    let currentImage: string | undefined;
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const imageTagPath = path.join(__dirname, '../../../../.image-tag');
+      const imageTag = fs.readFileSync(imageTagPath, 'utf-8').trim();
+      if (imageTag && imageTag !== 'unknown') {
+        const registry = process.env.SCIM_REGISTRY || 'ghcr.io/kayasax';
+        currentImage = `${registry}/scimtool:${imageTag}`;
+      }
+    } catch {
+      // File not found or error reading - not critical
+    }
 
     return {
       version,

@@ -416,7 +416,7 @@ const AppContent: React.FC = () => {
         }}
       />
       <div className={styles.page}>
-      {upgradeAvailable && latestTag && (
+      {upgradeAvailable && latestTag && !isTestVersion && (
         <div className={styles.upgradeBanner}>
           <span className={styles.upgradeBannerNew}>NEW</span>
           <div className={styles.flex1}>
