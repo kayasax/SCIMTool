@@ -32,6 +32,36 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
     }
   };
 
+  const downloadLog = () => {
+    const exportData = {
+      method: log.method,
+      url: log.url,
+      status: log.status,
+      durationMs: log.durationMs,
+      timestamp: log.createdAt,
+      identifier: log.reportableIdentifier,
+      requestHeaders: log.requestHeaders,
+      requestBody: log.requestBody ? (typeof log.requestBody === 'string' ? JSON.parse(log.requestBody) : log.requestBody) : null,
+      responseHeaders: log.responseHeaders,
+      responseBody: log.responseBody ? (typeof log.responseBody === 'string' ? JSON.parse(log.responseBody) : log.responseBody) : null,
+      error: log.errorMessage ? {
+        message: log.errorMessage,
+        stack: log.errorStack
+      } : null
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `scim-log-${log.method}-${new Date(log.createdAt).toISOString().replace(/[:.]/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const getStatusBadgeClass = (status: number): string => {
     if (status >= 200 && status < 300) return styles.statusSuccess;
     if (status >= 400 && status < 500) return styles.statusError;
@@ -72,7 +102,12 @@ export const LogDetail: React.FC<LogDetailProps> = ({ log, onClose }) => {
             </span>
             Request Details
           </h2>
-          <button className={styles.closeButton} onClick={onClose}>✕</button>
+          <div className={styles.headerActions}>
+            <button className={styles.downloadButton} onClick={downloadLog} title="Download log as JSON">
+              ⬇️ Download
+            </button>
+            <button className={styles.closeButton} onClick={onClose}>✕</button>
+          </div>
         </div>
 
         <div className={styles.modalContent}>

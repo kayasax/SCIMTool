@@ -47,6 +47,37 @@
   gap: var(--spacing-sm);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.downloadButton {
+  background: var(--current-primary);
+  border: 1px solid var(--current-primary);
+  color: white;
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  transition: all var(--transition-fast);
+}
+
+.downloadButton:hover {
+  background: var(--current-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--current-shadow-4);
+}
+
+.downloadButton:active {
+  transform: translateY(0);
+}
+
 .closeButton {
   background: none;
   border: none;
