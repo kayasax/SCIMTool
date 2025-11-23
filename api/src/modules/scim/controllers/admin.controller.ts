@@ -8,7 +8,8 @@
   Query,
   Param,
   NotFoundException,
-  Req
+  Req,
+  Logger
 } from '@nestjs/common';
 import type { Request } from 'express';
 
@@ -44,6 +45,7 @@ interface VersionInfo {
 
 @Controller('admin')
 export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
   constructor(
     private readonly loggingService: LoggingService,
     private readonly usersService: ScimUsersService,
@@ -195,8 +197,17 @@ export class AdminController {
     return this.groupsService.createGroup(payload, baseUrl);
   }
 
+  @Post('users/:id/delete')
+  @HttpCode(204)
+  async deleteUser(@Param('id') id: string): Promise<void> {
+    const deleted = await this.usersService.deleteUserByIdentifier(id);
+    if (!deleted) {
+      throw new NotFoundException('User not found');
+    }
+  }
+
   @Get('version')
-  getVersion(): VersionInfo {
+  async getVersion(): Promise<VersionInfo> {
     // Prefer explicit env vars injected at build/deploy time
     const version = process.env.APP_VERSION || this.readPackageVersion();
     const commit = process.env.GIT_COMMIT;
@@ -204,6 +215,9 @@ export class AdminController {
     const blobAccount = process.env.BLOB_BACKUP_ACCOUNT;
     const blobContainer = process.env.BLOB_BACKUP_CONTAINER;
     const backupMode: 'blob' | 'azureFiles' | 'none' = blobAccount ? 'blob' : 'none';
+
+    // Image tag detection moved to frontend (see web build in Dockerfile)
+    const currentImage = undefined;
 
     return {
       version,
@@ -217,7 +231,7 @@ export class AdminController {
         resourceGroup: process.env.SCIM_RG,
         containerApp: process.env.SCIM_APP,
         registry: process.env.SCIM_REGISTRY,
-        currentImage: process.env.SCIM_CURRENT_IMAGE,
+        currentImage,
         backupMode,
         blobAccount,
         blobContainer

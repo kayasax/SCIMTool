@@ -73,6 +73,22 @@ export class ScimUsersService {
     }
   }
 
+  async deleteUserByIdentifier(identifier: string): Promise<boolean> {
+    const user = await this.prisma.scimUser.findFirst({
+      where: {
+        OR: [{ id: identifier }, { scimId: identifier }]
+      },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return false;
+    }
+
+    await this.prisma.scimUser.delete({ where: { id: user.id } });
+    return true;
+  }
+
   async listUsers(
     { filter, startIndex = 1, count = DEFAULT_COUNT }: ListUsersParams,
     baseUrl: string

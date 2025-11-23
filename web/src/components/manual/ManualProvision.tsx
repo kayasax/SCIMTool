@@ -118,10 +118,50 @@ export const ManualProvision: React.FC = () => {
             <p>Create SCIM users directly to reproduce collisions or test attribute handling. All fields are optional except the userName.</p>
           </div>
         </header>
+
+        <div className={styles.infoBox}>
+          <h3>🔑 Understanding SCIM Identifiers</h3>
+          <p>
+            <strong>SCIMTool uses this logic:</strong> If <code>externalId</code> is provided, it becomes the unique identifier. 
+            Otherwise, <code>userName</code> is used as the identifier.
+          </p>
+          <details className={styles.helpDetails}>
+            <summary>How to create collision scenarios</summary>
+            <div className={styles.helpContent}>
+              <h4>Step 1: Find what Entra sends</h4>
+              <ol>
+                <li>Go to <strong>Raw Logs</strong> tab</li>
+                <li>Trigger a user provisioning from Entra</li>
+                <li>View the POST /Users request body</li>
+                <li>Note which fields Entra populated: <code>externalId</code> and/or <code>userName</code></li>
+              </ol>
+
+              <h4>Step 2: Create the collision</h4>
+              <p><strong>Scenario A</strong> - If Entra sends <code>externalId</code> (usually objectId):</p>
+              <ul>
+                <li>Copy an existing user's <code>externalId</code> from <strong>Database → Users</strong></li>
+                <li>Paste it below, use a <em>different</em> userName → Submit → Expect 409 Conflict ✅</li>
+              </ul>
+
+              <p><strong>Scenario B</strong> - If Entra only sends <code>userName</code>:</p>
+              <ul>
+                <li>Copy an existing user's <code>userName</code> from <strong>Database → Users</strong></li>
+                <li>Leave <code>externalId</code> empty, paste userName below → Submit → Expect 409 Conflict ✅</li>
+              </ul>
+
+              <p>
+                <a href="https://github.com/kayasax/SCIMTool/blob/master/docs/COLLISION-TESTING-GUIDE.md" target="_blank" rel="noopener noreferrer">
+                  📚 Full collision testing guide
+                </a>
+              </p>
+            </div>
+          </details>
+        </div>
+
         <form className={styles.form} onSubmit={handleUserSubmit}>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
-              <span>userName*</span>
+              <span>userName* 🆔</span>
               <input
                 type="text"
                 value={userForm.userName}
@@ -129,11 +169,14 @@ export const ManualProvision: React.FC = () => {
                   resetUserResult();
                   setUserForm((state) => ({ ...state, userName: event.target.value }));
                 }}
+                placeholder="user@example.com"
                 required
+                title="Required. Used as identifier if externalId is not provided."
               />
+              <small className={styles.fieldHint}>Used as identifier if externalId is empty</small>
             </label>
             <label className={styles.field}>
-              <span>externalId</span>
+              <span>externalId 🔑</span>
               <input
                 type="text"
                 value={userForm.externalId}
@@ -141,7 +184,12 @@ export const ManualProvision: React.FC = () => {
                   resetUserResult();
                   setUserForm((state) => ({ ...state, externalId: event.target.value }));
                 }}
+                placeholder="7b39476c-4bb9-4d7a-baa8-5ad9cfe7e58e"
+                title="Unique identifier (recommended). If provided, this becomes the primary identifier instead of userName."
               />
+              <small className={styles.fieldHint}>
+                🔑 If provided, this becomes the unique identifier (takes priority over userName)
+              </small>
             </label>
             <label className={styles.field}>
               <span>displayName</span>
@@ -276,6 +324,14 @@ export const ManualProvision: React.FC = () => {
             <p>Create SCIM groups and optionally include member IDs to validate identifier collisions or membership behavior.</p>
           </div>
         </header>
+
+        <div className={styles.infoBox}>
+          <p>
+            <strong>Group Identifier:</strong> <code>displayName</code> is the unique identifier for groups. 
+            To test collisions, use a <code>displayName</code> that already exists (check <strong>Database → Groups</strong>).
+          </p>
+        </div>
+
         <form className={styles.form} onSubmit={handleGroupSubmit}>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>

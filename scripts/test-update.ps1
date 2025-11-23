@@ -22,6 +22,9 @@
     If specified, creates a new revision without deactivating the old one.
     Useful for A/B testing or quick rollback.
 
+.PARAMETER Force
+    Skip confirmation prompt and proceed immediately with deployment.
+
 .EXAMPLE
     # Deploy from current branch (if build-test.yml workflow ran)
     .\scripts\test-update.ps1
@@ -29,6 +32,10 @@
 .EXAMPLE
     # Deploy specific test tag
     .\scripts\test-update.ps1 -TestTag "test-collision-ui"
+
+.EXAMPLE
+    # Deploy without confirmation prompt
+    .\scripts\test-update.ps1 -TestTag "test-collision-ui" -Force
 
 .EXAMPLE
     # Deploy to specific app with revision mode
@@ -44,7 +51,8 @@ param(
     [string]$TestTag = "test-latest",
     [string]$ResourceGroup,
     [string]$AppName,
-    [switch]$CreateRevision
+    [switch]$CreateRevision,
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -67,6 +75,55 @@ function Write-Warning {
 function Write-Info {
     param([string]$Message)
     Write-Host "ℹ️  $Message" -ForegroundColor Gray
+}
+
+function Get-ContainerEnvArgs {
+    param(
+        [string]$ResourceGroup,
+        [string]$AppName,
+        [string]$ImageRef
+    )
+
+    Write-Step "Capturing environment variables"
+
+    $appDetailsJson = az containerapp show -n $AppName -g $ResourceGroup 2>$null
+    if (-not $appDetailsJson) {
+        throw "Failed to read Container App details for $AppName"
+    }
+
+    $appDetails = $appDetailsJson | ConvertFrom-Json
+    $revisionName = $appDetails.properties.latestReadyRevisionName
+    $envRecords = $null
+
+    if ($revisionName) {
+        Write-Info "Using baseline revision: $revisionName"
+        $envJson = az containerapp revision show -n $AppName -g $ResourceGroup --revision $revisionName --query "properties.template.containers[0].env" 2>$null
+        if ($envJson) {
+            $envRecords = $envJson | ConvertFrom-Json
+        }
+    }
+
+    if (-not $envRecords) {
+        Write-Warning "Falling back to template definition on the app"
+        $envRecords = $appDetails.properties.template.containers[0].env
+    }
+
+    if (-not $envRecords) {
+        throw "Unable to retrieve environment variables for $AppName"
+    }
+
+    $envArgs = @()
+    foreach ($entry in $envRecords) {
+        if ($entry.name -eq "SCIM_CURRENT_IMAGE") {
+            $envArgs += "$($entry.name)=$ImageRef"
+        } elseif ($entry.secretRef) {
+            $envArgs += "$($entry.name)=secretref:$($entry.secretRef)"
+        } elseif ($entry.value -ne $null -and $entry.value -ne "") {
+            $envArgs += "$($entry.name)=$($entry.value)"
+        }
+    }
+
+    return $envArgs
 }
 
 # Check Azure CLI
@@ -120,11 +177,16 @@ if (-not $AppName) {
         exit 1
     }
     
-    if ($apps.Count -eq 1) {
+    if ($apps -is [string]) {
+        # Single app returned as string
+        $AppName = $apps
+        Write-Info "Found: $AppName"
+    } elseif ($apps.Count -eq 1) {
+        # Single app returned as array
         $AppName = $apps[0]
         Write-Info "Found: $AppName"
     } else {
-        Write-Host "`nMultiple apps in $ResourceGroup:" -ForegroundColor Yellow
+        Write-Host "`nMultiple apps in ${ResourceGroup}:" -ForegroundColor Yellow
         $apps | ForEach-Object { Write-Host "  • $_" -ForegroundColor Gray }
         $AppName = Read-Host "`nEnter App name"
     }
@@ -140,7 +202,19 @@ if ($currentImage) {
 }
 
 # Build full image reference
-$imageRef = "ghcr.io/kayasax/scimtool:$TestTag"
+# Construct image reference
+$registry = "ghcr.io"
+$imageName = "kayasax/scimtool"
+$imageRef = "${registry}/${imageName}:${TestTag}"
+
+# Check if tag looks like a branch name and provide helpful hint
+if ($TestTag -match '^test-[^-]+-') {
+    Write-Host ""
+    Write-Host "💡 Tip: Branch 'test/xyz' creates tag 'test-test-xyz' (not 'test-xyz')" -ForegroundColor Cyan
+    Write-Host "   If deploying from branch test/collision-ui-improvements, use:" -ForegroundColor Cyan
+    Write-Host "   -TestTag test-test-collision-ui-improvements" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 # Confirm
 Write-Host "`n📦 Deployment Plan:" -ForegroundColor Cyan
@@ -157,34 +231,54 @@ if ($TestTag -like "test-*") {
     Write-Warning "Non-standard tag: $TestTag"
 }
 
-$confirm = Read-Host "`nProceed? (y/N)"
-if ($confirm -notmatch '^[Yy]$') {
-    Write-Host "Cancelled." -ForegroundColor Yellow
-    exit 0
+if (-not $Force) {
+    $confirm = Read-Host "`nProceed? (y/N)"
+    if ($confirm -notmatch '^[Yy]$') {
+        Write-Host "Cancelled." -ForegroundColor Yellow
+        exit 0
+    }
+} else {
+    Write-Info "Force mode enabled - skipping confirmation"
 }
 
 # Update Container App
 Write-Step "Updating Container App"
 try {
+    $envArgs = Get-ContainerEnvArgs -ResourceGroup $ResourceGroup -AppName $AppName -ImageRef $imageRef
+
     if ($CreateRevision) {
-        # Create new revision without deactivating old one
-        Write-Info "Creating new revision..."
-        az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            --revision-suffix "test-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
-            2>&1 | Out-Null
+        $revisionSuffix = "test-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        Write-Info "Creating parallel revision: $revisionSuffix"
     } else {
-        # Standard update (replaces current revision)
-        az containerapp update `
-            -n $AppName `
-            -g $ResourceGroup `
-            --image $imageRef `
-            2>&1 | Out-Null
+        $revisionSuffix = Get-Date -Format 'HHmmss'
+        Write-Info "Creating new revision with suffix: $revisionSuffix"
     }
-    
+
+    Write-Info "Deploying image: $imageRef"
+    if ($envArgs.Count -gt 0) {
+        Write-Info "Reapplying $($envArgs.Count) environment variables"
+    }
+
+    $arguments = @(
+        "containerapp", "update",
+        "-n", $AppName,
+        "-g", $ResourceGroup,
+        "--image", $imageRef,
+        "--revision-suffix", $revisionSuffix
+    )
+
+    if ($envArgs.Count -gt 0) {
+        $arguments += "--set-env-vars"
+        $arguments += $envArgs
+    }
+
+    $output = & az @arguments 2>&1
+
     if ($LASTEXITCODE -ne 0) {
+        if ($output) {
+            Write-Host "`nAzure CLI Error Output:" -ForegroundColor Red
+            Write-Host $output -ForegroundColor Red
+        }
         throw "Update command failed with exit code $LASTEXITCODE"
     }
 } catch {

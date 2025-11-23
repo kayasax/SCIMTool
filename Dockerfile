@@ -82,6 +82,10 @@ COPY --from=api-build --chown=scim:nodejs /app/public ./public
 COPY --from=api-build --chown=scim:nodejs /app/prisma ./prisma
 COPY --from=api-build --chown=scim:nodejs /app/package.json ./package.json
 
+# Write image tag to file at build time
+ARG IMAGE_TAG=unknown
+RUN echo "${IMAGE_TAG}" > /app/.image-tag
+
 # Copy entrypoint script
 COPY --chown=scim:nodejs api/docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
